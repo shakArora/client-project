@@ -1,0 +1,18 @@
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Avenir Next', Avenir, Montserrat, 'Segoe UI', Roboto, Arial,
+    sans-serif;
+  background: radial-gradient(circle at top, #ecf8ff 0%, #e6f5ff 45%, #ddf0fb 100%);
+  color: #00131f;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
