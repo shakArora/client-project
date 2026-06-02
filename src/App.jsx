@@ -110,4 +110,69 @@ function App() {
   )
 }
 
+
+/* 
+usage: getCoordinates('1600 Amphitheatre Parkway, Mountain View, CA').then(coords => {
+    console.log(coords); 
+});
+
+{ lat: 37.4224824, lon: -122.0856086 }
+*/
+
+async function getCoordinates(address) {
+    const url = `https://openstreetmap.org{encodeURIComponent(address)}`;
+    
+    try {
+        const response = await fetch(url, {
+            headers: { 'User-Agent': 'YourAppName (your-email@example.com)' } // Required for Nominatim
+        });
+        
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const data = await response.json();
+        if (data && data.length > 0) {
+            return {
+                lat: parseFloat(data[0].lat),
+                lon: parseFloat(data[0].lon)
+            };
+        } else {
+            throw new Error('Address not found');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+function parseAddr(coords) {
+  if (!coords) return 'Invalid coordinates';
+  return `${coords.lat},${coords.lon}`;
+}
+
+/* FROM GEMINI uses OSRM (we should self-host it)
+ * It's OSS, so no api keys
+ */
+// origin and destination parameter format: '-95.3698,29.7499'
+async function getOSRMRoute(origin, destination) {
+    // Coordinates: [longitude, latitude]
+    
+    const url = `https://project-osrm.org{origin};${destination}?overview=false`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.code === 'Ok') {
+            const meters = data.routes[0].distance;
+            const seconds = data.routes[0].duration;
+            
+            console.log(`Distance: ${(meters / 1609.34).toFixed(2)} miles`); // Convert meters to miles
+            console.log(`Drive Time: ${(seconds / 60).toFixed(0)} minutes`);
+        }
+    } catch (error) {
+        console.error('Error fetching route:', error);
+    }
+}
+
+
+
 export default App
