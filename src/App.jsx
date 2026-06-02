@@ -143,7 +143,7 @@ async function getCoordinates(address) {
     }
 }
 
-function parseAddr(coords) {
+async function parseAddr(coords) {
   if (!coords) return 'Invalid coordinates';
   return `${coords.lat},${coords.lon}`;
 }
@@ -167,12 +167,60 @@ async function getOSRMRoute(origin, destination) {
             
             console.log(`Distance: ${(meters / 1609.34).toFixed(2)} miles`); // Convert meters to miles
             console.log(`Drive Time: ${(seconds / 60).toFixed(0)} minutes`);
+            return {
+              dist: (meters / 1609.34).toFixed(2),
+              driveTime: (seconds / 60).toFixed(0)
+            };
         }
     } catch (error) {
         console.error('Error fetching route:', error);
     }
 }
 
+// GET ADDRESS LIST -> PARSE EXCEL TO CSV TO JSON
+// addresses is a list of addresses
+// weights is the amount of mulch each house needs
+async function mapBuilder(addresses, weights) {
+  let coors = [];
+  let i = 0;
+  for (const addr of addresses) {
+    getCoordinates(addr).then(coords => {
+      var latlong = coords;
+    });
+    latlong = parseAddr(latlong); 
+    coors.push({latlong, weights[i]});
+    i++;
+  }
+  return coors; 
+}
 
+// takes in the resulting map from mapBuilder(addresses, weights); [{address, howMuchWeightNeeded}....]
+// and the amount each car can carry in an array parsed from JSON
+// get where each car should go
+async function cluster(locations, cars) {
+  locations.sort((a, b) => b.weight - a.weight);
+  const assignments = {};
+  for (let i = 0; i < cars.length; i++) {
+    assignments[`Car_${i}`] = { capacity: cars[i], assignedTo: [], remainingCapacity: cars[i] };
+  }
+  for (const loc of locations) {
+    let assigned = false;
+    for (let carId in assignments) {
+      const car = assignments[carId];
+      if (loc.weight <= car.remainingCapacity) {
+        car.assignedTo.push({ address: loc.address, weight: loc.weight });
+        car.remainingCapacity -= loc.weight;
+        assigned = true;
+        break; 
+      }
+    }
+    
+    if (!assigned) {
+      console.warn(`Warning: Location "${loc.address}" requires ${loc.weight}, which exceeds any individual car's capacity.`);
+    }
+  }
+
+  return assignments;
+}
 
 export default App
