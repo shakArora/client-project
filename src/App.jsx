@@ -152,7 +152,7 @@ async function parseAddr(coords) {
  * It's OSS, so no api keys
  */
 // origin and destination parameter format: '-95.3698,29.7499'
-async function getOSRMRoute(origin, destination) {
+async function distanceFinder(origin, destination) {
     // Coordinates: [longitude, latitude]
     
     const url = `https://project-osrm.org{origin};${destination}?overview=false`;
@@ -175,52 +175,6 @@ async function getOSRMRoute(origin, destination) {
     } catch (error) {
         console.error('Error fetching route:', error);
     }
-}
-
-// GET ADDRESS LIST -> PARSE EXCEL TO CSV TO JSON
-// addresses is a list of addresses
-// weights is the amount of mulch each house needs
-async function mapBuilder(addresses, weights) {
-  let coors = [];
-  let i = 0;
-  for (const addr of addresses) {
-    getCoordinates(addr).then(coords => {
-      var latlong = coords;
-    });
-    latlong = parseAddr(latlong); 
-    coors.push({latlong, weights[i]});
-    i++;
-  }
-  return coors; 
-}
-
-// takes in the resulting map from mapBuilder(addresses, weights); [{address, howMuchWeightNeeded}....]
-// and the amount each car can carry in an array parsed from JSON
-// get where each car should go
-async function cluster(locations, cars) {
-  locations.sort((a, b) => b.weight - a.weight);
-  const assignments = {};
-  for (let i = 0; i < cars.length; i++) {
-    assignments[`Car_${i}`] = { capacity: cars[i], assignedTo: [], remainingCapacity: cars[i] };
-  }
-  for (const loc of locations) {
-    let assigned = false;
-    for (let carId in assignments) {
-      const car = assignments[carId];
-      if (loc.weight <= car.remainingCapacity) {
-        car.assignedTo.push({ address: loc.address, weight: loc.weight });
-        car.remainingCapacity -= loc.weight;
-        assigned = true;
-        break; 
-      }
-    }
-    
-    if (!assigned) {
-      console.warn(`Warning: Location "${loc.address}" requires ${loc.weight}, which exceeds any individual car's capacity.`);
-    }
-  }
-
-  return assignments;
 }
 
 export default App
