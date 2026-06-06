@@ -80,30 +80,53 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/google/admin", async (req, res) => {
-  const schema = z.object({ idToken: z.string().min(20) });
+  // Accept either accessToken (from useGoogleLogin) or idToken (legacy)
+  const schema = z.object({
+    accessToken: z.string().min(20).optional(),
+    idToken:     z.string().min(20).optional(),
+  }).refine(d => d.accessToken || d.idToken, { message: "accessToken or idToken required" });
+
   try {
     const body = schema.parse(req.body);
-    if (!env.googleClientId) {
-      return res.status(500).json({ message: "GOOGLE_CLIENT_ID is not configured" });
-    }
+
     if (!env.adminGoogleWhitelist.length) {
-      return res.status(500).json({ message: "ADMIN_GOOGLE_WHITELIST is empty" });
+      return res.status(500).json({ message: "ADMIN_GOOGLE_WHITELIST is not configured" });
     }
 
-    const ticket = await googleClient.verifyIdToken({
-      idToken: body.idToken,
-      audience: env.googleClientId,
-    });
-    const payload = ticket.getPayload();
-    const email = payload?.email?.toLowerCase();
-    const googleSub = payload?.sub;
-    const name = payload?.name || "Administrator";
+    let email, googleSub, name;
 
-    if (!email || !googleSub) {
-      return res.status(401).json({ message: "Invalid Google token payload" });
+    if (body.accessToken) {
+      // Verify via Google's userinfo endpoint (useGoogleLogin implicit flow)
+      const resp = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+        headers: { Authorization: `Bearer ${body.accessToken}` },
+      });
+      if (!resp.ok) {
+        return res.status(401).json({ message: "Invalid Google access token" });
+      }
+      const info = await resp.json();
+      email     = info.email?.toLowerCase();
+      googleSub = info.id;
+      name      = info.name || "Administrator";
+    } else {
+      // Legacy: verify ID token
+      if (!env.googleClientId) {
+        return res.status(500).json({ message: "GOOGLE_CLIENT_ID is not configured" });
+      }
+      const ticket = await googleClient.verifyIdToken({
+        idToken:  body.idToken,
+        audience: env.googleClientId,
+      });
+      const payload = ticket.getPayload();
+      email     = payload?.email?.toLowerCase();
+      googleSub = payload?.sub;
+      name      = payload?.name || "Administrator";
+    }
+
+    if (!email) {
+      return res.status(401).json({ message: "Could not retrieve email from Google" });
     }
     if (!env.adminGoogleWhitelist.includes(email)) {
-      return res.status(403).json({ message: "Google account is not admin-whitelisted" });
+      return res.status(403).json({ message: `${email} is not on the admin whitelist` });
     }
 
     let user = await User.findOne({ email });
@@ -111,7 +134,7 @@ router.post("/google/admin", async (req, res) => {
       user = await User.create({ name, email, googleSub, role: ROLES.ADMIN });
     } else {
       user.googleSub = googleSub;
-      user.role = ROLES.ADMIN;
+      user.role      = ROLES.ADMIN;
       await user.save();
     }
 
@@ -122,9 +145,9 @@ router.post("/google/admin", async (req, res) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Invalid Google login payload", issues: error.issues });
+      return res.status(400).json({ message: "Invalid payload", issues: error.issues });
     }
-    return res.status(401).json({ message: "Google login failed", error: error.message });
+    return res.status(401).json({ message: "Google login failed", details: error.message });
   }
 });
 

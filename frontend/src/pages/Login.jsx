@@ -34,6 +34,8 @@ export default function Login() {
     }
   }
 
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
   // ── Google login (admin only) ─────────────────────
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResp) => {
@@ -146,7 +148,7 @@ export default function Login() {
               {loading ? 'Signing In…' : 'Sign In'}
             </button>
 
-            {tab === 'Administrator' && (
+            {tab === 'Administrator' && googleClientId && (
               <div style={{ padding: '.9rem', border: '1.5px dashed var(--border)', borderRadius: 'var(--r3)', textAlign: 'center' }}>
                 <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '.7rem' }}>Or continue with Google (admin only)</p>
                 <button type="button" onClick={() => googleLogin()} className="btn btn-outline btn-full" disabled={loading}>

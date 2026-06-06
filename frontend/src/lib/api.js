@@ -36,7 +36,7 @@ api.interceptors.response.use(
 export const authApi = {
   login:           (email, password) => api.post("/auth/login",    { email, password }),
   register:        (data)            => api.post("/auth/register",  data),
-  googleAdmin:     (idToken)         => api.post("/auth/google/admin", { idToken }),
+  googleAdmin:     (accessToken)     => api.post("/auth/google/admin", { accessToken }),
   resetRequest:    (email, channel)  => api.post("/auth/password-reset/request",  { email, channel }),
   resetConfirm:    (token, newPassword) => api.post("/auth/password-reset/confirm", { token, newPassword }),
 };

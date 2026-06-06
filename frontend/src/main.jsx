@@ -8,14 +8,18 @@ import App from "./App.jsx";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
-createRoot(document.getElementById("root")).render(
+const tree = (
   <StrictMode>
-    <GoogleOAuthProvider clientId={googleClientId}>
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </BrowserRouter>
-    </GoogleOAuthProvider>
-  </StrictMode>,
+    <BrowserRouter>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
+  </StrictMode>
+);
+
+createRoot(document.getElementById("root")).render(
+  googleClientId
+    ? <GoogleOAuthProvider clientId={googleClientId}>{tree}</GoogleOAuthProvider>
+    : tree
 );
