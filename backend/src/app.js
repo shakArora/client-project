@@ -14,19 +14,30 @@ const app = express();
 
 // ── CORS — must be first, before Helmet ──────────────
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const allowed =
-    env.nodeEnv !== "production" ||
-    origin === env.frontendUrl;
+  const origin  = req.headers.origin || "";
+  const allowed = [
+    env.frontendUrl,                         // e.g. https://routed.netlify.app
+    "http://localhost:5173",
+    "http://localhost:4173",
+  ];
 
-  if (allowed && origin) {
+  // In production allow only the configured FRONTEND_URL;
+  // in development allow any localhost origin too.
+  const okOrigin =
+    env.nodeEnv !== "production" ||
+    !env.frontendUrl ||
+    allowed.includes(origin);
+
+  if (okOrigin && origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
+  } else if (!origin) {
+    // Same-origin / server-to-server — no header needed
   }
+
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
 
-  // Respond immediately to preflight
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
