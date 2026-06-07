@@ -1,8 +1,13 @@
 [build]
-  command = "npm run build"
-  publish = "dist"
+  base    = "frontend"          # Netlify runs all commands from this folder
+  command = "npm install && npm run build"
+  publish = "dist"              # relative to base
 
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback — every URL serves index.html so React Router handles routing
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from   = "/*"
+  to     = "/index.html"
   status = 200

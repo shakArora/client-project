@@ -1,22 +1,110 @@
-OSRM GitHub Account: 
-
-https://github.com/Project-OSRM 
-
-Contains self-hosting info, src, etc. 
-
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Serif: `Cormorant Garamond` fallback chain (`Georgia`, etc.)
+- Sans: `Inter` fallback chain (`Avenir Next`, `Segoe UI`, etc.)
 
-## React Compiler
+## Project Structure
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```text
+.
+├── backend/
+│   ├── .env.example
+│   ├── package.json
+│   └── src/
+│       ├── app.js
+│       ├── server.js
+│       ├── config/
+│       ├── middleware/
+│       ├── models/
+│       ├── routes/
+│       └── utils/
+├── frontend/
+│   ├── .env.example
+│   ├── package.json
+│   ├── public/
+│   │   └── _redirects
+│   └── src/
+└── package.json
+```
 
-## Expanding the ESLint configuration
+## Environment Setup
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Backend
+
+1. Copy `backend/.env.example` to `backend/.env`
+2. Fill values:
+   - `MONGODB_URI`
+   - `JWT_SECRET`
+   - `GOOGLE_CLIENT_ID`
+   - `ADMIN_GOOGLE_WHITELIST` (comma-separated admin emails)
+
+### Frontend
+
+1. Copy `frontend/.env.example` to `frontend/.env`
+2. Set:
+   - `VITE_API_URL` (default `http://localhost:5000`)
+   - `VITE_GOOGLE_CLIENT_ID` (for production GIS integration)
+
+## Install Dependencies
+
+```bash
+npm install --prefix backend
+npm install --prefix frontend
+```
+
+## Run Locally
+
+Backend:
+
+```bash
+npm run dev:backend
+```
+
+Frontend:
+
+```bash
+npm run dev:frontend
+```
+
+Or run per app directly with each folder's scripts.
+
+## Available API Areas
+
+- `GET /api/health`
+- Auth:
+  - `POST /api/auth/register`
+  - `POST /api/auth/login`
+  - `POST /api/auth/google/admin`
+  - `POST /api/auth/password-reset/request`
+  - `POST /api/auth/password-reset/confirm`
+- Entities:
+  - Vendors: `/api/vendors`
+  - Fundraisers: `/api/fundraisers`
+  - Products: `/api/products`
+  - Orders: `/api/orders`
+  - Driver routes + OTP access: `/api/driver/routes/:otp`
+
+## Frontend MVP Routes
+
+- `/` landing/home
+- `/about` help/info
+- `/login` role tabs + Google admin button scaffold
+- `/vendor` vendor dashboard
+- `/shop`, `/shop/:id`, `/checkout`, `/confirmation`
+- `/driver-access`, `/driver/:otp`
+- `/admin` sidebar dashboard (vendors/orders)
+
+## Deployment Notes
+
+- Frontend is Netlify-friendly (`frontend/public/_redirects` ensures SPA routing fallback).
+- Build command for frontend:
+
+```bash
+npm run build:frontend
+```
+
+- Backend can be deployed to any Node host with MongoDB connectivity and environment variables set.
