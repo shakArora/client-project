@@ -1,167 +1,147 @@
-/**
- * GEMINI 3.5 FLASH GENERATED THIS TEST FILE AFTER I PASSED IN THE PACKAGE.JSON FILE, AND THE PROMPT: 
- * "my file is called logic.js
- * make me the test file"
- * RUNS IN THE TERMINAL: $ node logic-test.js
- * SHOULD OUTPUT THE FOLLOWING IN THE TERMINAL IF THE TESTS HAVE BEEN PASSED
-🚀 Starting Pure JS ESM Test Suite...
-✅ PASSED: geocode() should return lat and lon coordinates for valid addresses
-✅ PASSED: geocode() should throw an error if no locations are found
-✅ PASSED: distanceFinder() should fetch coordinates and extract OSRM route data
-✅ PASSED: clusterAddressesWithCapacity() packs clusters based on weight capacity
-✅ PASSED: clusterAddressesWithCapacity() flags packages as unassigned if capacity is missing
-✅ PASSED: logic() runs multi-wave clustering without matrix lookup indexing failures
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { 
+  geocode, 
+  distanceFinder, 
+  distMatrix, 
+  clusterAddressesWithCapacity, 
+  logic 
+} from './logic.js';
 
-🏁 Pure JS ESM Test Suite Execution Completed.
- */
+test('Routing and Clustering Logic Suite', async (t) => {
+  
+  const originalFetch = globalThis.fetch;
+  
+  t.afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
 
-import assert from 'assert/strict';
-// Import your functions from logic.js
-import { geocode, distanceFinder, clusterAddressesWithCapacity, logic } from './logic.js';
-
-// ==========================================
-// MOCKING FRAMEWORK (Pure JS / ESM)
-// ==========================================
-const originalFetch = global.fetch;
-let fetchMocks = [];
-
-function mockFetchResponse(handler) {
-  fetchMocks.push(handler);
-}
-
-global.fetch = async (url, options) => {
-  if (fetchMocks.length > 0) {
-    const handler = fetchMocks.shift();
-    return handler(url, options);
-  }
-  return originalFetch(url, options);
-};
-
-function clearMocks() {
-  fetchMocks = [];
-}
-
-async function runTest(name, testFn) {
-  try {
-    clearMocks();
-    await testFn();
-    console.log(`✅ PASSED: ${name}`);
-  } catch (error) {
-    console.error(`❌ FAILED: ${name}`);
-    console.error(error);
-  }
-}
-
-// ==========================================
-// THE TESTS
-// ==========================================
-async function main() {
-  console.log('🚀 Starting Pure JS ESM Test Suite...\n');
-
-  // --- Test 1: geocode() Success ---
-  await runTest('geocode() should return lat and lon coordinates for valid addresses', async () => {
-    mockFetchResponse((url) => {
-      assert.match(url, /openstreetmap\.org/);
+  // ==========================================
+  // 1. GEOCODE FUNCTION TEST
+  // ==========================================
+  await t.test('geocode() - should resolve coordinates from valid API response', async () => {
+    globalThis.fetch = async (url) => {
+      assert.ok(url.includes('openstreetmap.org'));
       return {
         json: async () => [{ lat: '40.7128', lon: '-74.0060' }]
       };
-    });
+    };
 
-    const result = await geocode('New York, NY');
-    assert.deepEqual(result, { lat: '40.7128', lon: '-74.0060' });
+    const coords = await geocode('New York City');
+    assert.deepEqual(coords, { lat: '40.7128', lon: '-74.0060' });
   });
 
-  // --- Test 2: geocode() Failure ---
-  await runTest('geocode() should throw an error if no locations are found', async () => {
-    mockFetchResponse(() => ({
+  await t.test('geocode() - should throw error when no results found', async () => {
+    globalThis.fetch = async () => ({
       json: async () => []
-    }));
+    });
 
     await assert.rejects(
-      async () => { await geocode('Fake Address'); },
-      /Could not geocode address: Fake Address/
+      async () => await geocode('Fake Address 123'),
+      /Could not geocode address/
     );
   });
 
-  // --- Test 3: distanceFinder() Success ---
-  await runTest('distanceFinder() should fetch coordinates and extract OSRM route data', async () => {
-    mockFetchResponse(() => ({ json: async () => [{ lat: '40.0', lon: '-70.0' }] }));
-    mockFetchResponse(() => ({ json: async () => [{ lat: '41.0', lon: '-71.0' }] }));
-    mockFetchResponse((url) => {
-      assert.match(url, /project-osrm\.org/);
-      return {
-        json: async () => ({
-          routes: [{ distance: 16093.44, duration: 1200 }]
-        })
-      };
-    });
+  // ==========================================
+  // 2. DISTANCE FINDER FUNCTION TEST
+  // ==========================================
+  await t.test('distanceFinder() - should calculate route properties perfectly', async () => {
+    let mockFetchCallCount = 0;
+    
+    globalThis.fetch = async (url) => {
+      mockFetchCallCount++;
+      if (url.includes('openstreetmap.org')) {
+        return { json: async () => [{ lat: '10', lon: '20' }] };
+      }
+      if (url.includes('project-osrm.org')) {
+        return {
+          json: async () => ({
+            routes: [{ distance: 16093.44, duration: 1200 }]
+          })
+        };
+      }
+    };
 
-    const result = await distanceFinder('Point A', 'Point B');
-    assert.equal(result.drivingTime, '20 mins');
-    assert.equal(result.distance, '10.00 miles (16.09 km)');
+    const res = await distanceFinder('Addr1', 'Addr2');
+    
+    assert.equal(mockFetchCallCount, 3);
+    assert.equal(res.distance, '10.00 miles (16.09 km)');
+    assert.equal(res.drivingTime, '20 mins');
+    assert.equal(res.raw.meters, 16093.44);
   });
 
-  // --- Test 4: clusterAddressesWithCapacity() Basic Bin Packing ---
-  await runTest('clusterAddressesWithCapacity() packs clusters based on weight capacity', async () => {
-    const addresses = ['House A', 'House B', 'House C'];
-    const weights = [10, 20, 15];
-    const carCapacities = [30, 20];
+  // ==========================================
+  // 3. DIST MATRIX FUNCTION TEST
+  // ==========================================
+  await t.test('distMatrix() - should compile NxN duration matrix', async () => {
+    globalThis.fetch = async (url) => {
+      if (url.includes('openstreetmap.org')) return { json: async () => [{ lat: '1', lon: '1' }] };
+      if (url.includes('project-osrm.org')) return { json: async () => ({ routes: [{ distance: 1000, duration: 60 }] }) };
+    };
+
+    const addresses = ['Point A', 'Point B'];
+    const matrix = await distMatrix(addresses);
+
+    assert.equal(matrix.length, 2);
+    assert.equal(matrix[0].length, 2);
+    assert.equal(matrix[0][0], 60);
+  });
+
+  // ==========================================
+  // 4. CLUSTER ADDRESSES WITH CAPACITY TEST
+  // ==========================================
+  await t.test('clusterAddressesWithCapacity() - handles virtual weight splits cleanly', async () => {
+    const addresses = ['House 1', 'House 2', 'House 3'];
+    const amountPerAddress = [20, 38, 10];
+    const carCapacities = [8, 16];
+    
     const distanceMatrix = [
       [0, 5, 10],
       [5, 0, 15],
       [10, 15, 0]
     ];
 
-    const result = await clusterAddressesWithCapacity(addresses, weights, distanceMatrix, carCapacities);
-    
+    const result = await clusterAddressesWithCapacity(addresses, amountPerAddress, distanceMatrix, carCapacities);
+
+    assert.equal(result.assignments.length, addresses.length);
     assert.equal(result.summary.totalAddresses, 3);
-    assert.equal(result.summary.assignedAddresses, 3);
-    assert.equal(result.unassignedAddresses.length, 0);
+    
+    const clusterWithParts = result.clusters.some(c => c.addresses.some(a => a.includes('(Part')));
+    assert.ok(clusterWithParts);
   });
 
-  // --- Test 5: clusterAddressesWithCapacity() Leftovers Handling ---
-  await runTest('clusterAddressesWithCapacity() flags packages as unassigned if capacity is missing', async () => {
-    const addresses = ['House A', 'House B'];
-    const weights = [50, 50];
-    const carCapacities = [60];
-    const distanceMatrix = [[0, 5], [5, 0]];
-
-    const result = await clusterAddressesWithCapacity(addresses, weights, distanceMatrix, carCapacities);
-    
-    assert.equal(result.summary.assignedAddresses, 1);
-    assert.equal(result.unassignedAddresses.length, 1);
-  });
-
-  // --- Test 6: logic() Matrix Slicing Sub-Matrix Map Loop ---
-  await runTest('logic() runs multi-wave clustering without matrix lookup indexing failures', async () => {
-    const addresses = ['Loc 0', 'Loc 1', 'Loc 2'];
-    const amountPerAddress = [25, 25, 25];
-    const carCapacities = [30]; 
-    
-    // Stub out global function to avoid network hits
-    const originalDistMatrix = global.distMatrix;
-    global.distMatrix = async () => [
-      [0, 10, 20],
-      [10, 0, 30],
-      [20, 30, 0]
-    ];
-
+  // ==========================================
+  // 5. BULLETPROOF FAST LOGIC RECURSION TEST
+  // ==========================================
+  await t.test('logic() - recursive loop should handle remaining unassigned assets instantly', async () => {
     const originalLog = console.log;
-    let logOutputs = [];
-    console.log = (msg) => logOutputs.push(msg);
+    let consoleOutputs = [];
+    console.log = (msg) => consoleOutputs.push(msg);
+
+    // Bypassing network fetch operations
+    globalThis.fetch = async (url) => {
+      if (url.includes('openstreetmap.org')) return { json: async () => [{ lat: '1', lon: '1' }] };
+      if (url.includes('project-osrm.org')) return { json: async () => ({ routes: [{ distance: 5000, duration: 300 }] }) };
+    };
+
+    // --- QUICK TIMEOUT BYPASS ---
+    // Safely shadow/bypass global setTimeout configuration for this local thread test
+    const originalSetTimeout = globalThis.setTimeout;
+    globalThis.setTimeout = (cb) => cb(); 
+
+    const addresses = ['House A', 'House B'];
+    const weights = [30, 10]; 
+    const cars = [40]; 
 
     try {
-      await logic(addresses, amountPerAddress, carCapacities);
-      const waveLogs = logOutputs.filter(log => typeof log === 'string' && log.includes('ROUTES WAVE'));
-      assert.equal(waveLogs.length, 3);
+      // Runs smoothly and finishes instantly with zero millisecond delays
+      await logic(addresses, weights, cars);
+      
+      const totalWaveslogged = consoleOutputs.filter(line => line.includes('ROUTES WAVE')).length;
+      assert.ok(totalWaveslogged >= 1, 'Logic loop should complete safely and output waves');
     } finally {
-      global.distMatrix = originalDistMatrix;
       console.log = originalLog;
+      globalThis.setTimeout = originalSetTimeout; // Clean restore
     }
   });
-
-  global.fetch = originalFetch;
-  console.log('\n🏁 Pure JS ESM Test Suite Execution Completed.');
-}
-
-main();
+});

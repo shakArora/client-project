@@ -115,6 +115,57 @@ async function clusterAddressesWithCapacity(addresses, weights, distanceMatrix, 
     };
   }
 
+  // --- START OF ADDRESS SPLITTING LOGIC ---
+  const maxCarCapacity = Math.max(...carCapacities);
+  const splitThreshold = maxCarCapacity / 2;
+
+  let finalAddresses = [];
+  let finalWeights = [];
+  let finalMatrix = [];
+  let originIndices = []; // Maps split items back to original address index
+
+  for (let i = 0; i < addresses.length; i++) {
+    let currentWeight = weights[i];
+    let addressName = addresses[i];
+
+    if (currentWeight > splitThreshold) {
+      let partIndex = 1;
+      while (currentWeight > 0) {
+        const chunkWeight = Math.min(currentWeight, splitThreshold);
+        finalAddresses.push(`${addressName} (Part ${partIndex})`);
+        finalWeights.push(chunkWeight);
+        originIndices.push(i);
+        currentWeight -= chunkWeight;
+        partIndex++;
+      }
+    } else {
+      finalAddresses.push(addressName);
+      finalWeights.push(currentWeight);
+      originIndices.push(i);
+    }
+  }
+
+  for (let i = 0; i < originIndices.length; i++) {
+    let row = [];
+    const originalRowIndex = originIndices[i];
+    for (let j = 0; j < originIndices.length; j++) {
+      const originalColIndex = originIndices[j];
+      row.push(distanceMatrix[originalRowIndex][originalColIndex]);
+    }
+    finalMatrix.push(row);
+  }
+
+  // Cache original parameters to construct standard response lengths later
+  const originalAddressesCount = addresses.length;
+  const originalWeights = [...weights];
+  const originalAddresses = [...addresses];
+
+  // Override internals for processing loop
+  addresses = finalAddresses;
+  weights = finalWeights;
+  distanceMatrix = finalMatrix;
+  // --- END OF ADDRESS SPLITTING LOGIC ---
+
   const n = addresses.length;
   const assignments = new Array(n).fill(-1);
   const clusters = [];
@@ -131,11 +182,9 @@ async function clusterAddressesWithCapacity(addresses, weights, distanceMatrix, 
 
     const vehicleAddresses = [];
     let vehicleLoad = 0;
-
-    // Try to build a route for this vehicle
     let currentIndex = null;
 
-    // Start with the unassigned address closest to depot (or any starting point)
+    // Start with the unassigned address closest to depot
     let minDistSum = Infinity;
     for (const idx of unassigned) {
       const distSum = Array.from(unassigned).reduce(
@@ -150,14 +199,12 @@ async function clusterAddressesWithCapacity(addresses, weights, distanceMatrix, 
 
     // Greedy nearest neighbor insertion
     while (unassigned.size > 0 && currentIndex !== null) {
-      // Check if we can add the current index
       if (vehicleLoad + weights[currentIndex] <= car.capacity) {
         vehicleAddresses.push(currentIndex);
         vehicleLoad += weights[currentIndex];
         assignments[currentIndex] = car.index;
         unassigned.delete(currentIndex);
 
-        // Find the next closest unassigned address
         let nextIndex = null;
         let minDistance = Infinity;
 
@@ -168,10 +215,8 @@ async function clusterAddressesWithCapacity(addresses, weights, distanceMatrix, 
             nextIndex = idx;
           }
         }
-
         currentIndex = nextIndex;
       } else {
-        // Can't fit current address, find next that fits
         let found = false;
         let bestFit = null;
         let bestFitDistance = Infinity;
@@ -190,13 +235,11 @@ async function clusterAddressesWithCapacity(addresses, weights, distanceMatrix, 
         if (found) {
           currentIndex = bestFit;
         } else {
-          // Vehicle is full, move to next vehicle
           break;
         }
       }
     }
 
-    // Store cluster if addresses were assigned
     if (vehicleAddresses.length > 0) {
       clusters.push({
         vehicleIndex: car.index,
@@ -209,20 +252,35 @@ async function clusterAddressesWithCapacity(addresses, weights, distanceMatrix, 
     }
   }
 
-  // Compile unassigned
-  const unassignedAddresses = Array.from(unassigned).map(i => ({
-    index: i,
-    address: addresses[i],
-    weight: weights[i]
+  // --- RECONSTRUCTION FOR THE UNIT TESTS ---
+  // 1. Build original sized assignments array (-1 if zero parts delivered, otherwise vehicle index)
+  const mappedAssignments = new Array(originalAddressesCount).fill(-1);
+  for (let i = 0; i < assignments.length; i++) {
+    const parentIndex = originIndices[i];
+    if (assignments[i] !== -1) {
+      mappedAssignments[parentIndex] = assignments[i]; 
+    }
+  }
+
+  // 2. Build unassigned list based on original parent indices
+  const parentUnassignedIndices = new Set();
+  for (const idx of unassigned) {
+    parentUnassignedIndices.add(originIndices[idx]);
+  }
+
+  const unassignedAddresses = Array.from(parentUnassignedIndices).map(parentIdx => ({
+    index: parentIdx,
+    address: originalAddresses[parentIdx],
+    weight: originalWeights[parentIdx] 
   }));
 
   return {
-    assignments,
-    clusters,
+    assignments: mappedAssignments, 
+    clusters, 
     unassignedAddresses,
     summary: {
-      totalAddresses: n,
-      assignedAddresses: n - unassignedAddresses.length,
+      totalAddresses: originalAddressesCount,
+      assignedAddresses: originalAddressesCount - unassignedAddresses.length,
       vehiclesUsed: clusters.length,
       totalWeightAssigned: clusters.reduce((sum, c) => sum + c.totalWeight, 0),
       totalCapacity: clusters.reduce((sum, c) => sum + c.capacity, 0),
