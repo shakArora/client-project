@@ -18,6 +18,8 @@ const driverRouteSchema = new mongoose.Schema(
     fundraiserId:    { type: mongoose.Schema.Types.ObjectId, ref: "Fundraiser", required: true },
     otp:             { type: String, required: true, trim: true, uppercase: true },
     driverName:      { type: String, trim: true },
+    driverPhone:     { type: String, trim: true },
+    capacity:        { type: Number, default: 999, min: 1 },
     stops:           { type: [stopSchema], default: [] },
     completedStops:  { type: Number, default: 0, min: 0 },
     startedAt:       { type: Date },

@@ -13,6 +13,13 @@ import { signAuthToken } from "../utils/auth.js";
 
 const router = express.Router();
 
+const strongPassword = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .refine(p => /[A-Z]/.test(p), "Password must contain at least one uppercase letter")
+  .refine(p => /[a-z]/.test(p), "Password must contain at least one lowercase letter")
+  .refine(p => /[0-9]/.test(p), "Password must contain at least one number")
+  .refine(p => /[^A-Za-z0-9]/.test(p), "Password must contain at least one special character");
+
 // ── Dashboard stats ───────────────────────────────────
 router.get("/stats", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
@@ -58,7 +65,7 @@ router.post("/users", requireAuth, requireRole(ROLES.ADMIN), async (req, res) =>
   const schema = z.object({
     name:     z.string().min(2).trim(),
     email:    z.string().email().trim(),
-    password: z.string().min(6),
+    password: strongPassword,
     role:     z.enum([ROLES.VENDOR, ROLES.ADMIN, ROLES.DRIVER]).default(ROLES.VENDOR),
     phone:    z.string().optional(),
   });
@@ -95,7 +102,7 @@ router.post("/vendors", requireAuth, requireRole(ROLES.ADMIN), async (req, res) 
   const schema = z.object({
     name:         z.string().min(2).trim(),
     email:        z.string().email().trim(),
-    password:     z.string().min(6),
+    password:     strongPassword,
     fundraiserId: z.string().min(10),
     referralCode: z.string().min(2).max(6).trim().toUpperCase(),
   });
@@ -106,6 +113,9 @@ router.post("/vendors", requireAuth, requireRole(ROLES.ADMIN), async (req, res) 
     const body = schema.parse(req.body);
 
     let user = await User.findOne({ email: body.email.toLowerCase() });
+    if (user?.role === ROLES.ADMIN) {
+      return res.status(409).json({ message: "This email belongs to an administrator account." });
+    }
     if (!user) {
       const passwordHash = await bcrypt.hash(body.password, 10);
       user = await User.create({
@@ -114,6 +124,9 @@ router.post("/vendors", requireAuth, requireRole(ROLES.ADMIN), async (req, res) 
         passwordHash,
         role:  ROLES.VENDOR,
       });
+    } else if (user.role !== ROLES.VENDOR) {
+      user.role = ROLES.VENDOR;
+      await user.save();
     }
 
     const vendor = await Vendor.create({

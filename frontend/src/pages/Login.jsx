@@ -91,7 +91,7 @@ export default function Login() {
           <Link to="/shop">Shop</Link>
           <Link to="/about">About</Link>
         </div>
-        <Link to="/signup" className="btn btn-gold btn-sm">Sign Up</Link>
+        <Link to="/request-access" className="btn btn-outline btn-sm">Request Access</Link>
       </nav>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', flex: 1, minHeight: 'calc(100vh - 64px)' }}>
@@ -150,9 +150,9 @@ export default function Login() {
 
             {tab === 'Administrator' && googleClientId && (
               <div style={{ padding: '.9rem', border: '1.5px dashed var(--border)', borderRadius: 'var(--r3)', textAlign: 'center' }}>
-                <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '.7rem' }}>Or continue with Google (admin only)</p>
+                <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '.7rem' }}>Or sign in with Google (admin only)</p>
                 <button type="button" onClick={() => googleLogin()} className="btn btn-outline btn-full" disabled={loading}>
-                  🔵 Continue with Google
+                  Sign in with Google
                 </button>
               </div>
             )}
@@ -188,9 +188,9 @@ export default function Login() {
             </form>
           </div>
 
-          <p style={{ textAlign: 'center', fontSize: '.85rem', color: 'var(--t3)' }}>
-            No account?{' '}
-            <Link to="/signup" style={{ color: 'var(--gold)', fontWeight: 700 }}>Sign Up</Link>
+          <p style={{ textAlign: 'center', fontSize: '.83rem', color: 'var(--t3)' }}>
+            Need admin access?{' '}
+            <Link to="/request-access" style={{ color: 'var(--gold-dk)', fontWeight: 700 }}>Request it here</Link>
           </p>
         </div>
       </div>

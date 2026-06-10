@@ -8,7 +8,7 @@ export function useActiveFundraiser() {
 
   function reload() {
     setLoading(true);
-    fundraiserApi.list()
+    fundraiserApi.mine()
       .then(r => {
         const items = r.data || [];
         setList(items);

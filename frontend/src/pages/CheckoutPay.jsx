@@ -1,18 +1,16 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import CheckoutStepper from '../components/CheckoutStepper';
 import { orderApi } from '../lib/api';
 
-const NAV = [{ label: 'Shop', to: '/shop' }];
+const NAV = [{ label: 'Shop', to: '/shop' }, { label: 'About', to: '/about' }];
 
-function Stepper({ step }) {
+function SummaryRow({ label, value, gold }) {
   return (
-    <div className="stepper" style={{ margin: '1.1rem 0' }}>
-      <div className={`stepper-step ${step > 1 ? 'done' : step === 1 ? 'active' : ''}`}>{step > 1 ? '✓' : '1'}</div>
-      <div className={`stepper-line ${step > 1 ? 'done' : ''}`} />
-      <div className={`stepper-step ${step > 2 ? 'done' : step === 2 ? 'active' : ''}`}>{step > 2 ? '✓' : '2'}</div>
-      <div className={`stepper-line ${step > 2 ? 'done' : ''}`} />
-      <div className={`stepper-step ${step === 3 ? 'active' : ''}`}>3</div>
+    <div className="checkout-row">
+      <span style={{ color: 'var(--t2)' }}>{label}</span>
+      <span style={{ fontWeight: 700, color: gold ? 'var(--gold-dk)' : 'var(--t1)' }}>{value}</span>
     </div>
   );
 }
@@ -23,85 +21,120 @@ export default function CheckoutPay() {
   const info = cart.customerInfo || {};
 
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
+  const [error, setError] = useState('');
 
-  async function placeOrder() {
-    setError(''); setLoading(true);
+  const subtotal = (cart.items || []).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const pillLabel = cart.fundraiserTitle || 'Community Fundraiser';
+
+  async function placeOrder(e) {
+    e?.preventDefault();
+    setError('');
+    setLoading(true);
     try {
-      const payload = {
-        fundraiserId:    cart.fundraiserId,
-        referralCode:    info.referralCode || undefined,
-        customerName:    info.name,
-        customerEmail:   info.email,
+      const { data } = await orderApi.place({
+        fundraiserId: cart.fundraiserId,
+        referralCode: info.referralCode || undefined,
+        customerName: info.name,
+        customerEmail: info.email,
+        customerPhone: info.phone || undefined,
         deliveryAddress: info.address,
-        comments:        info.comments || undefined,
-        items:           cart.items,
-      };
-      const { data } = await orderApi.place(payload);
+        comments: info.comments || undefined,
+        items: cart.items,
+      });
       sessionStorage.setItem('routed_order', JSON.stringify(data));
       sessionStorage.removeItem('routed_cart');
       navigate('/shop/confirmation');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to place order. Please try again.');
+      if (!err.response) {
+        setError('Network error — check your connection and try again.');
+      } else if (err.response?.status >= 500) {
+        setError('Server error — please try again in a moment.');
+      } else {
+        setError(err.response?.data?.message || 'Failed to place order. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   }
 
-  return (
-    <div className="page">
-      <Navbar links={NAV} />
-      <main style={{ maxWidth: 1020, margin: '0 auto', padding: '1.8rem 1.25rem 4rem' }}>
-        <span className="title-pill">Community Fundraiser</span>
-        <Stepper step={3} />
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.7rem,4vw,2.4rem)', margin: '.5rem 0 1.6rem' }}>Review &amp; Pay</h1>
+  const orderSummary = (
+    <div className="checkout-summary">
+      <p className="checkout-summary-label">Order Summary</p>
+      {(cart.items || []).map((item, i) => (
+        <SummaryRow key={i} label={`${item.productName} × ${item.quantity}`} value={`$${(item.quantity * item.unitPrice).toFixed(2)}`} />
+      ))}
+      <SummaryRow label="Delivery Fee" value="$0.00" />
+      <div className="checkout-total">
+        <span>Total</span>
+        <span style={{ color: 'var(--gold-dk)' }}>${subtotal.toFixed(2)}</span>
+      </div>
+    </div>
+  );
 
-        {error && (
-          <div style={{ background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 'var(--r2)', padding: '.7rem .9rem', color: 'var(--red)', fontSize: '.88rem', marginBottom: '1rem' }}>
-            {error}
+  return (
+    <div className="page checkout-page">
+      <Navbar links={NAV} actionLabel="Log In" actionTo="/login" />
+
+      <main className="checkout-main checkout-main--wide">
+        <span className="title-pill">{pillLabel}</span>
+        <CheckoutStepper step={3} />
+        <h1 className="checkout-title">Review &amp; Pay</h1>
+
+        {cart.fundraiserDescription && (
+          <p style={{ color: 'var(--t2)', lineHeight: 1.6, marginBottom: '1rem', fontSize: '.95rem' }}>{cart.fundraiserDescription}</p>
+        )}
+        {cart.deliveryNotes && (
+          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '.85rem 1rem', marginBottom: '1.25rem', fontSize: '.9rem', color: '#1e3a5f', lineHeight: 1.5 }}>
+            <strong>Delivery information:</strong> {cart.deliveryNotes}
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '1.25rem', alignItems: 'start' }}>
-          {/* Left – review info */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.9rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.85rem' }}>
-              <div className="field"><label>Full Name</label><input readOnly value={info.name || ''} /></div>
-              <div className="field"><label>Email</label><input readOnly value={info.email || ''} /></div>
-            </div>
-            <div className="field"><label>Delivery Address</label><input readOnly value={info.address || ''} /></div>
-            {info.comments && <div className="field"><label>Comments</label><textarea readOnly value={info.comments} rows={2} /></div>}
-            {info.referralCode && <div className="field"><label>Referral Code</label><input readOnly value={info.referralCode} /></div>}
+        {error && <div className="checkout-error">{error}</div>}
 
-            <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--r3)', padding: '1.2rem', textAlign: 'center', color: 'var(--t3)', fontSize: '.92rem' }}>
-              <p style={{ fontWeight: 700, marginBottom: '.35rem' }}>Payment</p>
-              PayPal / Stripe integration goes here
+        <div className="checkout-pay-grid">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="checkout-summary hide-mobile" style={{ marginBottom: 0 }}>
+              <p className="checkout-summary-label">Delivery To</p>
+              <SummaryRow label="Name" value={info.name || '—'} />
+              <SummaryRow label="Email" value={info.email || '—'} />
+              {info.phone && <SummaryRow label="Phone" value={info.phone} />}
+              <SummaryRow label="Address" value={info.address || '—'} />
+            </div>
+
+            <div className="checkout-summary">
+              <p className="checkout-summary-label">Payment</p>
+              <p style={{ color: 'var(--t3)', fontSize: '.9rem', textAlign: 'center', padding: '1.25rem 0' }}>
+                PayPal / Card — secure checkout
+              </p>
+            </div>
+
+            <div className="checkout-actions checkout-actions--inline hide-mobile" style={{ flexDirection: 'column' }}>
+              <button onClick={placeOrder} disabled={loading} className="btn btn-dark btn-full btn-lg">
+                {loading ? 'Placing…' : 'Place Order'}
+              </button>
+              <button type="button" onClick={() => navigate('/shop/info')} className="btn btn-outline btn-full">
+                ← Back
+              </button>
             </div>
           </div>
 
-          {/* Right – order summary */}
-          <div className="card">
-            <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', marginBottom: '1rem' }}>Order Summary</h3>
-            {(cart.items || []).map(item => (
-              <div key={item.productId} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '.65rem', fontSize: '.9rem', color: 'var(--t2)' }}>
-                <span>{item.productName} × {item.quantity}</span>
-                <span>${(item.quantity * item.unitPrice).toFixed(2)}</span>
-              </div>
-            ))}
-            <div style={{ borderTop: '1.5px solid var(--border)', paddingTop: '.75rem', display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1rem', marginBottom: '1.2rem' }}>
-              <span>Total</span>
-              <span style={{ color: 'var(--gold-dk)' }}>${(cart.totalAmount || 0).toFixed(2)}</span>
-            </div>
-
-            <button onClick={placeOrder} disabled={loading} className="btn btn-dark btn-full btn-lg" style={{ textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '.6rem' }}>
-              {loading ? 'Placing Order…' : 'Place Order'}
-            </button>
-            <Link to="/shop/info" className="btn btn-outline btn-full">← Back</Link>
+          <div className="checkout-pay-sidebar">
+            {orderSummary}
           </div>
         </div>
       </main>
 
-      <style>{`@media(max-width:768px){div[style*="1.4fr 1fr"]{grid-template-columns:1fr!important}div[style*="1fr 1fr"]{grid-template-columns:1fr!important}}`}</style>
+      <div className="checkout-actions-sticky">
+        <div style={{ marginBottom: '.5rem', fontSize: '.82rem', color: 'var(--t3)', textAlign: 'center' }}>
+          Total: <strong style={{ color: 'var(--gold-dk)' }}>${subtotal.toFixed(2)}</strong>
+        </div>
+        <div className="checkout-actions">
+          <button type="button" onClick={() => navigate('/shop/info')} className="btn btn-outline btn-lg">← Back</button>
+          <button onClick={placeOrder} disabled={loading} className="btn btn-dark btn-lg">
+            {loading ? 'Placing…' : 'Submit'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -24,11 +24,14 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-router.post("/register", async (req, res) => {
-  // eslint-disable-next-line no-console
-  console.log("[register] body received:", JSON.stringify(req.body));
+router.post("/register", async (_req, res) => {
+  // Public registration is disabled — accounts are created by the admin team.
+  return res.status(403).json({
+    message: "Account registration is not open. Please email contact.routed@gmail.com to request access.",
+  });
+  // eslint-disable-next-line no-unreachable
   try {
-    const body = registerSchema.parse(req.body);
+    const body = registerSchema.parse(_req.body);
     const existing = await User.findOne({ email: body.email.toLowerCase() });
     if (existing) return res.status(409).json({ message: "Email already registered" });
 

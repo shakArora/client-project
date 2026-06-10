@@ -103,6 +103,22 @@ router.post("/", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
   }
 });
 
+// ── Vendor: update own profile (goal, etc.) ───────────
+router.patch("/me", requireAuth, requireRole(ROLES.VENDOR), async (req, res) => {
+  try {
+    const body = z.object({
+      revenueGoal: z.coerce.number().min(0).optional(),
+    }).parse(req.body);
+    const vendor = await Vendor.findOneAndUpdate({ userId: req.user.sub }, body, { new: true })
+      .populate("fundraiserId", "title slug isActive endDate");
+    if (!vendor) return res.status(404).json({ message: "Vendor profile not found" });
+    res.json(vendor);
+  } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ message: "Invalid payload" });
+    res.status(500).json({ message: "Unable to update profile" });
+  }
+});
+
 // ── Admin: update vendor ──────────────────────────────
 router.patch("/:id", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
   try {

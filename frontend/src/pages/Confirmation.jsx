@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
-const NAV = [{ label: 'Shop', to: '/shop' }];
+const NAV = [{ label: 'Shop', to: '/shop' }, { label: 'About', to: '/about' }];
 
 export default function Confirmation() {
+  const navigate = useNavigate();
   const [order, setOrder] = useState(null);
 
   useEffect(() => {
@@ -12,37 +13,60 @@ export default function Confirmation() {
     if (saved) setOrder(JSON.parse(saved));
   }, []);
 
+  const firstName = order?.customerName?.split(' ')[0] || '';
+  const orderCode = order ? `#${(order._id || '').slice(-8).toUpperCase()}` : '—';
+  const itemSummary = order
+    ? (order.items || []).map(i => `${i.productName} × ${i.quantity}`).join(', ')
+    : '—';
+
+  const deliveryDate = order?.fundraiserId?.deliveryDate
+    ? new Date(order.fundraiserId.deliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
+
   return (
-    <div className="page">
-      <Navbar links={NAV} />
-      <main style={{ maxWidth: 520, margin: '0 auto', padding: '3rem 1.25rem 4rem', textAlign: 'center' }}>
-        <div style={{ width: 88, height: 88, borderRadius: '50%', background: '#4E6D38', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.4rem', color: '#fff', margin: '0 auto 1.4rem' }}>✓</div>
+    <div className="page checkout-page">
+      <Navbar links={NAV} actionLabel="Log In" actionTo="/login" />
 
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(2rem,5vw,2.8rem)', marginBottom: '.65rem' }}>Order Placed!</h1>
+      <main className="checkout-main" style={{ textAlign: 'center', paddingTop: '2rem' }}>
+        <div style={{
+          width: 72, height: 72, borderRadius: '50%', background: 'var(--green)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 1.25rem', boxShadow: '0 8px 32px rgba(78,109,56,.25)',
+        }}>
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
 
-        <p style={{ color: 'var(--t3)', lineHeight: 1.6, marginBottom: '1.8rem', fontSize: '.97rem' }}>
-          {order
-            ? <>Thank you, <strong style={{ color: 'var(--t1)' }}>{order.customerName}</strong>! A confirmation has been sent to <strong style={{ color: 'var(--t1)' }}>{order.customerEmail}</strong>.</>
-            : 'Your order has been received. Check your email for confirmation.'}
+        <h1 className="checkout-title" style={{ marginBottom: '.65rem' }}>Order Placed!</h1>
+
+        <p style={{ color: 'var(--t3)', lineHeight: 1.65, marginBottom: '1.75rem', fontSize: '.95rem' }}>
+          {firstName && <>Thank you, <strong style={{ color: 'var(--t1)' }}>{firstName}</strong>! </>}
+          A confirmation email has been sent to{' '}
+          {order?.customerEmail
+            ? <strong style={{ color: 'var(--t1)' }}>{order.customerEmail}</strong>
+            : 'your email address'}.
         </p>
 
         {order && (
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r4)', padding: '1.1rem 1.3rem', marginBottom: '1.6rem', textAlign: 'left' }}>
+          <div className="checkout-summary" style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
             {[
-              { label: 'Order #',    value: order._id?.slice(-6).toUpperCase() || '—' },
-              { label: 'Items',      value: `${order.totalBags} bag${order.totalBags !== 1 ? 's' : ''}` },
-              { label: 'Total Paid', value: `$${order.totalAmount?.toFixed(2) || '0.00'}`, gold: true },
-              { label: 'Delivery',   value: order.deliveryAddress || '—' },
-            ].map(({ label, value, gold }) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '.55rem 0', borderBottom: '1px solid var(--border-lt)' }}>
-                <span style={{ color: 'var(--t3)', fontSize: '.9rem' }}>{label}</span>
-                <span style={{ fontWeight: 700, fontSize: '.9rem', color: gold ? 'var(--gold-dk)' : 'var(--t1)' }}>{value}</span>
+              { label: 'Order #', value: orderCode },
+              { label: 'Items', value: itemSummary },
+              { label: 'Total Paid', value: `$${(order.totalAmount || 0).toFixed(2)}`, gold: true },
+              deliveryDate && { label: 'Est. Delivery', value: deliveryDate },
+            ].filter(Boolean).map(({ label, value, gold }) => (
+              <div key={label} className="checkout-row">
+                <span style={{ color: 'var(--t3)' }}>{label}</span>
+                <span style={{ fontWeight: 700, color: gold ? 'var(--gold-dk)' : 'var(--t1)', textAlign: 'right', maxWidth: '60%', wordBreak: 'break-word' }}>{value}</span>
               </div>
             ))}
           </div>
         )}
 
-        <Link to="/shop" className="btn btn-gold btn-full btn-lg" style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Shop More</Link>
+        <button onClick={() => navigate('/shop')} className="btn btn-gold btn-full btn-lg">
+          Shop More
+        </button>
       </main>
     </div>
   );

@@ -13,6 +13,7 @@ const vendorSchema = new mongoose.Schema(
     bagsSold:     { type: Number, default: 0, min: 0 },
     totalRevenue: { type: Number, default: 0, min: 0 },
     orderCount:   { type: Number, default: 0, min: 0 },
+    revenueGoal:  { type: Number, default: 0, min: 0 },
     isActive:     { type: Boolean, default: true },
   },
   { timestamps: true },

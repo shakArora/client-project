@@ -1,7 +1,3 @@
-/**
- * Centralised Axios client. Every page imports from here — never create
- * raw fetch/axios calls elsewhere.
- */
 import axios from "axios";
 
 const BASE = import.meta.env.VITE_API_BASE_URL || "/api";
@@ -12,14 +8,12 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Attach JWT automatically
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("routed_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Redirect to /login on 401
 api.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -34,22 +28,22 @@ api.interceptors.response.use(
 
 /* ── Auth ─────────────────────────────────────────────── */
 export const authApi = {
-  login:           (email, password) => api.post("/auth/login",    { email, password }),
-  register:        (data)            => api.post("/auth/register",  data),
-  googleAdmin:     (accessToken)     => api.post("/auth/google/admin", { accessToken }),
-  resetRequest:    (email, channel)  => api.post("/auth/password-reset/request",  { email, channel }),
-  resetConfirm:    (token, newPassword) => api.post("/auth/password-reset/confirm", { token, newPassword }),
+  login:        (email, password) => api.post("/auth/login",           { email, password }),
+  googleAdmin:  (accessToken)     => api.post("/auth/google/admin",    { accessToken }),
+  resetRequest: (email, channel)  => api.post("/auth/password-reset/request",  { email, channel }),
+  resetConfirm: (token, newPw)    => api.post("/auth/password-reset/confirm",   { token, newPassword: newPw }),
 };
 
 /* ── Fundraisers ──────────────────────────────────────── */
 export const fundraiserApi = {
-  list:     ()    => api.get("/fundraisers"),
-  active:   ()    => api.get("/fundraisers/active"),
-  get:      (id)  => api.get(`/fundraisers/${id}`),
-  stats:    (id)  => api.get(`/fundraisers/${id}/stats`),
-  create:   (data)=> api.post("/fundraisers", data),
-  update:   (id, data) => api.patch(`/fundraisers/${id}`, data),
-  activate: (id)  => api.patch(`/fundraisers/${id}/activate`),
+  list:      ()           => api.get("/fundraisers"),
+  mine:      ()           => api.get("/fundraisers/mine"),
+  active:    ()           => api.get("/fundraisers/active"),
+  bySlug:    (slug)       => api.get(`/fundraisers/by-slug/${slug}`),
+  get:       (id)         => api.get(`/fundraisers/${id}`),
+  create:    (data)       => api.post("/fundraisers", data),
+  update:    (id, data)   => api.patch(`/fundraisers/${id}`, data),
+  activate:  (id)         => api.patch(`/fundraisers/${id}/activate`),
 };
 
 /* ── Products ─────────────────────────────────────────── */
@@ -63,35 +57,38 @@ export const productApi = {
 
 /* ── Orders ───────────────────────────────────────────── */
 export const orderApi = {
-  list:         (params)  => api.get("/orders", { params }),
-  get:          (id)      => api.get(`/orders/${id}`),
-  place:        (data)    => api.post("/orders", data),
-  updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
+  list:            (params)     => api.get("/orders", { params }),
+  get:             (id)         => api.get(`/orders/${id}`),
+  place:           (data)       => api.post("/orders", data),
+  validateAddress: (address)    => api.post("/orders/validate-address", { address }),
+  updateStatus:    (id, status) => api.patch(`/orders/${id}/status`, { status }),
+  refund:          (id)         => api.post(`/orders/${id}/refund`),
 };
 
 /* ── Vendors ──────────────────────────────────────────── */
 export const vendorApi = {
-  list:      (params)      => api.get("/vendors", { params }),
-  me:        ()            => api.get("/vendors/me"),
-  myOrders:  ()            => api.get("/vendors/me/orders"),
-  get:       (id)          => api.get(`/vendors/${id}`),
-  orders:    (id)          => api.get(`/vendors/${id}/orders`),
-  create:    (data)        => api.post("/vendors", data),
-  update:    (id, data)    => api.patch(`/vendors/${id}`, data),
+  list:     (params)   => api.get("/vendors", { params }),
+  me:       ()         => api.get("/vendors/me"),
+  updateMe: (data)     => api.patch("/vendors/me", data),
+  myOrders: ()         => api.get("/vendors/me/orders"),
+  get:      (id)       => api.get(`/vendors/${id}`),
+  create:   (data)     => api.post("/vendors", data),
+  update:   (id, data) => api.patch(`/vendors/${id}`, data),
 };
 
 /* ── Admin ────────────────────────────────────────────── */
 export const adminApi = {
   stats:        (fundraiserId) => api.get("/admin/stats", { params: { fundraiserId } }),
   listUsers:    ()             => api.get("/admin/users"),
-  createUser:   (data)         => api.post("/admin/users", data),
   createVendor: (data)         => api.post("/admin/vendors", data),
 };
 
 /* ── Driver ───────────────────────────────────────────── */
 export const driverApi = {
-  getRoute:      (otp)             => api.get(`/driver/routes/${otp}`),
-  completeStop:  (otp, stopIndex)  => api.patch(`/driver/routes/${otp}/stops/${stopIndex}/complete`),
-  listRoutes:    (params)          => api.get("/driver/routes", { params }),
-  createRoute:   (data)            => api.post("/driver/routes", data),
+  getRoute:       (otp)            => api.get(`/driver/routes/${otp}`),
+  completeStop:   (otp, idx)       => api.patch(`/driver/routes/${otp}/stops/${idx}/complete`),
+  listRoutes:     (params)         => api.get("/driver/routes", { params }),
+  addDriver:      (data)           => api.post("/driver/drivers", data),
+  deleteDriver:   (id)             => api.delete(`/driver/drivers/${id}`),
+  generateRoutes: (fundraiserId)   => api.post("/driver/routes/generate", { fundraiserId }),
 };

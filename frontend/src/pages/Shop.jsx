@@ -27,6 +27,12 @@ export default function Shop() {
     (async () => {
       try {
         const fr = await fundraiserApi.active();
+        // Redirect to the canonical customer URL
+        if (fr.data?.slug) {
+          const ref = refCode ? `?ref=${refCode}` : '';
+          navigate(`/fundraiser/${fr.data.slug}${ref}`, { replace: true });
+          return;
+        }
         setFundraiser(fr.data);
         const pr = await productApi.list(fr.data._id);
         const list = pr.data.length ? pr.data : FALLBACK_PRODUCTS;

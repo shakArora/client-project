@@ -8,8 +8,23 @@ import { ROLES } from "../models/User.js";
 
 const router = express.Router();
 
+// ── Geocode a delivery address via Nominatim ──────────
+async function geocodeAddress(address) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&addressdetails=1`;
+    const res  = await fetch(url, {
+      headers: { "User-Agent": "Routed/1.0 contact.routed@gmail.com" },
+      signal: AbortSignal.timeout(5000),
+    });
+    const data = await res.json();
+    if (!data.length) return null;
+    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name };
+  } catch {
+    return null;
+  }
+}
+
 // ── Admin / Vendor: list orders ───────────────────────
-// Admin sees all; vendor sees only their own
 router.get("/", requireAuth, async (req, res) => {
   try {
     const filter = {};
@@ -21,7 +36,7 @@ router.get("/", requireAuth, async (req, res) => {
     if (req.query.fundraiserId) filter.fundraiserId = req.query.fundraiserId;
     if (req.query.status)       filter.status = req.query.status;
 
-    const orders = await Order.find(filter).sort({ createdAt: -1 }).limit(200).lean();
+    const orders = await Order.find(filter).sort({ createdAt: -1 }).limit(500).lean();
     res.json(orders);
   } catch {
     res.status(500).json({ message: "Unable to list orders" });
@@ -29,6 +44,24 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 // ── Auth: get single order ────────────────────────────
+// ── Public: validate a delivery address (geocode) ─────
+router.post("/validate-address", async (req, res) => {
+  try {
+    const { address } = z.object({ address: z.string().min(5).trim() }).parse(req.body);
+    const coords = await geocodeAddress(address);
+    if (!coords) {
+      return res.status(400).json({
+        valid: false,
+        message: "We couldn't locate that address. Please double-check and try again.",
+      });
+    }
+    res.json({ valid: true, coords });
+  } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ message: "Invalid address" });
+    res.status(500).json({ message: "Unable to validate address" });
+  }
+});
+
 router.get("/:id", requireAuth, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate("vendorId", "name referralCode").lean();
@@ -43,8 +76,8 @@ router.get("/:id", requireAuth, async (req, res) => {
 const orderItemSchema = z.object({
   productId:   z.string().min(10),
   productName: z.string().min(1),
-  quantity:    z.number().int().min(1),
-  unitPrice:   z.number().min(0),
+  quantity:    z.coerce.number().int().min(1),
+  unitPrice:   z.coerce.number().min(0),
 });
 
 const createSchema = z.object({
@@ -52,6 +85,7 @@ const createSchema = z.object({
   referralCode:    z.string().min(2).max(6).trim().toUpperCase().optional(),
   customerName:    z.string().min(2).trim(),
   customerEmail:   z.string().email().trim(),
+  customerPhone:   z.string().optional(),
   deliveryAddress: z.string().min(5).trim(),
   comments:        z.string().optional(),
   items:           z.array(orderItemSchema).min(1),
@@ -62,14 +96,27 @@ router.post("/", async (req, res) => {
   try {
     const body = createSchema.parse(req.body);
 
-    // Resolve vendor by referral code (if provided)
+    const fr = await Fundraiser.findById(body.fundraiserId).lean();
+    if (!fr || !fr.isActive) {
+      return res.status(403).json({ message: "This fundraiser is not accepting orders right now." });
+    }
+    if (fr.endDate) {
+      const end = new Date(fr.endDate);
+      end.setHours(23, 59, 59, 999);
+      if (new Date() > end) {
+        return res.status(403).json({ message: "Ordering has closed for this fundraiser." });
+      }
+    }
+
+    const coords = await geocodeAddress(body.deliveryAddress);
+    if (!coords) {
+      return res.status(400).json({ message: "We couldn't locate that address. Please double-check and try again." });
+    }
+
+    // Resolve vendor
     let vendorId = null;
     if (body.referralCode) {
-      const vendor = await Vendor.findOne({
-        fundraiserId: body.fundraiserId,
-        referralCode: body.referralCode,
-        isActive: true,
-      });
+      const vendor = await Vendor.findOne({ fundraiserId: body.fundraiserId, referralCode: body.referralCode, isActive: true });
       if (vendor) vendorId = vendor._id;
     }
 
@@ -81,15 +128,13 @@ router.post("/", async (req, res) => {
       vendorId,
       totalBags,
       totalAmount,
+      coords,
       status: body.paymentIntentId ? "paid" : "pending",
     });
 
-    // Increment fundraiser counters
     await Fundraiser.findByIdAndUpdate(body.fundraiserId, {
       $inc: { soldBags: totalBags, totalRevenue: totalAmount, orderCount: 1 },
     });
-
-    // Increment vendor counters
     if (vendorId) {
       await Vendor.findByIdAndUpdate(vendorId, {
         $inc: { bagsSold: totalBags, totalRevenue: totalAmount, orderCount: 1 },
@@ -98,9 +143,7 @@ router.post("/", async (req, res) => {
 
     res.status(201).json(order);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Invalid order payload", issues: error.issues });
-    }
+    if (error instanceof z.ZodError) return res.status(400).json({ message: "Invalid order payload", issues: error.issues });
     res.status(500).json({ message: "Unable to place order" });
   }
 });
@@ -112,14 +155,38 @@ router.patch("/:id/status", requireAuth, requireRole(ROLES.ADMIN), async (req, r
       status: z.enum(["pending", "paid", "fulfilled", "delivered", "refunded", "cancelled"]),
     }).parse(req.body);
 
-    const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true, runValidators: true });
+    const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
     if (!order) return res.status(404).json({ message: "Order not found" });
     res.json(order);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Invalid status", issues: error.issues });
-    }
+    if (error instanceof z.ZodError) return res.status(400).json({ message: "Invalid status" });
     res.status(500).json({ message: "Unable to update order status" });
+  }
+});
+
+// ── Admin: refund an order ────────────────────────────
+router.post("/:id/refund", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (order.status === "refunded") return res.status(409).json({ message: "Order already refunded" });
+
+    order.status = "refunded";
+    await order.save();
+
+    // Reverse the fundraiser and vendor counters
+    await Fundraiser.findByIdAndUpdate(order.fundraiserId, {
+      $inc: { soldBags: -order.totalBags, totalRevenue: -order.totalAmount, orderCount: -1 },
+    });
+    if (order.vendorId) {
+      await Vendor.findByIdAndUpdate(order.vendorId, {
+        $inc: { bagsSold: -order.totalBags, totalRevenue: -order.totalAmount, orderCount: -1 },
+      });
+    }
+
+    res.json(order);
+  } catch {
+    res.status(500).json({ message: "Unable to refund order" });
   }
 });
 
