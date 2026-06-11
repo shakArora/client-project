@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import AdminShell from '../components/AdminShell';
 import { driverApi, orderApi } from '../lib/api';
 import { useActiveFundraiser } from '../lib/useActiveFundraiser';
+import { 
+  geocode, 
+  distanceFinder, 
+  distMatrix, 
+  clusterAddressesWithCapacity, 
+  logic 
+} from '../../../src/logic.js';
 
 function Field({ label, children }) {
   return <div className="field"><label>{label}</label>{children}</div>;
