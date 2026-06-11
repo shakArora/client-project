@@ -6,7 +6,7 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 async function geocode(address) {
     const url = `https://openstreetmap.org?q=${encodeURIComponent(address)}&format=json&limit=1`;
     const response = await fetch(url, {
-        headers: { 'USER-AGENT': 'APP-NAME' } // OPEN STREET MAP REQUIRES VALID USER-AGENT AND APP NAME
+        headers: { 'Web Application for Fundraisers': 'Routed' } // OPEN STREET MAP REQUIRES VALID USER-AGENT AND APP NAME
     });
     const data = await response.json();
     await wait(1100); // PREVENT API LIMITS
