@@ -1,147 +1,118 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { 
-  geocode, 
-  distanceFinder, 
-  distMatrix, 
-  clusterAddressesWithCapacity, 
-  logic 
-} from './logic.js';
 
-test('Routing and Clustering Logic Suite', async (t) => {
-  
+// Set the testing variable BEFORE importing module logic to disable throttle stalls
+process.env.NODE_ENV = 'test';
+
+import { geocode, distMatrix, clusterAddressesWithCapacity, logic } from './logic.js';
+
+test('Routed Logistics Engine Unit Test Suite', async (t) => {
   const originalFetch = globalThis.fetch;
-  
+
+  // Intercept and cleanly simulate production endpoints
+  t.beforeEach(() => {
+    globalThis.fetch = async (url) => {
+      if (url.includes('nominatim.openstreetmap.org')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => [{ lat: '40.7128', lon: '-74.0060' }]
+        };
+      }
+      if (url.includes('router.project-osrm.org')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            code: 'Ok',
+            durations: [
+              [0, 15, 30],
+              [15, 0, 15],
+              [30, 15, 0]
+            ],
+            distances: [
+              [0, 1000, 2000],
+              [1000, 0, 1000],
+              [2000, 1000, 0]
+            ]
+          })
+        };
+      }
+      return { ok: false, status: 404 };
+    };
+  });
+
   t.afterEach(() => {
     globalThis.fetch = originalFetch;
   });
 
   // ==========================================
-  // 1. GEOCODE FUNCTION TEST
+  // 1. GEOCODE TEST
   // ==========================================
-  await t.test('geocode() - should resolve coordinates from valid API response', async () => {
-    globalThis.fetch = async (url) => {
-      assert.ok(url.includes('openstreetmap.org'));
-      return {
-        json: async () => [{ lat: '40.7128', lon: '-74.0060' }]
-      };
-    };
-
+  await t.test('geocode() - should resolve valid geographic objects instantly', async () => {
     const coords = await geocode('New York City');
     assert.deepEqual(coords, { lat: '40.7128', lon: '-74.0060' });
   });
 
-  await t.test('geocode() - should throw error when no results found', async () => {
+  await t.test('geocode() - should throw explicit exception when endpoint data is empty', async () => {
     globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
       json: async () => []
     });
 
     await assert.rejects(
-      async () => await geocode('Fake Address 123'),
+      async () => await geocode('Unknown Ghost Location'),
       /Could not geocode address/
     );
   });
 
   // ==========================================
-  // 2. DISTANCE FINDER FUNCTION TEST
+  // 2. DISTMATRIX TEST
   // ==========================================
-  await t.test('distanceFinder() - should calculate route properties perfectly', async () => {
-    let mockFetchCallCount = 0;
-    
-    globalThis.fetch = async (url) => {
-      mockFetchCallCount++;
-      if (url.includes('openstreetmap.org')) {
-        return { json: async () => [{ lat: '10', lon: '20' }] };
-      }
-      if (url.includes('project-osrm.org')) {
-        return {
-          json: async () => ({
-            routes: [{ distance: 16093.44, duration: 1200 }]
-          })
-        };
-      }
-    };
-
-    const res = await distanceFinder('Addr1', 'Addr2');
-    
-    assert.equal(mockFetchCallCount, 3);
-    assert.equal(res.distance, '10.00 miles (16.09 km)');
-    assert.equal(res.drivingTime, '20 mins');
-    assert.equal(res.raw.meters, 16093.44);
+  await t.test('distMatrix() - should process elements into symmetric array matrices', async () => {
+    const targetAddresses = ['Location A', 'Location B', 'Location C'];
+    const matrix = await distMatrix(targetAddresses, 'duration');
+    assert.equal(matrix.length, 3);
+    assert.equal(matrix[0][1], 15);
+    assert.equal(matrix[2][0], 30);
   });
 
   // ==========================================
-  // 3. DIST MATRIX FUNCTION TEST
+  // 3. CLUSTERADDRESSESWITHCAPACITY TEST
   // ==========================================
-  await t.test('distMatrix() - should compile NxN duration matrix', async () => {
-    globalThis.fetch = async (url) => {
-      if (url.includes('openstreetmap.org')) return { json: async () => [{ lat: '1', lon: '1' }] };
-      if (url.includes('project-osrm.org')) return { json: async () => ({ routes: [{ distance: 1000, duration: 60 }] }) };
-    };
-
-    const addresses = ['Point A', 'Point B'];
-    const matrix = await distMatrix(addresses);
-
-    assert.equal(matrix.length, 2);
-    assert.equal(matrix[0].length, 2);
-    assert.equal(matrix[0][0], 60);
-  });
-
-  // ==========================================
-  // 4. CLUSTER ADDRESSES WITH CAPACITY TEST
-  // ==========================================
-  await t.test('clusterAddressesWithCapacity() - handles virtual weight splits cleanly', async () => {
-    const addresses = ['House 1', 'House 2', 'House 3'];
-    const amountPerAddress = [20, 38, 10];
-    const carCapacities = [8, 16];
-    
-    const distanceMatrix = [
-      [0, 5, 10],
-      [5, 0, 15],
-      [10, 15, 0]
+  await t.test('clusterAddressesWithCapacity() - should split split-threshold weights cleanly', async () => {
+    const addresses = ['House 1', 'House 2'];
+    const weights = [50, 10]; 
+    const carCapacities = [2, 0, 1]; // splitThreshold will be 15
+    const mockMatrix = [
+      [0, 5],
+      [5, 0]
     ];
 
-    const result = await clusterAddressesWithCapacity(addresses, amountPerAddress, distanceMatrix, carCapacities);
-
-    assert.equal(result.assignments.length, addresses.length);
-    assert.equal(result.summary.totalAddresses, 3);
+    const report = await clusterAddressesWithCapacity(addresses, weights, mockMatrix, carCapacities);
     
-    const clusterWithParts = result.clusters.some(c => c.addresses.some(a => a.includes('(Part')));
-    assert.ok(clusterWithParts);
+    // Total original entities remains unchanged in output track lengths
+    assert.equal(report.assignments.length, 2);
+    assert.equal(report.summary.totalAddresses, 2);
+    
+    // Large items are split to parts
+    const splitFound = report.clusters.some(c => c.addresses.some(a => a.includes('(Part')));
+    assert.ok(splitFound, 'Should find split virtual part entities inside active clusters');
   });
 
   // ==========================================
-  // 5. BULLETPROOF FAST LOGIC RECURSION TEST
+  // 4. RECURSIVE ROUTING ENGINE SYSTEM WAVES
   // ==========================================
-  await t.test('logic() - recursive loop should handle remaining unassigned assets instantly', async () => {
-    const originalLog = console.log;
-    let consoleOutputs = [];
-    console.log = (msg) => consoleOutputs.push(msg);
+  await t.test('logic() - should recursively process leftover structural inventory items across waves', async () => {
+    const items = ['Customer A', 'Customer B', 'Customer C'];
+    const massWeights = [25, 25, 25];
+    const fleetCars = [30]; // Each wave can only take one single asset comfortably
 
-    // Bypassing network fetch operations
-    globalThis.fetch = async (url) => {
-      if (url.includes('openstreetmap.org')) return { json: async () => [{ lat: '1', lon: '1' }] };
-      if (url.includes('project-osrm.org')) return { json: async () => ({ routes: [{ distance: 5000, duration: 300 }] }) };
-    };
+    const routeWaves = await logic(items, massWeights, fleetCars);
 
-    // --- QUICK TIMEOUT BYPASS ---
-    // Safely shadow/bypass global setTimeout configuration for this local thread test
-    const originalSetTimeout = globalThis.setTimeout;
-    globalThis.setTimeout = (cb) => cb(); 
-
-    const addresses = ['House A', 'House B'];
-    const weights = [30, 10]; 
-    const cars = [40]; 
-
-    try {
-      // Runs smoothly and finishes instantly with zero millisecond delays
-      await logic(addresses, weights, cars);
-      
-      const totalWaveslogged = consoleOutputs.filter(line => line.includes('ROUTES WAVE')).length;
-      assert.ok(totalWaveslogged >= 1, 'Logic loop should complete safely and output waves');
-    } finally {
-      console.log = originalLog;
-      globalThis.setTimeout = originalSetTimeout; // Clean restore
-    }
+    // Verifies that a high weight layout forces sequence wave recursion
+    assert.ok(routeWaves.length > 1, 'Pipeline should stack extra recursive routing matrices smoothly');
+    assert.equal(routeWaves[0].summary.totalAddresses, 3);
   });
 });

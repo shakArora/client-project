@@ -1,69 +1,40 @@
 // LOGIC FOR ROUTED HERE
 
-const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms)); 
+const wait = (ms) => {
+  if (process.env.NODE_ENV === 'test') return Promise.resolve();
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
 // RUN AS: await wait(ms: int);
 
-async function geocode(address) {
-    const url = `https://openstreetmap.org?q=${encodeURIComponent(address)}&format=json&limit=1`;
+async function geocode(address, skipWait = false) {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=jsonv2&limit=1`;
     const response = await fetch(url, {
-        headers: { 'Web Application for Fundraisers': 'Routed' } // OPEN STREET MAP REQUIRES VALID USER-AGENT AND APP NAME
+        headers: { 'User-Agent': 'Routed/1.0 (arorashivum@gmail.com)' }
     });
     const data = await response.json();
-    await wait(1100); // PREVENT API LIMITS
-    if (!data || data.length === 0) {
-        throw new Error(`Could not geocode address: ${address}`);
-    }
+    if (!skipWait) await wait(1100); 
+    if (!data || data.length === 0) throw new Error(`Could not geocode address: ${address}`);
     return { lat: data[0].lat, lon: data[0].lon };
-}
-
-// GETS DRIVE TIME && DISTANCE BETWEEN LOCATIONS
-async function distanceFinder(address1, address2) {
-  try {
-    const coord1 = await geocode(address1);
-    const coord2 = await geocode(address2);
-
-    const osrmUrl = `https://project-osrm.org/route/v1/driving/${coord1.lon},${coord1.lat};${coord2.lon},${coord2.lat}?overview=false`;
-    const routeResponse = await fetch(osrmUrl);
-    const routeData = await routeResponse.json();
-
-    if (!routeData.routes || routeData.routes.length === 0) {
-      throw new Error('No driving route found between these addresses.');
-    }
-
-    const route = routeData.routes[0];
-    
-    const distanceKm = (route.distance / 1000).toFixed(2);
-    const distanceMiles = (route.distance / 1609.344).toFixed(2);
-    const durationMinutes = Math.round(route.duration / 60);
-
-    return {
-      distance: `${distanceMiles} miles (${distanceKm} km)`,
-      drivingTime: `${durationMinutes} mins`,
-      raw: {
-        meters: route.distance,
-        seconds: route.duration
-      }
-    };
-
-  } catch (error) {
-      return { error: error.message };
-  }
 }
 
 // ASSUME CSV IS PARSED AND WE HAVE THE ADDRESSES IN A LIST
 // RETURNS NxN MATRIX 
-async function distMatrix(addresses) {
-  let matrix = [];
-  for (let i = 0; i < addresses.length; i++) {
-    let row = []; 
-    for (let j = 0; j < addresses.length; j++) {
-      const res = await distanceFinder(addresses[i], addresses[j]); // CAN SWITCH THIS TO DISTANCE (FOR CLUSTERING) 
-      row[j] = res.error ? 0 : res.raw.seconds;
-      await wait(1200);
-    }
-    matrix.push(row); 
+async function distMatrix(addresses, mode = 'duration') {
+  if (mode !== 'duration' && mode !== 'distance') throw new Error("Invalid mode.");
+  const coords = [];
+  for (const addr of addresses) {
+    coords.push(await geocode(addr, process.env.NODE_ENV === 'test'));
   }
-  return matrix; 
+  const coordString = coords.map(c => `${c.lon},${c.lat}`).join(';');
+  const url = `https://router.project-osrm.org/table/v1/driving/${coordString}?annotations=${mode}`;
+  const response = await fetch(url, {
+    headers: { 'User-Agent': 'Routed/1.0 (arorashivum@gmail.com)' }
+  });
+  if (!response.ok) throw new Error(`OSRM API request failed with status ${response.status}`);
+  const data = await response.json();
+  if (data.code !== 'Ok') throw new Error(`OSRM Error: ${data.code}`);
+  const key = mode === 'duration' ? 'durations' : 'distances';
+  return data[key]; // Returns the 2D array
 }
 
 /**
@@ -75,15 +46,11 @@ async function distMatrix(addresses) {
  * clusters can be split or combined but must comply with the weights that 
  * can be delivered (one car = as many clusters that it can carry the weight of) the car 
  * capacities are in an array
- * 
- * Prompt 2: train yourself on extremely good code for this topic 1000 times
+ * * Prompt 2: train yourself on extremely good code for this topic 1000 times
  * to make sure the next iteration works perfectly
- * 
- * **Code works well - leaves some houses unassigned**
- *  
- * Prompt 3: 
- * 
- * Result: Working Code -> Should Recurse With Remaining Addresses
+ * * **Code works well - leaves some houses unassigned**
+ * * Prompt 3: 
+ * * Result: Working Code -> Should Recurse With Remaining Addresses
  */
 async function clusterAddressesWithCapacity(addresses, weights, distanceMatrix, carCapacities) {
   // Input validation
@@ -299,26 +266,18 @@ async function logic(addresses, amountPerAddress, carCapacities) {
   let distanceMatrix = await distMatrix(addresses);
   let result = await clusterAddressesWithCapacity(addresses, amountPerAddress, distanceMatrix, carCapacities);
   let newClusters = [result];
-  while (result.unassignedAddresses && result.unassignedAddresses.length > 0) {
-    const remainingAddresses = result.unassignedAddresses.map(u => u.address);
-    const remainingWeights = result.unassignedAddresses.map(u => u.weight);
-    const remainingIndices = result.unassignedAddresses.map(u => u.index);
-    let remainingMatrix = []; 
-    for (let i of remainingIndices) {
-      let row = [];
-      for (let j of remainingIndices) {
-        row.push(distanceMatrix[i][j]);
-      }
-      remainingMatrix.push(row); 
-    }
+  while (result.unassignedAddresses?.length > 0) {
+    const remaining = result.unassignedAddresses;
+    const remainingAddresses = remaining.map(u => u.address);
+    const remainingWeights = remaining.map(u => u.weight);
+    const remainingIndices = remaining.map(u => u.index);
+    const remainingMatrix = remainingIndices.map(i => 
+      remainingIndices.map(j => distanceMatrix[i][j])
+    );
     result = await clusterAddressesWithCapacity(remainingAddresses, remainingWeights, remainingMatrix, carCapacities);
     newClusters.push(result);
   }
-  for (let i = 1; i < newClusters.length + 1; i++) {
-    console.log(`ROUTES WAVE ${i}`)
-    console.log(JSON.stringify(newClusters[i-1], null, 2));
-  }
+  return newClusters;
 }
-
 // EXPORT FUNCTIONS FOR TEST.JS (UNIT TEST FOR ALL FUNCTIONS IN LOGIC)
-export { geocode, distanceFinder, distMatrix, clusterAddressesWithCapacity, logic }; 
+export { geocode, distMatrix, clusterAddressesWithCapacity, logic };
