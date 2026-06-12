@@ -146,6 +146,7 @@ export default function AdminDashboard() {
       const res = await fundraiserApi.create({
         title: newTitle.trim(),
         pickupAddress: newPickup.trim() || undefined,
+        deliveryHubAddress: newPickup.trim() || undefined,
         location: (newCity.trim() || newState) ? { city: newCity.trim() || undefined, state: newState || undefined } : undefined,
       });
       setCreating(false);
@@ -229,11 +230,11 @@ export default function AdminDashboard() {
                 placeholder="Troop 42 Spring Mulch Sale"
                 style={{ width: '100%', border: '2px solid var(--border)', borderRadius: 10, padding: '.75rem', fontSize: '.95rem', marginBottom: '1rem', boxSizing: 'border-box' }}
               />
-              <label style={{ display: 'block', fontSize: '.82rem', fontWeight: 700, color: 'var(--t2)', marginBottom: '.35rem' }}>Pickup address</label>
+              <label style={{ display: 'block', fontSize: '.82rem', fontWeight: 700, color: 'var(--t2)', marginBottom: '.35rem' }}>Fundraiser address</label>
               <input
                 value={newPickup}
                 onChange={e => setNewPickup(e.target.value)}
-                placeholder="Where mulch is stored / picked up from"
+                placeholder="Pickup location & driver route starting point"
                 style={{ width: '100%', border: '2px solid var(--border)', borderRadius: 10, padding: '.75rem', fontSize: '.95rem', marginBottom: '1rem', boxSizing: 'border-box' }}
               />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>

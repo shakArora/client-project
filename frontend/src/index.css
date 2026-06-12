@@ -2051,6 +2051,114 @@ input, textarea, select { font-family: var(--sans); }
   width: 100%;
 }
 
+/* ─── Import / Export tab ──────────────────────────────── */
+.import-export-tab { max-width: 900px; }
+.import-export-intro {
+  color: var(--t2);
+  font-size: .92rem;
+  line-height: 1.65;
+  margin-bottom: 1.25rem;
+}
+.import-export-section { margin-bottom: 1rem; }
+.import-export-section h4 {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  margin-bottom: .5rem;
+}
+.import-export-desc {
+  font-size: .85rem;
+  color: var(--t3);
+  line-height: 1.55;
+  margin-bottom: 1rem;
+}
+.import-export-products {
+  font-size: .82rem;
+  color: var(--t3);
+  margin: .5rem 0 .75rem;
+  line-height: 1.5;
+}
+.import-export-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+.import-export-actions {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+.import-export-msg {
+  margin-top: 1rem;
+  font-weight: 600;
+  font-size: .9rem;
+  line-height: 1.5;
+}
+.import-export-msg--ok { color: var(--green); }
+.import-export-msg--err { color: var(--red); }
+.import-format-guide { margin-bottom: .85rem; }
+.import-format-behavior {
+  font-size: .82rem;
+  color: var(--t2);
+  line-height: 1.5;
+  margin-bottom: .45rem;
+  padding: .55rem .75rem;
+  background: var(--surface);
+  border-radius: var(--r2);
+  border-left: 3px solid var(--gold);
+}
+.import-format-toggle {
+  background: none;
+  border: none;
+  color: var(--gold-dk);
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--sans);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.import-format-details {
+  margin-top: .65rem;
+  padding: .75rem;
+  background: var(--surface);
+  border-radius: var(--r2);
+  border: 1px solid var(--border-lt);
+}
+.import-format-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .8rem;
+  margin-bottom: .65rem;
+}
+.import-format-table th,
+.import-format-table td {
+  text-align: left;
+  padding: .4rem .5rem;
+  border-bottom: 1px solid var(--border-lt);
+}
+.import-format-table th {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--t3);
+}
+.import-format-table code {
+  font-size: .78rem;
+  background: #fff;
+  padding: .1rem .35rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-lt);
+}
+.import-format-notes {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: .78rem;
+  color: var(--t3);
+  line-height: 1.55;
+}
+.import-format-notes li { margin-bottom: .25rem; }
+
 @media (max-width: 900px) {
   .login-split { grid-template-columns: 1fr; }
   .login-panel-dark { min-height: 220px; padding: 2rem 1.5rem; }

@@ -9,6 +9,39 @@ import { geocodeAddress } from "../utils/geocode.js";
 
 const EXPORT_VERSION = 1;
 
+const DEFAULT_OPTIONS = {
+  orders:    "append",
+  products:  "upsert",
+  vendors:   "skip-existing",
+  drivers:   "skip-existing",
+  fundraiser: "merge",
+};
+
+function normalizeOptions(payload) {
+  return { ...DEFAULT_OPTIONS, ...(payload.options || {}) };
+}
+
+function normalizeAddress(addr) {
+  return String(addr || "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function emptyStats() {
+  return {
+    products: 0,
+    vendors: 0,
+    orders: 0,
+    drivers: 0,
+    skipped: [],
+    details: {
+      products:  { created: 0, updated: 0 },
+      vendors:   { created: 0, skipped: 0 },
+      orders:    { created: 0, skipped: 0, duplicates: 0 },
+      drivers:   { created: 0, skipped: 0 },
+      fundraiser: { updated: false },
+    },
+  };
+}
+
 export async function exportFundraiser(fundraiserId) {
   const fr = await Fundraiser.findById(fundraiserId).lean();
   if (!fr) throw new Error("Fundraiser not found");
@@ -68,13 +101,30 @@ async function genReferralCode(fundraiserId, preferred) {
   return code;
 }
 
+async function isDuplicateOrder(fundraiserId, order) {
+  const email = String(order.customerEmail || "").trim().toLowerCase();
+  const addr  = normalizeAddress(order.deliveryAddress || order.coords?.display);
+  const bags  = order.totalBags || 0;
+  if (!email || !addr) return false;
+
+  const existing = await Order.findOne({
+    fundraiserId,
+    customerEmail: email,
+    totalBags: bags,
+  }).lean();
+
+  if (!existing) return false;
+  return normalizeAddress(existing.deliveryAddress) === addr;
+}
+
 export async function importFundraiser(fundraiserId, adminId, payload) {
   const fr = await Fundraiser.findOne({ _id: fundraiserId, adminId });
   if (!fr) throw new Error("Fundraiser not found");
 
-  const stats = { products: 0, vendors: 0, orders: 0, drivers: 0, skipped: [] };
+  const options = normalizeOptions(payload);
+  const stats = emptyStats();
 
-  if (payload.fundraiser) {
+  if (payload.fundraiser && options.fundraiser !== "skip") {
     const allowed = [
       "title", "description", "location", "pickupAddress", "pickupCoords",
       "deliveryHubAddress", "deliveryHubCoords", "contactName", "contactEmail",
@@ -84,85 +134,147 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
       if (payload.fundraiser[key] !== undefined) fr[key] = payload.fundraiser[key];
     }
     await fr.save();
+    stats.details.fundraiser.updated = true;
   }
 
   const productMap = {};
   for (const p of payload.products || []) {
     const existing = await Product.findOne({ fundraiserId, name: p.name });
     if (existing) {
-      Object.assign(existing, { description: p.description, price: p.price, emoji: p.emoji, imageUrl: p.imageUrl, isActive: p.isActive ?? true });
+      if (options.products === "skip-existing") {
+        productMap[p.name] = existing._id;
+        continue;
+      }
+      Object.assign(existing, {
+        description: p.description,
+        price: p.price,
+        emoji: p.emoji,
+        imageUrl: p.imageUrl,
+        isActive: p.isActive ?? true,
+      });
       await existing.save();
       productMap[p.name] = existing._id;
+      stats.details.products.updated++;
     } else {
       const created = await Product.create({ ...p, fundraiserId });
       productMap[p.name] = created._id;
+      stats.details.products.created++;
     }
     stats.products++;
   }
 
   const vendorByCode = {};
+  const existingVendors = await Vendor.find({ fundraiserId }).lean();
+  for (const v of existingVendors) {
+    vendorByCode[v.referralCode] = v;
+  }
+
   for (const v of payload.vendors || []) {
+    const email = v.email?.toLowerCase();
+    if (!email) {
+      stats.skipped.push(`Vendor ${v.name || "(unnamed)"}: missing email`);
+      stats.details.vendors.skipped++;
+      continue;
+    }
+
+    let vendor = await Vendor.findOne({ fundraiserId, email });
+    if (vendor) {
+      vendorByCode[vendor.referralCode] = vendor;
+      if (v.referralCode) vendorByCode[v.referralCode.toUpperCase()] = vendor;
+      stats.details.vendors.skipped++;
+      stats.skipped.push(`Vendor ${v.name}: already exists (${email})`);
+      continue;
+    }
+
     const code = await genReferralCode(fundraiserId, v.referralCode);
-    let user = await User.findOne({ email: v.email?.toLowerCase() });
+    let user = await User.findOne({ email });
     if (!user) {
       user = await User.create({
         name: v.name,
-        email: v.email.toLowerCase(),
+        email,
         passwordHash: await bcrypt.hash("vendor", 10),
         role: ROLES.VENDOR,
       });
     }
-    let vendor = await Vendor.findOne({ fundraiserId, email: v.email?.toLowerCase() });
-    if (!vendor) {
-      vendor = await Vendor.create({
-        userId: user._id,
-        fundraiserId,
-        name: v.name,
-        email: v.email.toLowerCase(),
-        referralCode: code,
-        bagsSold: v.bagsSold || 0,
-        totalRevenue: v.totalRevenue || 0,
-        orderCount: v.orderCount || 0,
-        revenueGoal: v.revenueGoal || 0,
-        isActive: v.isActive ?? true,
-      });
-      await Fundraiser.findByIdAndUpdate(fundraiserId, { $inc: { vendorCount: 1 } });
-    }
+
+    vendor = await Vendor.create({
+      userId: user._id,
+      fundraiserId,
+      name: v.name,
+      email,
+      referralCode: code,
+      bagsSold: v.bagsSold || 0,
+      totalRevenue: v.totalRevenue || 0,
+      orderCount: v.orderCount || 0,
+      revenueGoal: v.revenueGoal || 0,
+      isActive: v.isActive ?? true,
+    });
+    await Fundraiser.findByIdAndUpdate(fundraiserId, { $inc: { vendorCount: 1 } });
     vendorByCode[code] = vendor;
     if (v.referralCode) vendorByCode[v.referralCode.toUpperCase()] = vendor;
+    stats.details.vendors.created++;
     stats.vendors++;
   }
 
-  let defaultProduct = await Product.findOne({ fundraiserId });
+  let defaultProduct = await Product.findOne({ fundraiserId, isActive: true })
+    || await Product.findOne({ fundraiserId });
+
   if (!defaultProduct && (payload.orders || []).length) {
-    defaultProduct = await Product.create({ fundraiserId, name: "Imported Item", price: 0, isActive: true });
+    defaultProduct = await Product.create({
+      fundraiserId,
+      name: "Imported Item",
+      price: 0,
+      isActive: true,
+    });
     productMap["Imported"] = defaultProduct._id;
     productMap["Imported Item"] = defaultProduct._id;
   }
 
   for (const o of payload.orders || []) {
+    if (options.orders === "skip") continue;
+
+    const draft = {
+      customerEmail: o.customerEmail,
+      customerName: o.customerName,
+      deliveryAddress: o.deliveryAddress,
+      coords: o.coords,
+      totalBags: o.totalBags,
+    };
+
+    if (await isDuplicateOrder(fundraiserId, draft)) {
+      stats.details.orders.duplicates++;
+      stats.skipped.push(`Order ${o.customerName}: duplicate (same email, address, bags)`);
+      continue;
+    }
+
     let coords = o.coords;
     if (!coords?.lat && o.deliveryAddress) {
       coords = await geocodeAddress(o.deliveryAddress);
       if (!coords) {
+        stats.details.orders.skipped++;
         stats.skipped.push(`Order ${o.customerName}: invalid address`);
         continue;
       }
     }
+
     let vendorId = null;
     if (o.referralCode && vendorByCode[o.referralCode.toUpperCase()]) {
       vendorId = vendorByCode[o.referralCode.toUpperCase()]._id;
     }
+
     const items = (o.items || []).map(item => ({
       productName: item.productName || "Imported",
       quantity:    item.quantity || 1,
       unitPrice:   item.unitPrice ?? 0,
       productId:   productMap[item.productName] || defaultProduct?._id,
     })).filter(item => item.productId);
+
     if (!items.length) {
+      stats.details.orders.skipped++;
       stats.skipped.push(`Order ${o.customerName}: no matching product`);
       continue;
     }
+
     await Order.create({
       fundraiserId,
       vendorId,
@@ -178,33 +290,38 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
       totalAmount: o.totalAmount || items.reduce((s, i) => s + i.quantity * i.unitPrice, 0),
       status: o.status || "pending",
     });
+    stats.details.orders.created++;
     stats.orders++;
   }
 
   for (const d of payload.drivers || []) {
     let code = d.otp?.toUpperCase();
     let route = code ? await DriverRoute.findOne({ fundraiserId, otp: code }) : null;
-    if (!route) {
-      let attempts = 0;
-      do {
-        code = code || genOTP();
-        attempts++;
-        if (attempts > 25) break;
-      } while (await DriverRoute.findOne({ fundraiserId, otp: code }));
-      route = await DriverRoute.create({
-        fundraiserId,
-        otp: code,
-        driverName: d.driverName,
-        driverPhone: d.driverPhone,
-        capacity: d.capacity || 999,
-        stops: [],
-      });
+
+    if (route) {
+      stats.details.drivers.skipped++;
+      stats.skipped.push(`Driver ${d.driverName || code}: code already exists — left unchanged`);
+      continue;
     }
-    if (d.stops?.length) {
-      route.stops = d.stops.map(s => ({ ...s, status: s.status || "pending" }));
-      route.completedStops = route.stops.filter(s => s.status === "delivered").length;
-      await route.save();
-    }
+
+    let attempts = 0;
+    do {
+      code = code || genOTP();
+      attempts++;
+      if (attempts > 25) break;
+    } while (await DriverRoute.findOne({ fundraiserId, otp: code }));
+
+    route = await DriverRoute.create({
+      fundraiserId,
+      otp: code,
+      driverName: d.driverName,
+      driverPhone: d.driverPhone,
+      capacity: d.capacity || 999,
+      stops: (d.stops || []).map(s => ({ ...s, status: s.status || "pending" })),
+    });
+    route.completedStops = route.stops.filter(s => s.status === "delivered").length;
+    await route.save();
+    stats.details.drivers.created++;
     stats.drivers++;
   }
 

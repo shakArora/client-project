@@ -54,7 +54,7 @@ router.get("/mine", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
   }
 });
 
-// ── Admin: export full migration package ────────────
+// ── Admin: export full data package ─────────────────
 router.get("/:id/export", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const item = await Fundraiser.findOne({ _id: req.params.id, adminId: req.user.sub });
@@ -67,7 +67,7 @@ router.get("/:id/export", requireAuth, requireRole(ROLES.ADMIN), async (req, res
   }
 });
 
-// ── Admin: import migration package ───────────────────
+// ── Admin: import data (append-only for orders) ─────
 router.post("/:id/import", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const stats = await importFundraiser(req.params.id, req.user.sub, req.body);

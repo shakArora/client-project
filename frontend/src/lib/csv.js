@@ -8,6 +8,10 @@ export function downloadJson(filename, data) {
   URL.revokeObjectURL(url);
 }
 
+export function downloadTemplateCsv(filename, headers, exampleRow) {
+  downloadCsv(filename, headers, exampleRow ? [exampleRow] : []);
+}
+
 export function downloadCsv(filename, headers, rows) {
   const lines = [
     headers.join(','),
