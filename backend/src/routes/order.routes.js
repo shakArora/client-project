@@ -5,24 +5,21 @@ import { Vendor } from "../models/Vendor.js";
 import { Fundraiser } from "../models/Fundraiser.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { ROLES } from "../models/User.js";
+import { geocodeAddress, searchAddresses } from "../utils/geocode.js";
 
 const router = express.Router();
 
-// ── Geocode a delivery address via Nominatim ──────────
-async function geocodeAddress(address) {
+// ── Public: search valid addresses (dropdown) ───────
+router.get("/address-search", async (req, res) => {
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&addressdetails=1`;
-    const res  = await fetch(url, {
-      headers: { "User-Agent": "Routed/1.0 contact.routed@gmail.com" },
-      signal: AbortSignal.timeout(5000),
-    });
-    const data = await res.json();
-    if (!data.length) return null;
-    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name };
+    const q = String(req.query.q || "").trim();
+    if (q.length < 3) return res.json([]);
+    const results = await searchAddresses(q, 6);
+    res.json(results);
   } catch {
-    return null;
+    res.status(500).json({ message: "Address search failed" });
   }
-}
+});
 
 // ── Admin / Vendor: list orders ───────────────────────
 router.get("/", requireAuth, async (req, res) => {

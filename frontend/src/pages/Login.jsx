@@ -25,6 +25,16 @@ export default function Login() {
     setError(''); setLoading(true);
     try {
       const { data } = await authApi.login(email, password);
+
+      if (tab === 'Vendor' && data.user.role === ROLES.ADMIN) {
+        setError('These are administrator credentials. Switch to the Administrator tab to sign in.');
+        return;
+      }
+      if (tab === 'Administrator' && data.user.role === ROLES.VENDOR) {
+        setError('These are vendor credentials. Switch to the Vendor tab to sign in.');
+        return;
+      }
+
       login(data.token, data.user);
       redirect(data.user.role);
     } catch (err) {

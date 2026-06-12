@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
+import { useAuth, ROLES } from '../lib/auth';
 
 export default function Navbar({
   links = [],
@@ -9,7 +10,11 @@ export default function Navbar({
   actionStyle = 'btn btn-gold btn-sm',
 }) {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const dashboardTo = user?.role === ROLES.ADMIN ? '/admin' : user?.role === ROLES.VENDOR ? '/vendor/codes' : null;
+  const ctaTo = dashboardTo || actionTo;
+  const ctaLabel = dashboardTo ? 'Dashboard' : actionLabel;
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
@@ -22,7 +27,7 @@ export default function Navbar({
     <>
       <nav className={`navbar ${open ? 'navbar--open' : ''}`}>
         <div className="navbar-inner">
-          <Link to="/" className="navbar-brand" onClick={() => setOpen(false)}>
+          <Link to="/" className="navbar-brand" onClick={() => { setOpen(false); window.scrollTo(0, 0); }}>
             Routed<span>.</span>
           </Link>
 
@@ -35,8 +40,8 @@ export default function Navbar({
           </div>
 
           <div className="navbar-end">
-            <Link to={actionTo} className={`${actionStyle} hide-mobile`} onClick={() => setOpen(false)}>
-              {actionLabel}
+            <Link to={ctaTo} className={`${actionStyle} hide-mobile`} onClick={() => setOpen(false)}>
+              {ctaLabel}
             </Link>
             {(links.length > 0 || actionLabel) && (
               <button
@@ -64,8 +69,8 @@ export default function Navbar({
                 {label}
               </Link>
             ))}
-            <Link to={actionTo} className="navbar-dropdown-cta" onClick={() => setOpen(false)}>
-              {actionLabel}
+            <Link to={ctaTo} className="navbar-dropdown-cta" onClick={() => setOpen(false)}>
+              {ctaLabel}
             </Link>
           </div>
         </div>

@@ -2,16 +2,22 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import CheckoutStepper from '../components/CheckoutStepper';
-import { orderApi } from '../lib/api';
+import AddressSelect from '../components/AddressSelect';
 
 const NAV = [{ label: 'Shop', to: '/shop' }, { label: 'About', to: '/about' }];
 
 export default function CheckoutInfo() {
   const navigate = useNavigate();
   const cart = JSON.parse(sessionStorage.getItem('routed_cart') || '{}');
+  const saved = cart.customerInfo || {};
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', address: '', comments: '',
-    referralCode: cart.refCode || '',
+    name: saved.name || '',
+    email: saved.email || '',
+    phone: saved.phone || '',
+    address: saved.address || '',
+    addressCoords: saved.addressCoords || null,
+    comments: saved.comments || '',
+    referralCode: cart.refCode || saved.referralCode || '',
   });
   const [validating, setValidating] = useState(false);
   const [addrError, setAddrError] = useState('');
@@ -22,17 +28,17 @@ export default function CheckoutInfo() {
   async function handleNext(e) {
     e.preventDefault();
     setAddrError('');
-    setValidating(true);
-    try {
-      await orderApi.validateAddress(form.address.trim());
-    } catch (err) {
-      setAddrError(err.response?.data?.message || 'We could not verify that address. Please check spelling and try again.');
-      setValidating(false);
+    if (!form.addressCoords?.lat) {
+      setAddrError('Please select a valid delivery address from the dropdown.');
       return;
     }
+    setValidating(true);
+    const cartNow = JSON.parse(sessionStorage.getItem('routed_cart') || '{}');
+    sessionStorage.setItem('routed_cart', JSON.stringify({
+      ...cartNow,
+      customerInfo: { ...form, address: form.addressCoords.display || form.address },
+    }));
     setValidating(false);
-    const saved = JSON.parse(sessionStorage.getItem('routed_cart') || '{}');
-    sessionStorage.setItem('routed_cart', JSON.stringify({ ...saved, customerInfo: form }));
     navigate('/shop/pay');
   }
 
@@ -67,12 +73,21 @@ export default function CheckoutInfo() {
             <label>Phone Number</label>
             <input type="tel" placeholder="(555) 000-0000" value={form.phone} onChange={set('phone')} autoComplete="tel" inputMode="tel" />
           </div>
-          <div className="field">
-            <label>Delivery Address</label>
-            <input placeholder="123 Main St, Springfield, IL 62701" value={form.address} onChange={set('address')} required autoComplete="street-address" />
-            {addrError && <p style={{ color: 'var(--red)', fontSize: '.85rem', marginTop: '.4rem', fontWeight: 600 }}>{addrError}</p>}
-            <p style={{ color: 'var(--t3)', fontSize: '.8rem', marginTop: '.35rem' }}>We verify your address before saving. Invalid addresses cannot be used for delivery.</p>
-          </div>
+
+          <AddressSelect
+            label="Delivery Address"
+            value={form.address}
+            coords={form.addressCoords}
+            required
+            placeholder="123 Main St, Springfield, IL"
+            hint="Start typing, then pick your address from the list. We only deliver to verified addresses."
+            onChange={({ address, coords }) => {
+              setForm(f => ({ ...f, address, addressCoords: coords }));
+              setAddrError('');
+            }}
+          />
+          {addrError && <p style={{ color: 'var(--red)', fontSize: '.85rem', marginTop: '-.5rem', marginBottom: '1rem', fontWeight: 600 }}>{addrError}</p>}
+
           <div className="field">
             <label>Comments (Optional)</label>
             <textarea placeholder="Leave at the side gate…" rows={3} value={form.comments} onChange={set('comments')} style={{ resize: 'vertical' }} />
@@ -86,7 +101,7 @@ export default function CheckoutInfo() {
 
           <div className="checkout-actions checkout-actions--inline">
             <button type="button" onClick={() => navigate(-1)} className="btn btn-outline btn-lg">← Back</button>
-            <button type="submit" className="btn btn-gold btn-lg" disabled={validating}>{validating ? 'Checking address…' : 'Next →'}</button>
+            <button type="submit" className="btn btn-gold btn-lg" disabled={validating}>{validating ? 'Saving…' : 'Next →'}</button>
           </div>
         </form>
       </main>
@@ -94,7 +109,7 @@ export default function CheckoutInfo() {
       <div className="checkout-actions-sticky">
         <div className="checkout-actions">
           <button type="button" onClick={() => navigate(-1)} className="btn btn-outline btn-lg">← Back</button>
-          <button type="submit" form="checkout-info-form" className="btn btn-gold btn-lg" disabled={validating}>{validating ? 'Checking…' : 'Next →'}</button>
+          <button type="submit" form="checkout-info-form" className="btn btn-gold btn-lg" disabled={validating}>{validating ? 'Saving…' : 'Next →'}</button>
         </div>
       </div>
     </div>

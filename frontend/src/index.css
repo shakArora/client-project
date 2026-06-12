@@ -637,15 +637,28 @@ input, textarea, select { font-family: var(--sans); }
   color: #fff;
 }
 .qty-input {
-  width: 52px;
+  width: 3.25rem;
+  min-width: 3.25rem;
   text-align: center;
   border: 1.5px solid var(--border);
   border-radius: var(--r2);
   padding: .5rem .25rem;
   font-weight: 700;
   font-size: 1rem;
+  font-variant-numeric: tabular-nums;
   background: #FFFDF6;
   outline: none;
+}
+.product-qty-row {
+  min-width: 9.5rem;
+  flex-shrink: 0;
+}
+.product-card-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: .75rem;
+  min-height: 4.5rem;
 }
 
 /* ─── Vendor nav ─────────────────────────────────────── */

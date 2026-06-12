@@ -10,6 +10,10 @@ const fundraiserSchema = new mongoose.Schema(
       city:  { type: String, trim: true },
       state: { type: String, trim: true },
     },
+    pickupAddress: { type: String, trim: true },
+    pickupCoords:  { lat: Number, lon: Number, display: String },
+    deliveryHubAddress: { type: String, trim: true },
+    deliveryHubCoords:  { lat: Number, lon: Number, display: String },
     // Contact info shown on customer page
     contactName:  { type: String, trim: true },
     contactEmail: { type: String, trim: true },

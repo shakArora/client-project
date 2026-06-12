@@ -4,6 +4,8 @@ import { DriverRoute } from "../models/DriverRoute.js";
 import { Order } from "../models/Order.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { ROLES } from "../models/User.js";
+import { Fundraiser } from "../models/Fundraiser.js";
+import { optimizeRoutes, capacityFallback, buildStopsFromOrders } from "../utils/routeOptimizer.js";
 
 const router = express.Router();
 
@@ -15,7 +17,7 @@ function genOTP() {
   return code;
 }
 
-/** Distribute all non-refunded orders across drivers by bag capacity. */
+/** Distribute orders across drivers — OSRM-optimized when possible. */
 async function autoGenerateRoutes(fundraiserId) {
   const drivers = await DriverRoute.find({ fundraiserId }).sort({ createdAt: 1 });
   if (!drivers.length) return { drivers: [], message: "No drivers" };
@@ -23,8 +25,11 @@ async function autoGenerateRoutes(fundraiserId) {
   const orders = await Order.find({
     fundraiserId,
     status: { $nin: ["refunded", "cancelled"] },
-  }).sort({ createdAt: 1 }).lean();
+  }).sort({ createdAt: 1 });
   if (!orders.length) return { drivers, message: "No orders" };
+
+  const fr = await Fundraiser.findById(fundraiserId).lean();
+  const hubAddress = fr?.deliveryHubAddress || fr?.pickupAddress || null;
 
   for (const d of drivers) {
     d.stops = [];
@@ -33,45 +38,32 @@ async function autoGenerateRoutes(fundraiserId) {
     d.completedAt = undefined;
   }
 
-  let driverIdx = 0;
-  for (const order of orders) {
-    let assigned = false;
-    for (let i = 0; i < drivers.length; i++) {
-      const d = drivers[(driverIdx + i) % drivers.length];
-      const usedCapacity = d.stops.reduce((s, stop) => s + stop.bags, 0);
-      if ((d.capacity || 999) - usedCapacity >= order.totalBags) {
-        d.stops.push({
-          orderId:         order._id,
-          customerName:    order.customerName,
-          deliveryAddress: order.deliveryAddress,
-          bags:            order.totalBags,
-          comment:         order.comments || "",
-        });
-        driverIdx = (driverIdx + i + 1) % drivers.length;
-        assigned = true;
-        break;
-      }
-    }
-    if (!assigned) {
-      const leastLoaded = drivers.reduce((min, d) => {
-        const used = d.stops.reduce((s, stop) => s + stop.bags, 0);
-        const minUsed = min.stops.reduce((s, stop) => s + stop.bags, 0);
-        return used < minUsed ? d : min;
-      });
-      leastLoaded.stops.push({
-        orderId:         order._id,
-        customerName:    order.customerName,
-        deliveryAddress: order.deliveryAddress,
-        bags:            order.totalBags,
-        comment:         order.comments || "",
-      });
-    }
+  let plan = null;
+  try {
+    plan = await optimizeRoutes({ hubAddress, orders, drivers });
+  } catch (err) {
+    console.error("OSRM optimization failed, using capacity fallback:", err);
+  }
+  if (!plan) {
+    plan = capacityFallback({ orders, drivers });
+  }
+
+  plan.stopsByDriver.forEach((orderList, i) => {
+    drivers[i].stops = buildStopsFromOrders(orderList);
+  });
+
+  if (plan.unassigned?.length) {
+    const fb = capacityFallback({ orders: plan.unassigned, drivers });
+    fb.stopsByDriver.forEach((orderList, i) => {
+      drivers[i].stops.push(...buildStopsFromOrders(orderList));
+    });
   }
 
   await Promise.all(drivers.map(d => d.save()));
+  const method = plan.optimized ? "optimized" : "capacity";
   return {
     drivers,
-    message: `Routes generated for ${drivers.length} driver(s)`,
+    message: `Routes generated for ${drivers.length} driver(s) (${method})`,
   };
 }
 

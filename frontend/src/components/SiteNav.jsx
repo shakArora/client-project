@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
+import { useAuth, ROLES } from '../lib/auth';
 
 const DEFAULT_LINKS = [
-  { label: 'Impact', href: '#impact' },
   { label: 'Features', href: '#features' },
   { label: 'How It Works', href: '#how-it-works' },
   { label: 'FAQ', href: '#faq' },
@@ -27,6 +27,17 @@ export default function SiteNav({
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const dashboardTo = user?.role === ROLES.ADMIN ? '/admin'
+    : user?.role === ROLES.VENDOR ? '/vendor/codes'
+    : null;
+
+  function goHome() {
+    setOpen(false);
+    window.scrollTo(0, 0);
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -83,16 +94,22 @@ export default function SiteNav({
     <>
       <header className={`site-nav ${scrolled ? 'site-nav--scrolled' : ''} ${open ? 'site-nav--open' : ''}`}>
         <div className="site-nav-inner">
-          <Link to="/" className="site-nav-brand" onClick={() => setOpen(false)}>
+          <Link to="/" className="site-nav-brand" onClick={goHome}>
             Routed<span>.</span>
           </Link>
 
           <nav className="site-nav-links hide-mobile">{navItems}</nav>
 
           <div className="site-nav-actions">
-            <Link to={actionTo} className="site-nav-cta hide-mobile" onClick={() => setOpen(false)}>
-              {actionLabel}
-            </Link>
+            {user && dashboardTo ? (
+              <Link to={dashboardTo} className="site-nav-cta hide-mobile" onClick={() => setOpen(false)}>
+                Dashboard
+              </Link>
+            ) : (
+              <Link to={actionTo} className="site-nav-cta hide-mobile" onClick={() => setOpen(false)}>
+                {actionLabel}
+              </Link>
+            )}
             <button
               type="button"
               className="site-nav-menu-btn"
@@ -128,9 +145,24 @@ export default function SiteNav({
                 </button>
               )
             ))}
-            <Link to={actionTo} className="site-nav-dropdown-cta" onClick={() => setOpen(false)}>
-              {actionLabel}
-            </Link>
+            {user && dashboardTo ? (
+              <>
+                <Link to={dashboardTo} className="site-nav-dropdown-cta" onClick={() => setOpen(false)}>
+                  Dashboard
+                </Link>
+                <button
+                  type="button"
+                  className="site-nav-dropdown-link"
+                  onClick={() => { logout(); setOpen(false); navigate('/'); }}
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <Link to={actionTo} className="site-nav-dropdown-cta" onClick={() => setOpen(false)}>
+                {actionLabel}
+              </Link>
+            )}
           </div>
         </div>
       </header>

@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { fundraiserApi, productApi, vendorApi, adminApi, orderApi, driverApi } from '../lib/api';
+import { US_STATES } from '../lib/usStates';
+import { downloadCsv, downloadJson, parseCsv } from '../lib/csv';
+import AddressSelect from '../components/AddressSelect';
 
 const FRONTEND = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 
-const TABS = ['Fundraiser Details', 'Products', 'Vendors', 'Orders', 'Drivers'];
+const TABS = ['Fundraiser Details', 'Products', 'Vendors', 'Orders', 'Drivers', 'Import / Export'];
 
 /* ───────────────────────── helpers ─────────────────────── */
 const STATUS_COLOR = {
@@ -34,6 +38,7 @@ function checks(fr, productCount) {
     { label: 'Contact info added',    ok: !!(fr.contactName && (fr.contactEmail || fr.contactPhone)) },
     { label: 'Delivery notes added',  ok: !!fr.deliveryNotes },
     { label: 'Cover image added',     ok: isValidCover(fr.coverImageUrl) },
+    { label: 'Delivery hub address',  ok: !!(fr.deliveryHubAddress && fr.deliveryHubCoords?.lat) },
     { label: 'At least 1 product',    ok: productCount > 0 },
   ];
 }
@@ -44,6 +49,8 @@ function DetailsTab({ fr, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [msg,    setMsg]    = useState('');
   const [productCount, setProductCount] = useState(0);
+
+  useEffect(() => { setForm({ ...fr }); }, [fr]);
 
   useEffect(() => {
     productApi.list(fr._id).then(r => setProductCount((r.data || []).filter(p => p.isActive).length)).catch(() => {});
@@ -79,10 +86,35 @@ function DetailsTab({ fr, onSaved }) {
             Basic Info
           </h3>
           <Field label="Fundraiser Name *"><input value={form.title || ''} onChange={set('title')} required /></Field>
-          <Field label="Description"><textarea rows={3} value={form.description || ''} onChange={set('description')} /></Field>
+          <Field label="Description — shown to customers on the shop page">
+            <textarea rows={3} value={form.description || ''} onChange={set('description')} placeholder="e.g. Troop 42 is selling premium hardwood mulch to fund summer camp. Bags are delivered to your driveway on delivery day." />
+          </Field>
+          <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginTop: '-.5rem', marginBottom: '1rem', lineHeight: 1.5 }}>
+            Tell families what you are selling, who it benefits, and when/how delivery works. Keep it friendly and specific.
+          </p>
+          <AddressSelect
+            label="Pickup address — where mulch is stored"
+            value={form.pickupAddress}
+            coords={form.pickupCoords}
+            hint="Select a verified address from the dropdown. Used for pickup logistics."
+            onChange={({ address, coords }) => setForm(f => ({ ...f, pickupAddress: address, pickupCoords: coords }))}
+          />
+          <AddressSelect
+            label="Delivery hub address — route starting point"
+            value={form.deliveryHubAddress}
+            coords={form.deliveryHubCoords}
+            required
+            hint="Drivers route from here. Required for optimized route generation. Select from dropdown."
+            onChange={({ address, coords }) => setForm(f => ({ ...f, deliveryHubAddress: address, deliveryHubCoords: coords }))}
+          />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <Field label="City"><input value={form.location?.city || ''} onChange={setNested('location','city')} /></Field>
-            <Field label="State"><input value={form.location?.state || ''} onChange={setNested('location','state')} /></Field>
+            <Field label="City"><input value={form.location?.city || ''} onChange={setNested('location','city')} placeholder="Springfield" /></Field>
+            <Field label="State">
+              <select value={form.location?.state || ''} onChange={setNested('location','state')} style={{ width: '100%', border: '2px solid var(--border)', borderRadius: 10, padding: '.6rem .75rem', fontSize: '.92rem', background: '#fff' }}>
+                <option value="">Select state</option>
+                {US_STATES.map(([abbr, name]) => <option key={abbr} value={abbr}>{name}</option>)}
+              </select>
+            </Field>
           </div>
         </section>
 
@@ -185,7 +217,7 @@ function FundraiserToggleButton({ fr, allGood, onToggled, compact, onIncomplete 
   }
 
   const ready = allGood || fr.isActive;
-  const incompleteHint = 'Complete the checklist in Fundraiser Details to publish';
+  const incompleteHint = 'Fill out all required info in Fundraiser Details before publishing';
 
   return (
     <button
@@ -366,7 +398,7 @@ function VendorsTab({ fr }) {
   const [vendors,  setVendors]  = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form,     setForm]     = useState({ name:'', email:'', password:'', referralCode:'' });
+  const [form,     setForm]     = useState({ name:'', email:'', password:'' });
   const [saving,   setSaving]   = useState(false);
   const [msg,      setMsg]      = useState('');
   const publicUrl = `${FRONTEND}/fundraiser/${fr.slug}`;
@@ -387,10 +419,10 @@ function VendorsTab({ fr }) {
     e.preventDefault();
     setSaving(true); setMsg('');
     try {
-      await adminApi.createVendor({ ...form, fundraiserId: fr._id, referralCode: form.referralCode.toUpperCase() });
+      const res = await adminApi.createVendor({ ...form, fundraiserId: fr._id });
       setShowForm(false);
-      setForm({ name:'', email:'', password:'', referralCode:'' });
-      setMsg('✅ Vendor added!');
+      setForm({ name:'', email:'', password:'' });
+      setMsg(`✅ Vendor added! Referral code: ${res.data.vendor?.referralCode || '—'}`);
       load();
     } catch (err) {
       setMsg(err.response?.data?.message || 'Failed to add vendor.');
@@ -441,16 +473,10 @@ function VendorsTab({ fr }) {
             <Field label="Name *"><input value={form.name} onChange={set('name')} required /></Field>
             <Field label="Email *"><input type="email" value={form.email} onChange={set('email')} required /></Field>
             <Field label="Temporary Password *">
-              <input type="password" value={form.password} onChange={set('password')} required minLength={8} />
-            </Field>
-            <p style={{ fontSize: '.75rem', color: 'var(--t3)', marginTop: '-.5rem', marginBottom: '.75rem' }}>
-              Min 8 chars · uppercase · lowercase · number · special character
-            </p>
-            <Field label="Referral Code (2–6 chars) *">
-              <input value={form.referralCode} onChange={e => setForm(f => ({ ...f, referralCode: e.target.value.toUpperCase() }))} maxLength={6} required placeholder="e.g. AJ47" />
+              <input type="password" value={form.password} onChange={set('password')} required placeholder="Any password — share with the vendor" />
             </Field>
             <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '1.25rem' }}>
-              The vendor's link will be: {publicUrl}?ref={form.referralCode || 'CODE'}
+              A unique referral code is assigned automatically. Link format: {publicUrl}?ref=CODE
             </p>
             {msg && <p style={{ color: '#dc2626', marginBottom: '.75rem', fontSize: '.85rem' }}>{msg}</p>}
             <div style={{ display: 'flex', gap: '.6rem' }}>
@@ -492,6 +518,7 @@ function OrdersTab({ fr }) {
 
   return (
     <div>
+      <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.1rem', marginBottom: '1rem' }}>Orders</h3>
       <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {[['Total Orders', orders.length], ['Paid', paid], ['Revenue', `$${total.toFixed(2)}`]].map(([l,v]) => (
           <div key={l} style={{ background: '#fff', borderRadius: 12, padding: '.85rem 1.25rem', boxShadow: '0 1px 8px rgba(0,0,0,.06)' }}>
@@ -650,7 +677,7 @@ function DriversTab({ fr }) {
 
       {!isDeliveryDay && (
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '.85rem 1rem', marginBottom: '1.25rem', fontSize: '.84rem', color: '#1e40af' }}>
-          <strong>How it works:</strong> Add each driver with their bag capacity — a unique code is assigned automatically. When orders exist, routes fill in automatically. You can also click <em>Generate Routes</em> to redistribute stops.
+          <strong>How it works:</strong> Set a delivery hub address in Fundraiser Details first. Add drivers with bag capacity — codes are auto-assigned. Routes use OSRM distance optimization from your hub. Click <em>Generate Routes</em> to rebuild stops.
         </div>
       )}
 
@@ -755,6 +782,145 @@ function DriversTab({ fr }) {
   );
 }
 
+/* ═══════════════════════ IMPORT / EXPORT TAB ════════════════ */
+function DataTab({ fr, onImported }) {
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [vendors, setVendors] = useState([]);
+  const [orders, setOrders] = useState([]);
+
+  useEffect(() => {
+    vendorApi.list({ fundraiserId: fr._id }).then(r => setVendors(r.data || [])).catch(() => {});
+    orderApi.list({ fundraiserId: fr._id }).then(r => setOrders(r.data || [])).catch(() => {});
+  }, [fr._id]);
+
+  async function exportPackage() {
+    setBusy(true);
+    setMsg('');
+    try {
+      const { data } = await fundraiserApi.export(fr._id);
+      downloadJson(`${fr.slug || 'fundraiser'}-routed-export.json`, data);
+      setMsg('✅ Full package downloaded.');
+    } catch {
+      setMsg('❌ Export failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function importPackage(file) {
+    if (!file) return;
+    if (!window.confirm('Import data into this fundraiser? Existing records may be duplicated.')) return;
+    setBusy(true);
+    setMsg('');
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      const { data } = await fundraiserApi.import(fr._id, payload);
+      setMsg(`✅ Import complete — ${data.stats.products} products, ${data.stats.vendors} vendors, ${data.stats.orders} orders, ${data.stats.drivers} drivers.`);
+      onImported();
+    } catch (err) {
+      setMsg(err.response?.data?.message || '❌ Import failed. Use a Routed export JSON file.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const card = { background: '#fff', border: '1px solid var(--border)', borderRadius: 12, padding: '1.25rem', marginBottom: '1rem' };
+
+  return (
+    <div>
+      <p style={{ color: 'var(--t2)', fontSize: '.92rem', lineHeight: 1.6, marginBottom: '1.25rem', maxWidth: 640 }}>
+        Moving an existing fundraiser to Routed? Export a full package from another instance, or import a JSON file with products, vendors, orders, drivers, and routes.
+      </p>
+
+      <div style={card}>
+        <h4 style={{ fontFamily: 'var(--serif)', marginBottom: '.5rem' }}>Full migration package</h4>
+        <p style={{ fontSize: '.85rem', color: 'var(--t3)', marginBottom: '1rem', lineHeight: 1.5 }}>
+          JSON includes fundraiser settings, products, vendors, orders (with addresses), and driver routes — ready to re-import elsewhere.
+        </p>
+        <div style={{ display: 'flex', gap: '.6rem', flexWrap: 'wrap' }}>
+          <button type="button" onClick={exportPackage} disabled={busy} className="btn btn-gold">↓ Export JSON package</button>
+          <label className="btn btn-dark" style={{ cursor: 'pointer' }}>
+            ↑ Import JSON package
+            <input type="file" accept=".json,application/json" style={{ display: 'none' }} disabled={busy} onChange={e => { importPackage(e.target.files?.[0]); e.target.value = ''; }} />
+          </label>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
+        <div style={card}>
+          <h4 style={{ fontFamily: 'var(--serif)', marginBottom: '.35rem' }}>Orders CSV</h4>
+          <p style={{ fontSize: '.82rem', color: 'var(--t3)', marginBottom: '.75rem' }}>Spreadsheet export for review or editing.</p>
+          <button type="button" className="btn btn-outline btn-full" disabled={!orders.length} onClick={() => downloadCsv(`orders-${fr.slug}.csv`,
+            ['Customer', 'Email', 'Phone', 'Address', 'Bags', 'Total', 'Status', 'Referral', 'Comments'],
+            orders.map(o => [o.customerName, o.customerEmail, o.customerPhone || '', o.deliveryAddress, o.totalBags, o.totalAmount.toFixed(2), o.status, o.referralCode || '', o.comments || ''])
+          )}>Export orders</button>
+        </div>
+        <div style={card}>
+          <h4 style={{ fontFamily: 'var(--serif)', marginBottom: '.35rem' }}>Vendors CSV</h4>
+          <p style={{ fontSize: '.82rem', color: 'var(--t3)', marginBottom: '.75rem' }}>Name + email columns for bulk vendor import.</p>
+          <button type="button" className="btn btn-outline btn-full" style={{ marginBottom: '.5rem' }} onClick={() => downloadCsv(`vendors-${fr.slug}.csv`,
+            ['Name', 'Email', 'Referral Code', 'Bags Sold', 'Revenue'],
+            vendors.map(v => [v.name, v.email, v.referralCode, v.bagsSold || 0, (v.totalRevenue || 0).toFixed(2)])
+          )}>Export vendors</button>
+          <label className="btn btn-outline btn-full" style={{ cursor: 'pointer', textAlign: 'center' }}>
+            Import vendors CSV
+            <input type="file" accept=".csv" style={{ display: 'none' }} onChange={async e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const rows = parseCsv(await file.text());
+              const vendors = rows.filter(r => (r.name || r.vendor) && r.email).map(r => ({
+                name: r.name || r.vendor,
+                email: r.email,
+                referralCode: r.referral || r.referralcode || r['referral code'] || undefined,
+                bagsSold: Number(r.bags || r.bagssold || 0),
+                totalRevenue: Number(r.revenue || 0),
+              }));
+              if (!vendors.length) { setMsg('❌ CSV needs name and email columns.'); return; }
+              const { data } = await fundraiserApi.import(fr._id, { vendors });
+              setMsg(`✅ Imported ${data.stats.vendors} vendor(s) from CSV.`);
+              onImported();
+              e.target.value = '';
+            }} />
+          </label>
+        </div>
+        <div style={card}>
+          <h4 style={{ fontFamily: 'var(--serif)', marginBottom: '.35rem' }}>Orders CSV import</h4>
+          <p style={{ fontSize: '.82rem', color: 'var(--t3)', marginBottom: '.75rem' }}>Columns: customer, email, address, bags, total, status, referral.</p>
+          <label className="btn btn-outline btn-full" style={{ cursor: 'pointer', textAlign: 'center' }}>
+            Import orders CSV
+            <input type="file" accept=".csv" style={{ display: 'none' }} onChange={async e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const rows = parseCsv(await file.text());
+              const orders = rows.filter(r => r.customer && r.address).map(r => ({
+                customerName: r.customer || r.customername,
+                customerEmail: r.email || r.customeremail || 'import@routed.local',
+                customerPhone: r.phone || '',
+                deliveryAddress: r.address,
+                totalBags: Number(r.bags || 1),
+                totalAmount: Number(r.total || 0),
+                status: r.status || 'pending',
+                referralCode: r.referral || r.referralcode || undefined,
+                comments: r.comments || '',
+                items: [{ productName: 'Imported', quantity: Number(r.bags || 1), unitPrice: Number(r.total || 0) / Math.max(1, Number(r.bags || 1)) }],
+              }));
+              if (!orders.length) { setMsg('❌ CSV needs customer and address columns.'); return; }
+              const { data } = await fundraiserApi.import(fr._id, { orders });
+              setMsg(`✅ Imported ${data.stats.orders} order(s). ${data.stats.skipped?.length ? `Skipped: ${data.stats.skipped.join('; ')}` : ''}`);
+              onImported();
+              e.target.value = '';
+            }} />
+          </label>
+        </div>
+      </div>
+
+      {msg && <p style={{ marginTop: '1rem', fontWeight: 600, color: msg.startsWith('✅') ? '#059669' : '#dc2626' }}>{msg}</p>}
+    </div>
+  );
+}
+
 /* ═══════════════════════ FIELD COMPONENT ════════════════════ */
 function Field({ label, children }) {
   return (
@@ -803,9 +969,10 @@ export default function AdminFundraiserDetail() {
       {/* Top bar */}
       <div style={{ background: 'var(--dark)', padding: '0 clamp(1rem,4vw,2.5rem)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56, gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0 }}>
-          <button onClick={() => navigate('/admin')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,.55)', cursor: 'pointer', fontSize: '.88rem', flexShrink: 0 }}>
+          <Link to="/admin" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,.55)', cursor: 'pointer', fontSize: '.88rem', flexShrink: 0, textDecoration: 'none' }}>
             ← All Fundraisers
-          </button>
+          </Link>
+          <Link to="/" style={{ color: 'var(--t-cream)', fontFamily: 'var(--serif)', fontSize: '.95rem', textDecoration: 'none', flexShrink: 0 }}>Routed</Link>
           <span style={{ color: 'rgba(255,255,255,.25)' }}>|</span>
           <span style={{ color: 'var(--t-cream)', fontFamily: 'var(--serif)', fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fr.title}</span>
           <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '.2rem .55rem', borderRadius: 99, background: fr.isActive ? '#d1fae533' : 'rgba(255,255,255,.1)', color: fr.isActive ? '#6ee7b7' : 'rgba(255,255,255,.5)', flexShrink: 0 }}>
@@ -833,6 +1000,7 @@ export default function AdminFundraiserDetail() {
         {tab === 'Vendors'            && <VendorsTab  fr={fr} />}
         {tab === 'Orders'             && <OrdersTab   fr={fr} />}
         {tab === 'Drivers'            && <DriversTab  fr={fr} />}
+        {tab === 'Import / Export'    && <DataTab fr={fr} onImported={reload} />}
       </div>
 
       <style>{`

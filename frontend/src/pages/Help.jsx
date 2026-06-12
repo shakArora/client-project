@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import SiteNav from '../components/SiteNav';
 
 const ROLES = [
@@ -75,13 +75,22 @@ const FAQ = [
 
 export default function Help() {
   const [open, setOpen] = useState(null);
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (hash === '#guide') {
+      document.getElementById('guide')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [hash]);
 
   return (
     <div className="marketing-dark">
       <SiteNav subpage actionLabel="Login" actionTo="/login" />
 
       <main style={{ maxWidth: 860, margin: '0 auto', padding: '6.5rem 1.25rem 5rem' }}>
-        <div style={{ marginBottom: '1.75rem' }}>
+        <div id="guide" style={{ marginBottom: '1.75rem', scrollMarginTop: '5.5rem' }}>
           <span className="title-pill">Help Center</span>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(2rem,5vw,3rem)', marginTop: '.6rem', marginBottom: '.5rem' }}>
             How does Routed work?

@@ -13,12 +13,27 @@ import { signAuthToken } from "../utils/auth.js";
 
 const router = express.Router();
 
-const strongPassword = z.string()
+const adminPassword = z.string()
   .min(8, "Password must be at least 8 characters")
   .refine(p => /[A-Z]/.test(p), "Password must contain at least one uppercase letter")
   .refine(p => /[a-z]/.test(p), "Password must contain at least one lowercase letter")
   .refine(p => /[0-9]/.test(p), "Password must contain at least one number")
   .refine(p => /[^A-Za-z0-9]/.test(p), "Password must contain at least one special character");
+
+const vendorPassword = z.string().min(1, "Password is required");
+
+const VENDOR_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+async function genVendorReferralCode(fundraiserId) {
+  let code, attempts = 0;
+  do {
+    code = "";
+    for (let i = 0; i < 4; i++) code += VENDOR_CODE_CHARS[Math.floor(Math.random() * VENDOR_CODE_CHARS.length)];
+    attempts++;
+    if (attempts > 30) throw new Error("Could not generate unique referral code");
+  } while (await Vendor.findOne({ fundraiserId, referralCode: code }));
+  return code;
+}
 
 // ── Dashboard stats ───────────────────────────────────
 router.get("/stats", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
@@ -65,13 +80,16 @@ router.post("/users", requireAuth, requireRole(ROLES.ADMIN), async (req, res) =>
   const schema = z.object({
     name:     z.string().min(2).trim(),
     email:    z.string().email().trim(),
-    password: strongPassword,
+    password: z.string().min(1),
     role:     z.enum([ROLES.VENDOR, ROLES.ADMIN, ROLES.DRIVER]).default(ROLES.VENDOR),
     phone:    z.string().optional(),
   });
 
   try {
     const body     = schema.parse(req.body);
+    if (body.role === ROLES.ADMIN) adminPassword.parse(body.password);
+    else vendorPassword.parse(body.password);
+
     const existing = await User.findOne({ email: body.email.toLowerCase() });
     if (existing) return res.status(409).json({ message: "Email already registered" });
 
@@ -102,9 +120,9 @@ router.post("/vendors", requireAuth, requireRole(ROLES.ADMIN), async (req, res) 
   const schema = z.object({
     name:         z.string().min(2).trim(),
     email:        z.string().email().trim(),
-    password:     strongPassword,
+    password:     vendorPassword,
     fundraiserId: z.string().min(10),
-    referralCode: z.string().min(2).max(6).trim().toUpperCase(),
+    referralCode: z.string().min(2).max(6).trim().toUpperCase().optional(),
   });
 
   try {
@@ -129,10 +147,12 @@ router.post("/vendors", requireAuth, requireRole(ROLES.ADMIN), async (req, res) 
       await user.save();
     }
 
+    const referralCode = body.referralCode || await genVendorReferralCode(body.fundraiserId);
+
     const vendor = await Vendor.create({
       userId:       user._id,
       fundraiserId: body.fundraiserId,
-      referralCode: body.referralCode,
+      referralCode,
       name:         body.name,
       email:        body.email.toLowerCase(),
     });

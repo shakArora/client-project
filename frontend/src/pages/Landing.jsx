@@ -4,7 +4,6 @@ import { ChevronDown, ArrowRight } from 'lucide-react';
 import SiteNav from '../components/SiteNav';
 
 const NAV_LINKS = [
-  { label: 'Impact', href: '#impact' },
   { label: 'Features', href: '#features' },
   { label: 'How It Works', href: '#how-it-works' },
   { label: 'FAQ', href: '#faq' },
@@ -12,13 +11,6 @@ const NAV_LINKS = [
 ];
 
 const DYNAMIC_WORDS = ['fundraisers', 'deliveries', 'Scout troops', 'mulch sales', 'your community'];
-
-const METRICS = [
-  { label: 'Hours Saved', value: '12+', desc: 'per delivery day', accent: 'gold' },
-  { label: 'Stops Routed', value: '500+', desc: 'auto-assigned', accent: 'green' },
-  { label: 'Orders Tracked', value: '2K+', desc: 'in real time', accent: 'gold' },
-  { label: 'Route Accuracy', value: '99%', desc: 'geocoded addresses', accent: 'green' },
-];
 
 const FEATURES = [
   {
@@ -92,35 +84,6 @@ const DASH_STOPS = [
 ];
 
 const STOP_COLORS = { delivered: '#4E6D38', current: '#C9A862', pending: '#BF3535' };
-
-function AnimatedCounter({ value }) {
-  const [display, setDisplay] = useState('0');
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return;
-      const numeric = parseFloat(value.replace(/[^0-9.]/g, ''));
-      const suffix = value.replace(/[0-9.]/g, '');
-      let current = 0;
-      const step = numeric / 50;
-      const timer = setInterval(() => {
-        current += step;
-        if (current >= numeric) {
-          setDisplay(`${numeric}${suffix}`);
-          clearInterval(timer);
-        } else {
-          setDisplay(`${Math.floor(current)}${suffix}`);
-        }
-      }, 30);
-      observer.disconnect();
-    }, { threshold: 0.5 });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [value]);
-
-  return <div className="landing-metric-value" ref={ref}>{display}</div>;
-}
 
 function FeatureVisual({ type }) {
   if (type === 'routes') {
@@ -314,33 +277,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Metrics */}
-      <section id="impact" className="landing-section animate-on-scroll">
-        <div style={{ textAlign: 'center' }}>
-          <div className="landing-section-label" style={{ justifyContent: 'center' }}>
-            <span className="landing-section-label-dot" /> Impact
-          </div>
-          <h2 className="landing-section-title">
-            Fundraising <span className="landing-gradient-text">impact</span> at scale
-          </h2>
-          <p className="landing-section-sub">
-            Less time on logistics. More time on what matters — selling and delivering.
-          </p>
-        </div>
-        <div className="landing-metrics">
-          {METRICS.map((m, i) => (
-            <div key={i} className="landing-metric">
-              <div className="landing-metric-label">
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.accent === 'gold' ? 'var(--gold)' : 'var(--green)' }} />
-                {m.label}
-              </div>
-              <AnimatedCounter value={m.value} />
-              <div className="landing-metric-desc">{m.desc}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* Features */}
       <section id="features" className="landing-section animate-on-scroll">
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
@@ -419,7 +355,7 @@ export default function Landing() {
           ))}
         </div>
         <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
-          <Link to="/help" className="glass-btn">
+          <Link to="/help#guide" className="glass-btn">
             Read the full guide <ArrowRight size={16} />
           </Link>
         </div>

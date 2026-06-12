@@ -5,6 +5,8 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { ROLES } from "../models/User.js";
 import { uniqueSlug } from "../utils/slug.js";
 import { isPublishReady } from "../utils/publishChecks.js";
+import { geocodeAddress } from "../utils/geocode.js";
+import { exportFundraiser, importFundraiser } from "../services/fundraiserMigration.js";
 
 const router = express.Router();
 
@@ -52,6 +54,30 @@ router.get("/mine", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
   }
 });
 
+// ── Admin: export full migration package ────────────
+router.get("/:id/export", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const item = await Fundraiser.findOne({ _id: req.params.id, adminId: req.user.sub });
+    if (!item) return res.status(404).json({ message: "Fundraiser not found" });
+    const data = await exportFundraiser(req.params.id);
+    res.json(data);
+  } catch (err) {
+    console.error("Export error:", err);
+    res.status(500).json({ message: "Unable to export fundraiser data" });
+  }
+});
+
+// ── Admin: import migration package ───────────────────
+router.post("/:id/import", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const stats = await importFundraiser(req.params.id, req.user.sub, req.body);
+    res.json({ message: "Import complete", stats });
+  } catch (err) {
+    console.error("Import error:", err);
+    res.status(400).json({ message: err.message || "Unable to import fundraiser data" });
+  }
+});
+
 // ── Public: get by id ─────────────────────────────────
 router.get("/:id", async (req, res) => {
   try {
@@ -74,6 +100,10 @@ const baseSchema = z.object({
   title:         z.string().min(2).trim(),
   description:   z.string().optional(),
   location:      z.object({ city: z.string().optional(), state: z.string().optional() }).optional(),
+  pickupAddress:      z.string().optional(),
+  pickupCoords:       z.object({ lat: z.number(), lon: z.number(), display: z.string() }).optional(),
+  deliveryHubAddress: z.string().optional(),
+  deliveryHubCoords:  z.object({ lat: z.number(), lon: z.number(), display: z.string() }).optional(),
   contactName:   z.string().optional(),
   contactEmail:  z.string().email().optional().or(z.literal("")),
   contactPhone:  z.string().optional(),
@@ -97,6 +127,18 @@ router.post("/", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
     if (body.isActive) await Fundraiser.updateMany({ adminId: req.user.sub }, { isActive: false });
 
     const slug = await uniqueSlug(Fundraiser, body.title);
+    if (body.pickupAddress && !body.pickupCoords) {
+      const coords = await geocodeAddress(body.pickupAddress);
+      if (!coords) return res.status(400).json({ message: "Pickup address could not be verified." });
+      body.pickupCoords = coords;
+      body.pickupAddress = coords.display;
+    }
+    if (body.deliveryHubAddress && !body.deliveryHubCoords) {
+      const coords = await geocodeAddress(body.deliveryHubAddress);
+      if (!coords) return res.status(400).json({ message: "Delivery hub address could not be verified." });
+      body.deliveryHubCoords = coords;
+      body.deliveryHubAddress = coords.display;
+    }
     const item = await Fundraiser.create({ ...body, adminId: req.user.sub, slug });
     res.status(201).json(item);
   } catch (error) {
@@ -120,6 +162,26 @@ router.patch("/:id", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => 
     }
     if (body.title) {
       body.slug = await uniqueSlug(Fundraiser, body.title, req.params.id);
+    }
+    if (body.pickupAddress !== undefined) {
+      if (!body.pickupAddress) {
+        body.pickupCoords = undefined;
+      } else if (!body.pickupCoords) {
+        const coords = await geocodeAddress(body.pickupAddress);
+        if (!coords) return res.status(400).json({ message: "Pickup address could not be verified." });
+        body.pickupCoords = coords;
+        body.pickupAddress = coords.display;
+      }
+    }
+    if (body.deliveryHubAddress !== undefined) {
+      if (!body.deliveryHubAddress) {
+        body.deliveryHubCoords = undefined;
+      } else if (!body.deliveryHubCoords) {
+        const coords = await geocodeAddress(body.deliveryHubAddress);
+        if (!coords) return res.status(400).json({ message: "Delivery hub address could not be verified." });
+        body.deliveryHubCoords = coords;
+        body.deliveryHubAddress = coords.display;
+      }
     }
 
     const item = await Fundraiser.findByIdAndUpdate(req.params.id, body, { new: true, runValidators: false });
@@ -153,6 +215,21 @@ router.patch("/:id/activate", requireAuth, requireRole(ROLES.ADMIN), async (req,
     res.json(item.toObject());
   } catch {
     res.status(500).json({ message: "Unable to toggle fundraiser status" });
+  }
+});
+
+// ── Admin: delete fundraiser (drafts / unused) ────────
+router.delete("/:id", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const item = await Fundraiser.findOne({ _id: req.params.id, adminId: req.user.sub });
+    if (!item) return res.status(404).json({ message: "Fundraiser not found" });
+    if (item.isActive) {
+      return res.status(400).json({ message: "Pause the fundraiser before deleting it." });
+    }
+    await Fundraiser.findByIdAndDelete(req.params.id);
+    res.json({ message: "Fundraiser deleted" });
+  } catch {
+    res.status(500).json({ message: "Unable to delete fundraiser" });
   }
 });
 

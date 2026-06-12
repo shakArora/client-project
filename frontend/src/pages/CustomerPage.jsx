@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { fundraiserApi, productApi } from '../lib/api';
+import { getSaleStatus, formatLocalDate } from '../lib/dates';
 
 const NAV = [{ label: 'About', to: '/about' }];
 const BG_CYCLE = ['#B8914A', '#8B6835', '#5A7A3A', '#7A6A40', '#4A6A35', '#9B7A3A'];
@@ -40,16 +41,15 @@ export default function CustomerPage() {
     load();
   }, [slug]);
 
-  function isSaleClosed(fr) {
-    if (!fr) return true;
-    if (!fr.isActive) return true;
-    if (!fr.endDate) return false;
-    const end = new Date(fr.endDate);
-    end.setHours(23, 59, 59, 999);
-    return new Date() > end;
-  }
+  const sale = getSaleStatus(fundraiser);
+  const isClosed = sale.closed;
 
-  const isClosed = isSaleClosed(fundraiser);
+  function closedMessage() {
+    if (sale.reason === 'draft') return 'This fundraiser is not live yet.';
+    if (sale.reason === 'not_started') return `Sales begin on ${formatLocalDate(fundraiser.startDate)}.`;
+    if (sale.reason === 'ended') return `The sale ended on ${formatLocalDate(fundraiser.endDate)}.`;
+    return 'Ordering is not available right now.';
+  }
   const totalBags   = Object.values(qty).reduce((s, n) => s + n, 0);
   const totalAmount = products.reduce((s, p) => s + (qty[p._id] || 0) * p.price, 0);
 
@@ -116,10 +116,7 @@ export default function CustomerPage() {
       {/* ── Closed banner ── */}
       {isClosed && (
         <div style={{ background: '#fff3cd', borderBottom: '1px solid #ffc107', padding: '1rem 1.5rem', textAlign: 'center', fontSize: '.95rem', lineHeight: 1.5 }}>
-          <strong>Ordering is not available.</strong>{' '}
-          {!fundraiser.isActive
-            ? 'This fundraiser is not live yet.'
-            : `The sale ended on ${new Date(fundraiser.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.`}
+          <strong>Ordering is not available.</strong> {closedMessage()}
         </div>
       )}
 
@@ -141,9 +138,11 @@ export default function CustomerPage() {
             <p style={{ color: 'var(--t2)', lineHeight: 1.7, fontSize: '1rem', maxWidth: 600, marginTop: '.25rem' }}>
               {fundraiser.description || 'Help fund a great cause! Every bag you order makes a difference.'}
             </p>
-            {fundraiser.endDate && !isClosed && (
+            {!isClosed && fundraiser.endDate && (
               <p style={{ color: 'var(--t3)', fontSize: '.92rem', marginTop: '.5rem' }}>
-                Order by {new Date(fundraiser.endDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.
+                {fundraiser.startDate
+                  ? `Sale runs ${formatLocalDate(fundraiser.startDate, { month: 'short', day: 'numeric' })} – ${formatLocalDate(fundraiser.endDate, { month: 'short', day: 'numeric', year: 'numeric' })}.`
+                  : `Order by ${formatLocalDate(fundraiser.endDate, { weekday: 'long', month: 'long', day: 'numeric' })}.`}
               </p>
             )}
             <p style={{ color: 'var(--t3)', fontSize: '.88rem', marginTop: '.75rem' }}>
@@ -244,9 +243,9 @@ function MobileProductCard({ p, i, qty, onChange, onDelta }) {
       <div style={{ padding: '1.1rem 1.25rem 1.4rem' }}>
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: '1.3rem', marginBottom: '.2rem' }}>{p.name}</h2>
         {p.description && <p style={{ color: 'var(--t3)', fontSize: '.88rem', fontStyle: 'italic', marginBottom: '.85rem' }}>{p.description}</p>}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '.75rem' }}>
+        <div className="product-card-footer">
           <strong style={{ fontFamily: 'var(--serif)', fontSize: '1.3rem', color: 'var(--gold-dk)' }}>${p.price.toFixed(2)} <span style={{ fontSize: '.82rem', fontWeight: 400, color: 'var(--t3)' }}>/ bag</span></strong>
-          <div>
+          <div className="product-qty-row">
             <label style={{ display: 'block', fontSize: '.78rem', fontWeight: 700, color: 'var(--t3)', marginBottom: '.35rem' }}>How many bags?</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}>
               <button type="button" onClick={() => onDelta(-1)} className="qty-btn qty-btn--minus" aria-label="Decrease quantity">−</button>
@@ -264,7 +263,7 @@ function DesktopProductCard({ p, i, qty, onChange, onDelta }) {
   const bg = BG_CYCLE[i % BG_CYCLE.length];
   const active = qty > 0;
   return (
-    <div style={{ background: 'var(--surface)', border: active ? '2px solid var(--gold)' : '1px solid var(--border)', borderRadius: 'var(--r4)', overflow: 'hidden', transition: 'border-color .15s' }}>
+    <div style={{ background: 'var(--surface)', border: `2px solid ${active ? 'var(--gold)' : 'transparent'}`, outline: active ? 'none' : '1px solid var(--border)', borderRadius: 'var(--r4)', overflow: 'hidden' }}>
       <div style={{ height: 165, background: p.imageUrl ? undefined : bg, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         {p.imageUrl
           ? <img src={p.imageUrl} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -274,9 +273,9 @@ function DesktopProductCard({ p, i, qty, onChange, onDelta }) {
       <div style={{ padding: '1rem 1.1rem 1.25rem' }}>
         <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.08rem', marginBottom: '.22rem' }}>{p.name}</h3>
         <p style={{ color: 'var(--t3)', fontSize: '.8rem', marginBottom: '.75rem' }}>{p.description}</p>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '.5rem' }}>
+        <div className="product-card-footer">
           <strong style={{ fontFamily: 'var(--serif)', fontSize: '1.15rem', color: 'var(--gold-dk)' }}>${p.price}</strong>
-          <div>
+          <div className="product-qty-row">
             <label style={{ display: 'block', fontSize: '.72rem', fontWeight: 700, color: 'var(--t3)', marginBottom: '.25rem' }}>Bags</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
               <button onClick={() => onDelta(-1)} style={{ width: 30, height: 30, borderRadius: '50%', border: '1.5px solid var(--border)', background: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>

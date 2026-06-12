@@ -44,6 +44,9 @@ export const fundraiserApi = {
   create:    (data)       => api.post("/fundraisers", data),
   update:    (id, data)   => api.patch(`/fundraisers/${id}`, data),
   activate:  (id)         => api.patch(`/fundraisers/${id}/activate`),
+  delete:    (id)         => api.delete(`/fundraisers/${id}`),
+  export:    (id)         => api.get(`/fundraisers/${id}/export`),
+  import:    (id, data)   => api.post(`/fundraisers/${id}/import`, data),
 };
 
 /* ── Products ─────────────────────────────────────────── */
@@ -61,6 +64,7 @@ export const orderApi = {
   get:             (id)         => api.get(`/orders/${id}`),
   place:           (data)       => api.post("/orders", data),
   validateAddress: (address)    => api.post("/orders/validate-address", { address }),
+  searchAddresses: (q)          => api.get("/orders/address-search", { params: { q } }),
   updateStatus:    (id, status) => api.patch(`/orders/${id}/status`, { status }),
   refund:          (id)         => api.post(`/orders/${id}/refund`),
 };

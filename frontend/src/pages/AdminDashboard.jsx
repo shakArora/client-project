@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { fundraiserApi } from '../lib/api';
+import { isPastFundraiser } from '../lib/dates';
+import { US_STATES } from '../lib/usStates';
 
 const FRONTEND = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 
@@ -20,7 +22,7 @@ function statusChecks(fr) {
   ];
 }
 
-function FundraiserCard({ fr, onToggle }) {
+function FundraiserCard({ fr, onToggle, onDelete, showDelete }) {
   const navigate = useNavigate();
   const checks   = statusChecks(fr);
   const allGood  = checks.every(c => c.ok);
@@ -78,6 +80,14 @@ function FundraiserCard({ fr, onToggle }) {
           >
             Open →
           </button>
+          {showDelete && (
+            <button
+              onClick={() => onDelete(fr._id)}
+              style={{ padding: '.55rem .85rem', borderRadius: 10, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', fontWeight: 700, fontSize: '.84rem', cursor: 'pointer' }}
+            >
+              Delete
+            </button>
+          )}
 
           {/* Publish / Go Live button */}
           <button
@@ -111,6 +121,9 @@ export default function AdminDashboard() {
   const [error,   setError]   = useState('');
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [newPickup, setNewPickup] = useState('');
+  const [newCity, setNewCity] = useState('');
+  const [newState, setNewState] = useState('');
   const [saving,   setSaving]   = useState(false);
   const [viewTab,  setViewTab]  = useState('active');
 
@@ -129,14 +142,31 @@ export default function AdminDashboard() {
     if (!newTitle.trim()) return;
     setSaving(true);
     try {
-      const res = await fundraiserApi.create({ title: newTitle.trim() });
+      const res = await fundraiserApi.create({
+        title: newTitle.trim(),
+        pickupAddress: newPickup.trim() || undefined,
+        location: (newCity.trim() || newState) ? { city: newCity.trim() || undefined, state: newState || undefined } : undefined,
+      });
       setCreating(false);
       setNewTitle('');
+      setNewPickup('');
+      setNewCity('');
+      setNewState('');
       navigate(`/admin/fundraiser/${res.data._id}`);
     } catch (err) {
       alert(err.response?.data?.message || 'Could not create fundraiser.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDelete(id) {
+    if (!window.confirm('Delete this draft fundraiser? This cannot be undone.')) return;
+    try {
+      await fundraiserApi.delete(id);
+      load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Could not delete fundraiser.');
     }
   }
 
@@ -152,16 +182,16 @@ export default function AdminDashboard() {
   const name = user?.name?.split(' ')[0] || 'Admin';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const now = new Date();
-  const active = list.filter(fr => fr.isActive || (fr.endDate && new Date(fr.endDate) >= now));
-  const past   = list.filter(fr => !fr.isActive && (!fr.endDate || new Date(fr.endDate) < now));
-  const display = viewTab === 'active' ? active : past;
+  const active = list.filter(fr => fr.isActive);
+  const drafts = list.filter(fr => !fr.isActive && !isPastFundraiser(fr));
+  const past   = list.filter(fr => !fr.isActive && isPastFundraiser(fr));
+  const display = viewTab === 'active' ? active : viewTab === 'drafts' ? drafts : past;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--sans)' }}>
       {/* Top nav */}
       <div style={{ background: 'var(--dark)', padding: '0 clamp(1rem,4vw,2.5rem)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56 }}>
-        <span style={{ fontFamily: 'var(--serif)', fontSize: '1.15rem', color: 'var(--t-cream)', fontWeight: 700 }}>Routed</span>
+        <Link to="/" style={{ fontFamily: 'var(--serif)', fontSize: '1.15rem', color: 'var(--t-cream)', fontWeight: 700, textDecoration: 'none' }}>Routed</Link>
         <div style={{ display: 'flex', gap: '.75rem', alignItems: 'center' }}>
           <span style={{ color: '#999', fontSize: '.82rem' }}>{user?.email}</span>
           <button onClick={() => { logout(); navigate('/login'); }} style={{ background: 'none', border: '1px solid rgba(255,255,255,.2)', borderRadius: 8, padding: '.3rem .7rem', color: 'rgba(255,255,255,.65)', fontSize: '.78rem', cursor: 'pointer' }}>
@@ -184,7 +214,7 @@ export default function AdminDashboard() {
 
         {/* Active / Past tabs */}
         <div style={{ display: 'flex', gap: '.4rem', marginBottom: '1.5rem' }}>
-          {[['active', `Active (${active.length})`], ['past', `Past (${past.length})`]].map(([key, label]) => (
+          {[['active', `Active (${active.length})`], ['drafts', `Drafts (${drafts.length})`], ['past', `Past (${past.length})`]].map(([key, label]) => (
             <button key={key} onClick={() => setViewTab(key)} style={{
               padding: '.45rem 1.2rem', borderRadius: 99, border: 'none', cursor: 'pointer', fontSize: '.88rem', fontWeight: 700, transition: 'all .15s',
               background: viewTab === key ? 'var(--dark)' : 'var(--surface-2)',
@@ -200,13 +230,34 @@ export default function AdminDashboard() {
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
             <form onSubmit={handleCreate} style={{ background: '#fff', borderRadius: 16, padding: '2rem', width: '100%', maxWidth: 440 }}>
               <h2 style={{ fontFamily: 'var(--serif)', marginBottom: '1.2rem' }}>New Fundraiser</h2>
+              <label style={{ display: 'block', fontSize: '.82rem', fontWeight: 700, color: 'var(--t2)', marginBottom: '.35rem' }}>Fundraiser name *</label>
               <input
                 autoFocus
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
-                placeholder="Fundraiser name (e.g. Troop 42 Spring 2025)"
+                placeholder="Troop 42 Spring Mulch Sale"
                 style={{ width: '100%', border: '2px solid var(--border)', borderRadius: 10, padding: '.75rem', fontSize: '.95rem', marginBottom: '1rem', boxSizing: 'border-box' }}
               />
+              <label style={{ display: 'block', fontSize: '.82rem', fontWeight: 700, color: 'var(--t2)', marginBottom: '.35rem' }}>Pickup address</label>
+              <input
+                value={newPickup}
+                onChange={e => setNewPickup(e.target.value)}
+                placeholder="Where mulch is stored / picked up from"
+                style={{ width: '100%', border: '2px solid var(--border)', borderRadius: 10, padding: '.75rem', fontSize: '.95rem', marginBottom: '1rem', boxSizing: 'border-box' }}
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '.82rem', fontWeight: 700, color: 'var(--t2)', marginBottom: '.35rem' }}>City</label>
+                  <input value={newCity} onChange={e => setNewCity(e.target.value)} placeholder="Springfield" style={{ width: '100%', border: '2px solid var(--border)', borderRadius: 10, padding: '.75rem', fontSize: '.95rem', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '.82rem', fontWeight: 700, color: 'var(--t2)', marginBottom: '.35rem' }}>State</label>
+                  <select value={newState} onChange={e => setNewState(e.target.value)} style={{ width: '100%', border: '2px solid var(--border)', borderRadius: 10, padding: '.75rem', fontSize: '.95rem', boxSizing: 'border-box', background: '#fff' }}>
+                    <option value="">Select state</option>
+                    {US_STATES.map(([abbr, name]) => <option key={abbr} value={abbr}>{name}</option>)}
+                  </select>
+                </div>
+              </div>
               <div style={{ display: 'flex', gap: '.6rem' }}>
                 <button type="button" onClick={() => setCreating(false)} className="btn btn-outline" style={{ flex: 1 }}>Cancel</button>
                 <button type="submit" className="btn btn-gold" style={{ flex: 2 }} disabled={saving}>
@@ -228,19 +279,19 @@ export default function AdminDashboard() {
           </div>
         ) : display.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem 1rem', background: '#fff', borderRadius: 16, boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>{viewTab === 'past' ? '🗂' : '📣'}</div>
+            <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>{viewTab === 'past' ? '🗂' : viewTab === 'drafts' ? '📝' : '📣'}</div>
             <h2 style={{ fontFamily: 'var(--serif)', marginBottom: '.5rem' }}>
-              {viewTab === 'past' ? 'No past fundraisers' : 'No active fundraisers'}
+              {viewTab === 'past' ? 'No past fundraisers' : viewTab === 'drafts' ? 'No drafts' : 'No active fundraisers'}
             </h2>
             <p style={{ color: 'var(--t3)', marginBottom: '1.5rem', fontSize: '.92rem' }}>
-              {viewTab === 'past' ? 'Completed fundraisers will appear here.' : 'Create your first fundraiser to get started.'}
+              {viewTab === 'past' ? 'Completed fundraisers will appear here.' : viewTab === 'drafts' ? 'Unpublished fundraisers appear here while you set them up.' : 'Create your first fundraiser to get started.'}
             </p>
-            {viewTab === 'active' && <button onClick={() => setCreating(true)} className="btn btn-gold">+ New Fundraiser</button>}
+            {viewTab !== 'past' && <button onClick={() => setCreating(true)} className="btn btn-gold">+ New Fundraiser</button>}
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
             {display.map(fr => (
-              <FundraiserCard key={fr._id} fr={fr} onToggle={handleToggle} />
+              <FundraiserCard key={fr._id} fr={fr} onToggle={handleToggle} onDelete={handleDelete} showDelete={viewTab === 'drafts'} />
             ))}
           </div>
         )}
