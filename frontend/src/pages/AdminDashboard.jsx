@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth';
 import { fundraiserApi } from '../lib/api';
 import { isPastFundraiser } from '../lib/dates';
 import { US_STATES } from '../lib/usStates';
+import { SkeletonDashboard } from '../components/Skeleton';
 
 const FRONTEND = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 
@@ -188,47 +189,37 @@ export default function AdminDashboard() {
   const display = viewTab === 'active' ? active : viewTab === 'drafts' ? drafts : past;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--sans)' }}>
-      {/* Top nav */}
-      <div style={{ background: 'var(--dark)', padding: '0 clamp(1rem,4vw,2.5rem)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56 }}>
-        <Link to="/" style={{ fontFamily: 'var(--serif)', fontSize: '1.15rem', color: 'var(--t-cream)', fontWeight: 700, textDecoration: 'none' }}>Routed</Link>
-        <div style={{ display: 'flex', gap: '.75rem', alignItems: 'center' }}>
-          <span style={{ color: '#999', fontSize: '.82rem' }}>{user?.email}</span>
-          <button onClick={() => { logout(); navigate('/login'); }} style={{ background: 'none', border: '1px solid rgba(255,255,255,.2)', borderRadius: 8, padding: '.3rem .7rem', color: 'rgba(255,255,255,.65)', fontSize: '.78rem', cursor: 'pointer' }}>
+    <div className="app-shell">
+      <div className="admin-topbar">
+        <Link to="/" className="admin-topbar-brand">Routed</Link>
+        <div className="admin-topbar-end">
+          <span className="admin-topbar-email">{user?.email}</span>
+          <button type="button" onClick={() => { logout(); navigate('/login'); }} className="admin-topbar-logout">
             Log out
           </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: 'clamp(1.5rem,4vw,3rem) clamp(1rem,4vw,2rem)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="app-main">
+        <div className="page-header">
           <div>
-            <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.5rem,4vw,2.1rem)', marginBottom: '.2rem' }}>
-              {greeting}, {name} 👋
-            </h1>
-            <p style={{ color: 'var(--t3)', fontSize: '.9rem' }}>Manage your fundraisers below.</p>
+            <h1>{greeting}, {name} 👋</h1>
+            <p>Manage your fundraisers below.</p>
           </div>
-          <button onClick={() => setCreating(true)} className="btn btn-gold">+ New Fundraiser</button>
+          <button type="button" onClick={() => setCreating(true)} className="btn btn-gold">+ New Fundraiser</button>
         </div>
 
-        {/* Active / Past tabs */}
-        <div style={{ display: 'flex', gap: '.4rem', marginBottom: '1.5rem' }}>
+        <div className="pill-tabs">
           {[['active', `Active (${active.length})`], ['drafts', `Drafts (${drafts.length})`], ['past', `Past (${past.length})`]].map(([key, label]) => (
-            <button key={key} onClick={() => setViewTab(key)} style={{
-              padding: '.45rem 1.2rem', borderRadius: 99, border: 'none', cursor: 'pointer', fontSize: '.88rem', fontWeight: 700, transition: 'all .15s',
-              background: viewTab === key ? 'var(--dark)' : 'var(--surface-2)',
-              color: viewTab === key ? '#fff' : 'var(--t3)',
-            }}>
+            <button key={key} type="button" onClick={() => setViewTab(key)} className={viewTab === key ? 'active' : ''}>
               {label}
             </button>
           ))}
         </div>
 
-        {/* Create modal */}
         {creating && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
-            <form onSubmit={handleCreate} style={{ background: '#fff', borderRadius: 16, padding: '2rem', width: '100%', maxWidth: 440 }}>
+          <div className="modal-overlay">
+            <form onSubmit={handleCreate} className="modal-card">
               <h2 style={{ fontFamily: 'var(--serif)', marginBottom: '1.2rem' }}>New Fundraiser</h2>
               <label style={{ display: 'block', fontSize: '.82rem', fontWeight: 700, color: 'var(--t2)', marginBottom: '.35rem' }}>Fundraiser name *</label>
               <input
@@ -269,27 +260,27 @@ export default function AdminDashboard() {
         )}
 
         {loading ? (
-          <p style={{ color: 'var(--t3)', textAlign: 'center', padding: '3rem' }}>Loading…</p>
+          <SkeletonDashboard />
         ) : error ? (
-          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '1.5rem', textAlign: 'center', color: '#991b1b' }}>
+          <div className="error-banner">
             <p style={{ fontSize: '1.5rem', marginBottom: '.5rem' }}>⚠️</p>
             <p style={{ fontWeight: 700, marginBottom: '.3rem' }}>Could not load fundraisers</p>
             <p style={{ fontSize: '.88rem', marginBottom: '1rem' }}>Check your internet connection and try again.</p>
-            <button onClick={load} className="btn btn-outline" style={{ fontSize: '.85rem' }}>Retry</button>
+            <button type="button" onClick={load} className="btn btn-outline" style={{ fontSize: '.85rem' }}>Retry</button>
           </div>
         ) : display.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '4rem 1rem', background: '#fff', borderRadius: 16, boxShadow: '0 2px 16px rgba(0,0,0,.06)' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>{viewTab === 'past' ? '🗂' : viewTab === 'drafts' ? '📝' : '📣'}</div>
-            <h2 style={{ fontFamily: 'var(--serif)', marginBottom: '.5rem' }}>
+          <div className="empty-state">
+            <div className="empty-state-icon">{viewTab === 'past' ? '🗂' : viewTab === 'drafts' ? '📝' : '📣'}</div>
+            <h2>
               {viewTab === 'past' ? 'No past fundraisers' : viewTab === 'drafts' ? 'No drafts' : 'No active fundraisers'}
             </h2>
-            <p style={{ color: 'var(--t3)', marginBottom: '1.5rem', fontSize: '.92rem' }}>
+            <p>
               {viewTab === 'past' ? 'Completed fundraisers will appear here.' : viewTab === 'drafts' ? 'Unpublished fundraisers appear here while you set them up.' : 'Create your first fundraiser to get started.'}
             </p>
-            {viewTab !== 'past' && <button onClick={() => setCreating(true)} className="btn btn-gold">+ New Fundraiser</button>}
+            {viewTab !== 'past' && <button type="button" onClick={() => setCreating(true)} className="btn btn-gold">+ New Fundraiser</button>}
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+          <div className="fundraiser-grid">
             {display.map(fr => (
               <FundraiserCard key={fr._id} fr={fr} onToggle={handleToggle} onDelete={handleDelete} showDelete={viewTab === 'drafts'} />
             ))}

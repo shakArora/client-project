@@ -5,12 +5,11 @@ export default function RequestAccess() {
   return (
     <div className="marketing-dark">
       <SiteNav subpage actionLabel="Log In" actionTo="/login" />
-      <main style={{ maxWidth: 560, margin: '0 auto', padding: '7rem 1.5rem 5rem', textAlign: 'center' }}>
+      <main className="marketing-page-main marketing-page-main--narrow">
+        <div className="marketing-page-hero">
         <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✉️</div>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.8rem,4vw,2.4rem)', marginBottom: '.75rem' }}>
-          Request Admin Access
-        </h1>
-        <p style={{ color: 'var(--t3)', lineHeight: 1.65, marginBottom: '1.8rem', fontSize: '.95rem' }}>
+        <h1>Request Admin Access</h1>
+        <p style={{ marginBottom: '1.8rem' }}>
           Routed admin accounts are created by our team to ensure your fundraiser runs smoothly.
           Send us an email and we'll get you set up within 24 hours.
         </p>
@@ -27,6 +26,7 @@ export default function RequestAccess() {
           Already have an account?{' '}
           <Link to="/login" style={{ color: 'var(--gold-dk)', fontWeight: 700 }}>Log in here</Link>
         </p>
+        </div>
       </main>
     </div>
   );

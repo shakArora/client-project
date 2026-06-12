@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { vendorApi } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import VendorNav from '../components/VendorNav';
+import AppPage from '../components/AppPage';
+import { SkeletonVendorPage } from '../components/Skeleton';
 
 export default function VendorSales() {
   const { user } = useAuth();
@@ -54,12 +56,12 @@ export default function VendorSales() {
     : '';
 
   return (
-    <div className="page" style={{ background: 'var(--bg)' }}>
+    <AppPage>
       <VendorNav userName={name} />
 
       <main className="vendor-main" style={{ maxWidth: 720 }}>
         {loading ? (
-          <p style={{ color: 'var(--t3)', textAlign: 'center', padding: '3rem 0' }}>Loading…</p>
+          <SkeletonVendorPage />
         ) : (
           <>
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.6rem,3.5vw,2.4rem)', marginBottom: '.2rem' }}>
@@ -198,6 +200,6 @@ export default function VendorSales() {
         </div>
       )}
 
-    </div>
+    </AppPage>
   );
 }

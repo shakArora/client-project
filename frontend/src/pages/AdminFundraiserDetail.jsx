@@ -5,6 +5,7 @@ import { fundraiserApi, productApi, vendorApi, adminApi, orderApi, driverApi } f
 import { US_STATES } from '../lib/usStates';
 import { downloadCsv, downloadJson, parseCsv } from '../lib/csv';
 import AddressSelect from '../components/AddressSelect';
+import { SkeletonFundraiserDetail, SkeletonList } from '../components/Skeleton';
 
 const FRONTEND = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 
@@ -323,7 +324,7 @@ function ProductsTab({ fr }) {
         <button onClick={openCreate} className="btn btn-gold" style={{ fontSize: '.85rem' }}>+ Add Product</button>
       </div>
 
-      {loading ? <p style={{ color: 'var(--t3)' }}>Loading…</p> : (
+      {loading ? <SkeletonList rows={4} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
           {products.map(p => (
             <div key={p._id} style={{ background: '#fff', borderRadius: 12, padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 1px 8px rgba(0,0,0,.06)' }}>
@@ -447,7 +448,7 @@ function VendorsTab({ fr }) {
 
       {msg && <p style={{ color: msg.startsWith('✅') ? '#059669' : '#dc2626', marginBottom: '1rem', fontWeight: 600 }}>{msg}</p>}
 
-      {loading ? <p style={{ color: 'var(--t3)' }}>Loading…</p> : (
+      {loading ? <SkeletonList rows={4} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
           {vendors.map(v => (
             <div key={v._id} style={{ background: '#fff', borderRadius: 10, padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', boxShadow: '0 1px 8px rgba(0,0,0,.06)', flexWrap: 'wrap' }}>
@@ -528,7 +529,7 @@ function OrdersTab({ fr }) {
         ))}
       </div>
 
-      {loading ? <p style={{ color: 'var(--t3)' }}>Loading…</p> : (
+      {loading ? <SkeletonList rows={4} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
           {orders.map(o => (
             <button key={o._id} onClick={() => setSelected(o)} style={{ background: '#fff', borderRadius: 10, padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', boxShadow: '0 1px 8px rgba(0,0,0,.06)', textAlign: 'left', border: 'none', cursor: 'pointer', flexWrap: 'wrap' }}>
@@ -692,7 +693,7 @@ function DriversTab({ fr }) {
 
       {msg && <p style={{ marginBottom: '1rem', fontWeight: 600, color: msg.startsWith('✅') ? '#059669' : '#dc2626' }}>{msg}</p>}
 
-      {loading ? <p style={{ color: 'var(--t3)' }}>Loading…</p> : (
+      {loading ? <SkeletonList rows={4} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.85rem' }}>
           {routes.map(r => {
             const currentStopIdx = (r.stops || []).findIndex(s => s.status !== 'delivered');
@@ -954,8 +955,18 @@ export default function AdminFundraiserDetail() {
       .catch(() => setProductCount(0));
   }, [id, fr?.updatedAt, fr?._id]);
 
-  if (loading) return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--t3)' }}>Loading…</div>;
-  if (!fr)     return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--t3)' }}>Fundraiser not found.</div>;
+  if (loading) return <SkeletonFundraiserDetail />;
+  if (!fr)     return (
+    <div className="app-shell">
+      <div className="app-main">
+        <div className="empty-state" style={{ marginTop: '3rem' }}>
+          <div className="empty-state-icon">🔍</div>
+          <h2>Fundraiser not found</h2>
+          <p>This fundraiser may have been deleted or you don&apos;t have access.</p>
+        </div>
+      </div>
+    </div>
+  );
 
   const allGood = checks(fr, productCount).every(c => c.ok);
 
@@ -965,14 +976,13 @@ export default function AdminFundraiserDetail() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--sans)' }}>
-      {/* Top bar */}
-      <div style={{ background: 'var(--dark)', padding: '0 clamp(1rem,4vw,2.5rem)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56, gap: '1rem' }}>
+    <div className="app-shell">
+      <div className="admin-topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0 }}>
-          <Link to="/admin" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,.55)', cursor: 'pointer', fontSize: '.88rem', flexShrink: 0, textDecoration: 'none' }}>
+          <Link to="/admin" style={{ color: 'rgba(255,255,255,.55)', fontSize: '.88rem', flexShrink: 0, textDecoration: 'none' }}>
             ← All Fundraisers
           </Link>
-          <Link to="/" style={{ color: 'var(--t-cream)', fontFamily: 'var(--serif)', fontSize: '.95rem', textDecoration: 'none', flexShrink: 0 }}>Routed</Link>
+          <Link to="/" className="admin-topbar-brand" style={{ fontSize: '.95rem', flexShrink: 0 }}>Routed</Link>
           <span style={{ color: 'rgba(255,255,255,.25)' }}>|</span>
           <span style={{ color: 'var(--t-cream)', fontFamily: 'var(--serif)', fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fr.title}</span>
           <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '.2rem .55rem', borderRadius: 99, background: fr.isActive ? '#d1fae533' : 'rgba(255,255,255,.1)', color: fr.isActive ? '#6ee7b7' : 'rgba(255,255,255,.5)', flexShrink: 0 }}>
@@ -982,10 +992,9 @@ export default function AdminFundraiserDetail() {
         <FundraiserToggleButton fr={fr} allGood={allGood} onToggled={reload} compact onIncomplete={goToChecklist} />
       </div>
 
-      {/* Tab bar */}
-      <div style={{ background: '#fff', borderBottom: '2px solid var(--border-lt)', display: 'flex', overflowX: 'auto', padding: '0 clamp(1rem,4vw,2.5rem)' }}>
+      <div className="admin-tabbar">
         {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{ padding: '1rem 1.25rem', border: 'none', borderBottom: t === tab ? '2.5px solid var(--gold-dk)' : '2.5px solid transparent', background: 'none', fontWeight: t === tab ? 700 : 400, color: t === tab ? 'var(--gold-dk)' : 'var(--t3)', cursor: 'pointer', fontSize: '.9rem', whiteSpace: 'nowrap', marginBottom: '-2px' }}>
+          <button key={t} type="button" onClick={() => setTab(t)} className={t === tab ? 'active' : ''}>
             {t}
           </button>
         ))}
@@ -993,8 +1002,7 @@ export default function AdminFundraiserDetail() {
 
       <CustomerLinkBar fr={fr} />
 
-      {/* Content */}
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: 'clamp(1.5rem,4vw,2.5rem) clamp(1rem,4vw,2rem)' }}>
+      <div className="app-main">
         {tab === 'Fundraiser Details' && <DetailsTab  fr={fr} onSaved={reload} />}
         {tab === 'Products'           && <ProductsTab fr={fr} />}
         {tab === 'Vendors'            && <VendorsTab  fr={fr} />}

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { driverApi } from '../lib/api';
+import AppPage from '../components/AppPage';
+import { SkeletonDriverRoute } from '../components/Skeleton';
 
 const STOP_STATUS = {
   delivered: { bg: '#4E6D38', color: '#fff', label: '✓', ring: '#4E6D38' },
@@ -39,11 +41,7 @@ export default function DriverRoute() {
     }
   }
 
-  if (loading) return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ color: 'var(--t3)' }}>Loading your route…</p>
-    </div>
-  );
+  if (loading) return <SkeletonDriverRoute />;
 
   const stops     = route?.stops || [];
   const currentIdx = stops.findIndex(s => s.status !== 'delivered');
@@ -52,7 +50,7 @@ export default function DriverRoute() {
   const total      = stops.length;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+    <AppPage style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Navbar */}
       <nav className="navbar" style={{ borderBottom: '2px solid var(--border-lt)' }}>
         <Link to="/" className="navbar-brand">Routed<span>.</span></Link>
@@ -189,6 +187,6 @@ export default function DriverRoute() {
           </button>
         </div>
       )}
-    </div>
+    </AppPage>
   );
 }

@@ -46,10 +46,9 @@ export default function About() {
     <div className="marketing-dark">
       <SiteNav subpage actionLabel="Login" actionTo="/login" />
 
-      <main style={{ maxWidth: 860, margin: '0 auto', padding: '6.5rem 1.25rem 5rem' }}>
+      <main className="marketing-page-main">
 
-        {/* Hero */}
-        <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+        <div className="marketing-page-hero" style={{ marginBottom: '3.5rem' }}>
           <span className="title-pill">About Routed</span>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(2.2rem,5vw,3.4rem)', marginTop: '.75rem', marginBottom: '1rem', lineHeight: 1.15 }}>
             Fundraisers, simplified from first sale to final delivery

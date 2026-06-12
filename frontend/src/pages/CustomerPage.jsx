@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import AppPage from '../components/AppPage';
+import { SkeletonCustomerShop } from '../components/Skeleton';
 import { fundraiserApi, productApi } from '../lib/api';
 import { getSaleStatus, formatLocalDate } from '../lib/dates';
 
@@ -99,18 +101,26 @@ export default function CustomerPage() {
     : 'Community Fundraiser';
 
   if (loading) return (
-    <div className="page"><Navbar links={NAV} actionLabel="Log In" actionTo="/login" />
-      <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--t3)' }}>Loading…</div>
-    </div>
+    <AppPage>
+      <Navbar links={NAV} actionLabel="Log In" actionTo="/login" />
+      <main className="shop-main shop-main--customer"><SkeletonCustomerShop /></main>
+    </AppPage>
   );
   if (error)   return (
-    <div className="page"><Navbar links={NAV} actionLabel="Log In" actionTo="/login" />
-      <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--t3)' }}>{error}</div>
-    </div>
+    <AppPage>
+      <Navbar links={NAV} actionLabel="Log In" actionTo="/login" />
+      <main className="shop-main shop-main--customer">
+        <div className="empty-state" style={{ marginTop: '2rem' }}>
+          <div className="empty-state-icon">🔍</div>
+          <h2>Fundraiser not found</h2>
+          <p>{error}</p>
+        </div>
+      </main>
+    </AppPage>
   );
 
   return (
-    <div className="page" style={{ background: 'var(--bg)' }}>
+    <AppPage>
       <Navbar links={NAV} actionLabel="Log In" actionTo="/login" />
 
       {/* ── Closed banner ── */}
@@ -224,7 +234,7 @@ export default function CustomerPage() {
         </div>
       )}
 
-    </div>
+    </AppPage>
   );
 }
 

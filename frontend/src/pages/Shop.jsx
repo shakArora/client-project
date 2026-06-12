@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import AppPage from '../components/AppPage';
+import { SkeletonCustomerShop } from '../components/Skeleton';
 import { fundraiserApi, productApi } from '../lib/api';
 
 const NAV = [{ label: 'About', to: '/about' }];
@@ -60,12 +62,12 @@ export default function Shop() {
   }
 
   return (
-    <div className="page">
+    <AppPage>
       <Navbar links={NAV} />
 
-      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '1.8rem 1.5rem 4rem' }}>
+      <main className="shop-main">
         {loading ? (
-          <p style={{ color: 'var(--t3)', textAlign: 'center', padding: '3rem 0' }}>Loading…</p>
+          <SkeletonCustomerShop />
         ) : (
           <>
             {/* Header */}
@@ -124,6 +126,6 @@ export default function Shop() {
       </main>
 
       <style>{`@media(max-width:768px){div[style*="repeat(3,1fr)"]{grid-template-columns:1fr!important}}`}</style>
-    </div>
+    </AppPage>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { driverApi } from '../lib/api';
+import { Skeleton } from '../components/Skeleton';
 
 export default function DriverDirect() {
   const { otp }    = useParams();
@@ -36,8 +37,10 @@ export default function DriverDirect() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ color: 'var(--t-gold)', fontSize: '1rem' }}>Loading your route…</p>
+    <div className="skeleton-driver-center">
+      <Skeleton className="skeleton--dark" style={{ width: 140, height: 28, borderRadius: 8 }} />
+      <Skeleton className="skeleton--dark" style={{ width: 220, height: 12 }} />
+      <Skeleton className="skeleton--dark" style={{ width: 180, height: 12 }} />
     </div>
   );
 }

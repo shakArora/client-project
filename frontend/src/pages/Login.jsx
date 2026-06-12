@@ -94,7 +94,7 @@ export default function Login() {
   }
 
   return (
-    <div className="page" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div className="page login-page">
       <nav className="navbar">
         <Link to="/" className="navbar-brand">Routed<span>.</span></Link>
         <div className="navbar-links hide-mobile">
@@ -104,13 +104,12 @@ export default function Login() {
         <Link to="/request-access" className="btn btn-outline btn-sm">Request Access</Link>
       </nav>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', flex: 1, minHeight: 'calc(100vh - 64px)' }}>
-        {/* Dark left panel */}
-        <div style={{ background: 'var(--dark)', padding: 'clamp(2rem,5vw,3.5rem)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(2rem,4vw,3rem)', color: '#fff', marginBottom: '.75rem' }}>
+      <div className="login-split">
+        <div className="login-panel-dark">
+          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(2rem,4vw,3rem)', color: '#fff', marginBottom: '.75rem', position: 'relative' }}>
             Welcome Back.
           </h1>
-          <p style={{ color: '#c8b89a', lineHeight: 1.6, marginBottom: '1.8rem', fontSize: '.95rem', maxWidth: 380 }}>
+          <p style={{ color: '#c8b89a', lineHeight: 1.6, marginBottom: '1.8rem', fontSize: '.95rem', maxWidth: 380, position: 'relative' }}>
             Sign in to manage your fundraiser, track your sales, or access your delivery route.
           </p>
           {[
@@ -118,15 +117,15 @@ export default function Login() {
             { icon: '⚙️', text: 'Administrator — manage your fundraiser' },
             { icon: '🚚', text: 'Driver — enter your route code' },
           ].map(({ icon, text }) => (
-            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '.75rem', marginBottom: '.65rem' }}>
-              <span style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(195,162,86,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.95rem' }}>{icon}</span>
-              <p style={{ color: '#e0d0b8', fontSize: '.9rem' }}>{text}</p>
+            <div key={text} className="login-feature" style={{ position: 'relative' }}>
+              <span style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(195,162,86,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.95rem', flexShrink: 0 }}>{icon}</span>
+              <span>{text}</span>
             </div>
           ))}
         </div>
 
-        {/* Form panel */}
-        <div style={{ padding: 'clamp(1.5rem,4vw,3rem)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1.2rem' }}>
+        <div className="login-panel-form">
+          <div className="login-form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           {/* Role tabs */}
           <div className="tab-bar">
             {TABS.map(t => (
@@ -202,10 +201,9 @@ export default function Login() {
             Need admin access?{' '}
             <Link to="/request-access" style={{ color: 'var(--gold-dk)', fontWeight: 700 }}>Request it here</Link>
           </p>
+          </div>
         </div>
       </div>
-
-      <style>{`@media(max-width:768px){div[style*="1fr 1.1fr"]{grid-template-columns:1fr!important}div[style*="background: var(--dark)"]{display:none!important}}`}</style>
     </div>
   );
 }

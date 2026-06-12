@@ -33,15 +33,16 @@ export default function DriverAccess() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--dark)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '1.4rem 1.6rem .6rem', borderBottom: '1px solid rgba(255,255,255,.08)' }}>
-        <Link to="/" style={{ fontFamily: 'var(--serif)', fontSize: '1.6rem', fontWeight: 800, color: '#fff', textDecoration: 'none' }}>
-          Routed<span style={{ color: 'var(--gold)' }}>.</span>
+    <div className="driver-portal">
+      <div className="driver-portal-header">
+        <Link to="/" className="driver-portal-brand">
+          Routed<span>.</span>
         </Link>
-        <p style={{ color: 'var(--t-gold)', fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.14em', marginTop: '.2rem', fontWeight: 700 }}>Driver Portal</p>
+        <p className="driver-portal-label">Driver Portal</p>
       </div>
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 1.5rem', textAlign: 'center' }}>
+      <main className="driver-portal-main">
+        <div className="driver-portal-card">
         <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.8rem,4vw,2.5rem)', color: '#fff', marginBottom: '.65rem' }}>
           Enter Driver Code
         </h1>
@@ -86,6 +87,7 @@ export default function DriverAccess() {
             {loading ? 'Checking…' : 'Access My Route →'}
           </button>
         </form>
+        </div>
       </main>
     </div>
   );
