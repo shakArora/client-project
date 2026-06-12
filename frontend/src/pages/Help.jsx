@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import SiteNav from '../components/SiteNav';
 
 const ROLES = [
@@ -7,8 +8,6 @@ const ROLES = [
     id: 'admin',
     icon: '⚙️',
     role: 'Administrator',
-    color: '#2563eb',
-    bg: '#eff6ff',
     steps: [
       { title: 'Create a Fundraiser', body: 'Log in and click "New Fundraiser" on your dashboard. Fill in the name, location, sale start/end dates, and delivery date. Upload a cover image and add contact info.' },
       { title: 'Add Products', body: 'Go to the Products tab and add each item for sale (e.g. Black Mulch, Red Mulch). Set the price per bag and choose an emoji or image.' },
@@ -24,8 +23,6 @@ const ROLES = [
     id: 'vendor',
     icon: '🔗',
     role: 'Vendor / Scout',
-    color: '#059669',
-    bg: '#ecfdf5',
     steps: [
       { title: 'Log In', body: 'Use the username and password provided by your administrator to log in to Routed.' },
       { title: 'Share Your Code & Link', body: 'Go to My Codes to find your unique referral code and shop link. Share the QR code or link with neighbors so their orders are credited to you.' },
@@ -38,8 +35,6 @@ const ROLES = [
     id: 'customer',
     icon: '🛒',
     role: 'Customer',
-    color: '#d97706',
-    bg: '#fffbeb',
     steps: [
       { title: 'Find Your Fundraiser', body: 'Use the link or QR code your Scout shared, or navigate to the fundraiser page directly. No account required to order.' },
       { title: 'Pick Your Products', body: 'Browse the available products, enter the quantity you want for each, and tap "Add to Cart".' },
@@ -52,8 +47,6 @@ const ROLES = [
     id: 'driver',
     icon: '🚚',
     role: 'Driver',
-    color: '#7c3aed',
-    bg: '#f5f3ff',
     steps: [
       { title: 'Get Your Code', body: 'The administrator will give you a unique 6-character one-time code (OTP) before delivery day.' },
       { title: 'Access Your Route', body: 'Go to the Driver Portal at Routed/driver and enter your 6-character code — or use the direct link Routed/driver/[YOUR-CODE] to jump straight to your route.' },
@@ -86,71 +79,77 @@ export default function Help() {
   }, [hash]);
 
   return (
-    <div className="marketing-dark">
+    <div className="landing-page marketing-dark">
       <SiteNav subpage actionLabel="Login" actionTo="/login" />
 
       <main className="marketing-page-main">
-        <div id="guide" className="marketing-page-hero" style={{ textAlign: 'left', marginBottom: '1.75rem', scrollMarginTop: '5.5rem' }}>
-          <span className="title-pill">Help Center</span>
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(2rem,5vw,3rem)', marginTop: '.6rem', marginBottom: '.5rem' }}>
-            How does Routed work?
-          </h1>
-          <p style={{ color: 'var(--t3)', fontSize: '.97rem', lineHeight: 1.6, maxWidth: 600 }}>
+        <header
+          id="guide"
+          className="marketing-page-hero marketing-page-hero--left"
+          style={{ scrollMarginTop: '5.5rem' }}
+        >
+          <div className="landing-eyebrow">
+            <span className="landing-eyebrow-dot" />
+            Help Center
+          </div>
+          <h1>How does Routed work?</h1>
+          <p>
             Routed is built for four types of users. Find your role below for a step-by-step guide.
           </p>
-        </div>
+        </header>
 
-        {/* Role cards */}
-        {ROLES.map(({ id, icon, role, color, bg, steps }) => (
-          <div key={id} style={{ marginBottom: '2.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', marginBottom: '1rem' }}>
-              <div style={{ width: 42, height: 42, borderRadius: '50%', background: bg, border: `2px solid ${color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>
-                {icon}
-              </div>
-              <h2 style={{ fontFamily: 'var(--serif)', fontSize: '1.4rem', color }}>{role}</h2>
+        {ROLES.map(({ id, icon, role, steps }) => (
+          <section key={id} className="mkt-role-section">
+            <div className="mkt-role-header">
+              <div className={`mkt-role-badge mkt-role-badge--${id}`}>{icon}</div>
+              <h2 className={`mkt-role-title mkt-role-title--${id}`}>{role}</h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px,1fr))', gap: '.75rem' }}>
+            <div className="mkt-step-grid">
               {steps.map((s, i) => (
-                <div key={i} className="card" style={{ display: 'flex', gap: '.75rem', padding: '1rem 1.1rem' }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: color, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem', fontWeight: 800, flexShrink: 0 }}>
-                    {i + 1}
-                  </div>
+                <div key={i} className="mkt-glass-card mkt-step-card">
+                  <div className={`mkt-step-num mkt-step-num--${id}`}>{i + 1}</div>
                   <div>
-                    <p style={{ fontWeight: 700, marginBottom: '.25rem', fontSize: '.93rem' }}>{s.title}</p>
-                    <p style={{ color: 'var(--t3)', fontSize: '.85rem', lineHeight: 1.55 }}>{s.body}</p>
+                    <strong>{s.title}</strong>
+                    <p>{s.body}</p>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         ))}
 
-        {/* FAQ */}
-        <div>
-          <h2 style={{ fontFamily: 'var(--serif)', fontSize: '1.6rem', marginBottom: '1.1rem' }}>Frequently Asked Questions</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+        <section>
+          <h2 className="mkt-section-title">Frequently Asked Questions</h2>
+          <div className="mkt-faq">
             {FAQ.map(({ q, a }, i) => (
-              <div key={i} style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r3)', overflow: 'hidden' }}>
+              <div key={i} className="mkt-faq-item">
                 <button
+                  type="button"
+                  className="mkt-faq-btn"
                   onClick={() => setOpen(open === i ? null : i)}
-                  style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.2rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                  aria-expanded={open === i}
                 >
-                  <span style={{ fontWeight: 700, fontSize: '.93rem' }}>{q}</span>
-                  <span style={{ fontSize: '1.1rem', color: 'var(--t3)', flexShrink: 0, marginLeft: '.5rem', transform: open === i ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▾</span>
+                  <span>{q}</span>
+                  <span className={`mkt-faq-chevron ${open === i ? 'mkt-faq-chevron--open' : ''}`}>▾</span>
                 </button>
                 {open === i && (
-                  <div style={{ padding: '0 1.2rem 1rem', color: 'var(--t3)', fontSize: '.9rem', lineHeight: 1.6 }}>{a}</div>
+                  <div className="mkt-faq-answer">{a}</div>
                 )}
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* CTA */}
-        <div style={{ marginTop: '2.5rem', textAlign: 'center', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link to="/login" className="btn btn-gold btn-lg">Log In</Link>
-          <Link to="/request-access" className="btn btn-outline btn-lg">Request Admin Access</Link>
-          <Link to="/about" className="btn btn-dark btn-lg">About Routed</Link>
+        <div className="mkt-cta-row" style={{ marginTop: '2.5rem' }}>
+          <Link to="/login" className="glass-btn glass-btn--gold">
+            Log In <ArrowRight size={16} />
+          </Link>
+          <Link to="/request-access" className="glass-btn">
+            Request Admin Access <ArrowRight size={16} />
+          </Link>
+          <Link to="/about" className="glass-btn">
+            About Routed <ArrowRight size={16} />
+          </Link>
         </div>
       </main>
     </div>

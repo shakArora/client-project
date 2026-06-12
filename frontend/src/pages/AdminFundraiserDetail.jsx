@@ -84,15 +84,12 @@ function DetailsTab({ fr, onSaved }) {
   const allGood  = chks.every(c => c.ok);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem' }}>
-      {/* Edit form */}
+    <div className="admin-detail-grid">
       <form onSubmit={handleSave}>
         <MigrationPackageSection fr={fr} onImported={onSaved} />
 
-        <section style={{ marginBottom: '1.75rem' }}>
-          <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', marginBottom: '1rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--border-lt)' }}>
-            Basic Info
-          </h3>
+        <section className="admin-section">
+          <h3 className="admin-section-title">Basic Info</h3>
           <Field label="Fundraiser Name *"><input value={form.title || ''} onChange={set('title')} required /></Field>
           <Field label="Description — shown to customers on the shop page">
             <textarea rows={3} value={form.description || ''} onChange={set('description')} placeholder="e.g. Troop 42 is selling premium hardwood mulch to fund summer camp. Bags are delivered to your driveway on delivery day." />
@@ -125,10 +122,9 @@ function DetailsTab({ fr, onSaved }) {
           </div>
         </section>
 
-        <section style={{ marginBottom: '1.75rem' }}>
-          <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', marginBottom: '1rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--border-lt)' }}>
-            Important Dates ⚠️ Required for publishing
-          </h3>
+        <section className="admin-section">
+          <h3 className="admin-section-title">Important Dates</h3>
+          <p className="admin-section-hint">Required for publishing.</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
             <Field label="Sale Starts"><input type="date" value={form.startDate ? form.startDate.slice(0,10) : ''} onChange={set('startDate')} /></Field>
             <Field label="Sale Ends *"><input type="date" value={form.endDate ? form.endDate.slice(0,10) : ''} onChange={set('endDate')} required /></Field>
@@ -136,10 +132,9 @@ function DetailsTab({ fr, onSaved }) {
           </div>
         </section>
 
-        <section style={{ marginBottom: '1.75rem' }}>
-          <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', marginBottom: '1rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--border-lt)' }}>
-            Contact Point ⚠️ Shown to customers
-          </h3>
+        <section className="admin-section">
+          <h3 className="admin-section-title">Contact Point</h3>
+          <p className="admin-section-hint">Shown to customers on the shop page.</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <Field label="Contact Name *"><input value={form.contactName || ''} onChange={set('contactName')} placeholder="e.g. John Smith" /></Field>
             <Field label="Contact Phone *"><input type="tel" value={form.contactPhone || ''} onChange={set('contactPhone')} placeholder="(555) 000-0000" /></Field>
@@ -147,10 +142,9 @@ function DetailsTab({ fr, onSaved }) {
           <Field label="Contact Email"><input type="email" value={form.contactEmail || ''} onChange={set('contactEmail')} /></Field>
         </section>
 
-        <section style={{ marginBottom: '1.75rem' }}>
-          <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', marginBottom: '1rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--border-lt)' }}>
-            Cover Image — required to publish
-          </h3>
+        <section className="admin-section">
+          <h3 className="admin-section-title">Cover Image</h3>
+          <p className="admin-section-hint">Required to publish — must be an image URL.</p>
           <Field label="Cover Image URL * (must be an image link, not an emoji)">
             <input value={form.coverImageUrl || ''} onChange={set('coverImageUrl')} placeholder="https://example.com/cover-photo.jpg" required />
           </Field>
@@ -161,13 +155,9 @@ function DetailsTab({ fr, onSaved }) {
           )}
         </section>
 
-        <section style={{ marginBottom: '1.75rem' }}>
-          <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', marginBottom: '1rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--border-lt)' }}>
-            Troop Payment Info ⚠️ Shown at checkout
-          </h3>
-          <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginTop: '-.5rem', marginBottom: '1rem', lineHeight: 1.5 }}>
-            Tell customers where to send payment so funds go to your troop.
-          </p>
+        <section className="admin-section">
+          <h3 className="admin-section-title">Troop Payment Info</h3>
+          <p className="admin-section-hint">Shown at checkout — tell customers where to send payment.</p>
           <Field label="Payment method *">
             <select
               value={form.paymentMethod || ''}
@@ -197,10 +187,9 @@ function DetailsTab({ fr, onSaved }) {
           </Field>
         </section>
 
-        <section style={{ marginBottom: '1.75rem' }}>
-          <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', marginBottom: '1rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--border-lt)' }}>
-            Delivery Details ⚠️ Shown at checkout
-          </h3>
+        <section className="admin-section">
+          <h3 className="admin-section-title">Delivery Details</h3>
+          <p className="admin-section-hint">Shown at checkout.</p>
           <Field label="Delivery Instructions *">
             <textarea rows={3} value={form.deliveryNotes || ''} onChange={set('deliveryNotes')} placeholder="e.g. We deliver to your driveway. Bags will arrive by noon on delivery day." />
           </Field>
@@ -210,28 +199,18 @@ function DetailsTab({ fr, onSaved }) {
         <button type="submit" className="btn btn-dark" disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</button>
       </form>
 
-      {/* Sidebar: publish checklist */}
-      <div>
-        <div id="publish-checklist" style={{ background: '#fff', border: '1px solid var(--border)', borderRadius: 12, padding: '1.2rem' }}>
-          <p style={{ fontWeight: 700, marginBottom: '.75rem', fontSize: '.88rem' }}>Publishing Checklist</p>
-          <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '.75rem' }}>
-            {allGood ? 'All set — use Publish in the top-right corner.' : 'Complete every item below. The Publish button stays gray until all show ✅.'}
-          </p>
-          {chks.map(c => (
-            <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: '.83rem', padding: '.22rem 0', color: c.ok ? '#065f46' : '#991b1b' }}>
-              <span style={{ fontSize: '1rem' }}>{fr.isActive ? (c.ok ? '✅' : '❌') : (c.ok ? '✅' : '❌')}</span>
-              <span>{c.label}</span>
-            </div>
-          ))}
-        </div>
+      <div id="publish-checklist" className="admin-sidebar-card">
+        <p style={{ fontWeight: 700, marginBottom: '.5rem', fontSize: '.9rem' }}>Publishing Checklist</p>
+        <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '.85rem', lineHeight: 1.5 }}>
+          {allGood ? 'All set — use Publish in the top bar.' : 'Complete every item. Publish stays disabled until all show ✅.'}
+        </p>
+        {chks.map(c => (
+          <div key={c.label} className={`fundraiser-card-check ${c.ok ? 'fundraiser-card-check--ok' : 'fundraiser-card-check--no'}`} style={{ fontSize: '.83rem' }}>
+            <span>{c.ok ? '✅' : '❌'}</span>
+            <span>{c.label}</span>
+          </div>
+        ))}
       </div>
-
-      <style>{`
-        @media (max-width: 860px) {
-          div[style*="1fr 340px"] { grid-template-columns: 1fr !important; }
-          div[style*="1fr 1fr 1fr"] { grid-template-columns: 1fr 1fr !important; }
-        }
-      `}</style>
     </div>
   );
 }
@@ -808,19 +787,19 @@ function OrdersTab({ fr }) {
         />
       </div>
       {csvMsg && <p className={`tab-csv-msg ${csvMsg.includes('failed') || csvMsg.includes('No valid') ? 'tab-csv-msg--err' : 'tab-csv-msg--ok'}`}>{csvMsg}</p>}
-      <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+      <div className="admin-stat-row">
         {[['Total Orders', orders.length], ['Paid', paid], ['Revenue', `$${total.toFixed(2)}`]].map(([l,v]) => (
-          <div key={l} style={{ background: '#fff', borderRadius: 12, padding: '.85rem 1.25rem', boxShadow: '0 1px 8px rgba(0,0,0,.06)' }}>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800 }}>{v}</div>
-            <div style={{ fontSize: '.75rem', color: 'var(--t3)' }}>{l}</div>
+          <div key={l} className="admin-stat-card">
+            <strong>{v}</strong>
+            <span>{l}</span>
           </div>
         ))}
       </div>
 
       {loading ? <SkeletonList rows={4} /> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+        <div className="admin-list">
           {orders.map(o => (
-            <button key={o._id} onClick={() => setSelected(o)} style={{ background: '#fff', borderRadius: 10, padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', boxShadow: '0 1px 8px rgba(0,0,0,.06)', textAlign: 'left', border: 'none', cursor: 'pointer', flexWrap: 'wrap' }}>
+            <button key={o._id} type="button" onClick={() => setSelected(o)} className="admin-list-item admin-list-item--clickable" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: '.95rem' }}>{o.customerName}</div>
                 <div style={{ fontSize: '.8rem', color: 'var(--t3)' }}>{o.deliveryAddress}</div>
@@ -1127,26 +1106,27 @@ export default function AdminFundraiserDetail() {
   return (
     <div className="app-shell">
       <div className="admin-topbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0 }}>
-          <Link to="/admin" style={{ color: 'rgba(255,255,255,.55)', fontSize: '.88rem', flexShrink: 0, textDecoration: 'none' }}>
-            ← All Fundraisers
-          </Link>
-          <Link to="/" className="admin-topbar-brand" style={{ fontSize: '.95rem', flexShrink: 0 }}>Routed</Link>
-          <span style={{ color: 'rgba(255,255,255,.25)' }}>|</span>
-          <span style={{ color: 'var(--t-cream)', fontFamily: 'var(--serif)', fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fr.title}</span>
-          <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '.2rem .55rem', borderRadius: 99, background: fr.isActive ? '#d1fae533' : 'rgba(255,255,255,.1)', color: fr.isActive ? '#6ee7b7' : 'rgba(255,255,255,.5)', flexShrink: 0 }}>
+        <div className="admin-topbar-start">
+          <Link to="/admin" className="admin-topbar-back">← All Fundraisers</Link>
+          <span className="admin-topbar-divider">|</span>
+          <Link to="/" className="admin-topbar-brand">Routed<span>.</span></Link>
+          <span className="admin-topbar-divider">|</span>
+          <span className="admin-topbar-title">{fr.title}</span>
+          <span className={`admin-badge ${fr.isActive ? 'admin-badge--topbar-live' : 'admin-badge--topbar-paused'}`}>
             {fr.isActive ? '● Live' : '○ Paused'}
           </span>
         </div>
         <FundraiserToggleButton fr={fr} allGood={allGood} onToggled={reload} compact onIncomplete={goToChecklist} />
       </div>
 
-      <div className="admin-tabbar">
-        {TABS.map(t => (
-          <button key={t} type="button" onClick={() => setTab(t)} className={t === tab ? 'active' : ''}>
-            {t}
-          </button>
-        ))}
+      <div className="admin-tabbar-wrap">
+        <div className="admin-tabbar">
+          {TABS.map(t => (
+            <button key={t} type="button" onClick={() => setTab(t)} className={t === tab ? 'active' : ''}>
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
 
       <CustomerLinkBar fr={fr} />

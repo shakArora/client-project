@@ -31,83 +31,59 @@ function FundraiserCard({ fr, onToggle, onDelete, showDelete }) {
   const publicUrl = `${FRONTEND}/fundraiser/${fr.slug}`;
 
   return (
-    <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 2px 16px rgba(0,0,0,.07)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* Top colour band */}
-      <div style={{ height: 6, background: fr.isActive ? 'linear-gradient(90deg,#C9A862,#9A7535)' : 'var(--border)' }} />
+    <div className="fundraiser-card">
+      <div className={`fundraiser-card-band ${fr.isActive ? '' : 'fundraiser-card-band--paused'}`} />
 
-      <div style={{ padding: '1.5rem', flex: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '.6rem' }}>
-          <h2 style={{ fontFamily: 'var(--serif)', fontSize: '1.2rem', lineHeight: 1.25 }}>{fr.title}</h2>
-          <span style={{ fontSize: '.72rem', fontWeight: 700, padding: '.25rem .65rem', borderRadius: 99, whiteSpace: 'nowrap', background: fr.isActive ? '#d1fae5' : '#f3f4f6', color: fr.isActive ? '#065f46' : '#6b7280' }}>
+      <div className="fundraiser-card-body">
+        <div className="fundraiser-card-header">
+          <h2>{fr.title}</h2>
+          <span className={`admin-badge ${fr.isActive ? 'admin-badge--live' : 'admin-badge--paused'}`}>
             {fr.isActive ? '● Live' : '○ Paused'}
           </span>
         </div>
 
-        {/* Stats */}
-        <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <div className="fundraiser-card-stats">
           {[
             { label: 'Orders', value: fr.orderCount  || 0 },
             { label: 'Bags',   value: fr.soldBags    || 0 },
             { label: 'Revenue',value: `$${(fr.totalRevenue || 0).toFixed(0)}` },
             { label: 'Vendors',value: fr.vendorCount || 0 },
           ].map(({ label, value }) => (
-            <div key={label}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{value}</div>
-              <div style={{ fontSize: '.72rem', color: 'var(--t3)' }}>{label}</div>
+            <div key={label} className="fundraiser-card-stat">
+              <strong>{value}</strong>
+              <span>{label}</span>
             </div>
           ))}
         </div>
 
-        {/* Checklist */}
-        <div style={{ background: 'var(--surface)', borderRadius: 10, padding: '.85rem', marginBottom: '1rem' }}>
+        <div className="fundraiser-card-checklist">
           {checks.map(c => (
-            <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '.4rem', fontSize: '.82rem', padding: '.15rem 0', color: c.ok ? '#065f46' : '#92400e' }}>
+            <div key={c.label} className={`fundraiser-card-check ${c.ok ? 'fundraiser-card-check--ok' : 'fundraiser-card-check--no'}`}>
               <span>{c.ok ? '✅' : '❌'}</span>
               <span>{c.label}</span>
             </div>
           ))}
         </div>
 
-        {/* Customer link */}
-        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '.65rem .85rem', marginBottom: '1rem' }}>
-          <p style={{ fontSize: '.7rem', fontWeight: 700, color: '#92400e', marginBottom: '.2rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>Customer Link</p>
-          <a href={publicUrl} target="_blank" rel="noreferrer" style={{ fontSize: '.8rem', color: 'var(--gold-dk)', wordBreak: 'break-all' }}>{publicUrl}</a>
+        <div className="fundraiser-card-linkbox">
+          <p>Customer Link</p>
+          <a href={publicUrl} target="_blank" rel="noreferrer">{publicUrl}</a>
         </div>
 
-        <div style={{ display: 'flex', gap: '.6rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => navigate(`/admin/fundraiser/${fr._id}`)}
-            className="btn btn-dark"
-            style={{ flex: 1 }}
-          >
+        <div className="fundraiser-card-actions">
+          <button type="button" onClick={() => navigate(`/admin/fundraiser/${fr._id}`)} className="btn btn-dark" style={{ flex: 1 }}>
             Open →
           </button>
           {showDelete && (
-            <button
-              onClick={() => onDelete(fr._id)}
-              style={{ padding: '.55rem .85rem', borderRadius: 10, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', fontWeight: 700, fontSize: '.84rem', cursor: 'pointer' }}
-            >
-              Delete
-            </button>
+            <button type="button" onClick={() => onDelete(fr._id)} className="btn-delete-draft">Delete</button>
           )}
-
-          {/* Publish / Go Live button */}
           <button
+            type="button"
             onClick={() => allGood ? onToggle(fr._id) : null}
             title={!allGood ? 'Complete the checklist above to publish' : fr.isActive ? 'Pause this fundraiser' : 'Go live!'}
-            style={{
-              padding: '.55rem 1rem',
-              borderRadius: 10,
-              border: 'none',
-              fontWeight: 700,
-              fontSize: '.84rem',
-              cursor: allGood ? 'pointer' : 'not-allowed',
-              background: fr.isActive ? '#fef3c7' : allGood ? '#059669' : '#e5e7eb',
-              color: fr.isActive ? '#92400e' : allGood ? '#fff' : '#9ca3af',
-              transition: 'all .2s',
-            }}
+            className={`btn-publish ${fr.isActive ? 'btn-publish--pause' : allGood ? 'btn-publish--ready' : 'btn-publish--disabled'}`}
           >
-            {fr.isActive ? 'Pause' : allGood ? 'Publish' : 'Publish'}
+            {fr.isActive ? 'Pause' : 'Publish'}
           </button>
         </div>
       </div>
@@ -193,7 +169,7 @@ export default function AdminDashboard() {
   return (
     <div className="app-shell">
       <div className="admin-topbar">
-        <Link to="/" className="admin-topbar-brand">Routed</Link>
+        <Link to="/" className="admin-topbar-brand">Routed<span>.</span></Link>
         <div className="admin-topbar-end">
           <span className="admin-topbar-email">{user?.email}</span>
           <button type="button" onClick={() => { logout(); navigate('/login'); }} className="admin-topbar-logout">

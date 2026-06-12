@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import SiteNav from '../components/SiteNav';
 
 const FEATURES = [
@@ -41,110 +42,102 @@ const STATS = [
   { value: '100%', label: 'Mobile-First Design' },
 ];
 
+const LIFECYCLE = [
+  { n: '1', title: 'Setup', body: 'Admin creates the fundraiser, adds products, sets dates and contact info.' },
+  { n: '2', title: 'Sell', body: 'Vendors share their codes. Customers order online from the fundraiser page.' },
+  { n: '3', title: 'Prepare', body: 'Admin adds drivers with bag capacities before delivery day.' },
+  { n: '4', title: 'Deliver', body: 'Generate routes with one click. Drivers follow their optimized stop lists.' },
+  { n: '5', title: 'Complete', body: 'Delivery finishes. Admin reviews order reports and past fundraiser data.' },
+];
+
 export default function About() {
   return (
-    <div className="marketing-dark">
+    <div className="landing-page marketing-dark">
       <SiteNav subpage actionLabel="Login" actionTo="/login" />
 
       <main className="marketing-page-main">
-
-        <div className="marketing-page-hero" style={{ marginBottom: '3.5rem' }}>
-          <span className="title-pill">About Routed</span>
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(2.2rem,5vw,3.4rem)', marginTop: '.75rem', marginBottom: '1rem', lineHeight: 1.15 }}>
-            Fundraisers, simplified from first sale to final delivery
-          </h1>
-          <p style={{ color: 'var(--t3)', lineHeight: 1.75, maxWidth: 640, margin: '0 auto', fontSize: '.97rem' }}>
+        <header className="marketing-page-hero">
+          <div className="landing-eyebrow">
+            <span className="landing-eyebrow-dot" />
+            About Routed
+          </div>
+          <h1>Fundraisers, simplified from first sale to final delivery</h1>
+          <p>
             Routed was built for Boy Scouts, Girl Scouts, Cub Scouts, and youth organizations worldwide
             to run more efficient fundraisers — replacing the outdated, tedious manual processes that organizers
             have wrestled with for years.
           </p>
-        </div>
+        </header>
 
-        {/* Origin Story */}
-        <div className="card" style={{ marginBottom: '2rem', padding: '1.75rem', background: 'linear-gradient(135deg,#fffbeb,#fff)' }}>
-          <h2 style={{ fontFamily: 'var(--serif)', fontSize: '1.45rem', marginBottom: '.75rem' }}>Why Routed?</h2>
-          <p style={{ color: 'var(--t2)', lineHeight: 1.75, fontSize: '.95rem' }}>
+        <div className="mkt-glass-card mkt-story-card">
+          <h2>Why Routed?</h2>
+          <p>
             A local Boy Scouts troop runs a mulch fundraiser every year. The hardest part was never the selling —
             it was building the delivery routes. Every year, troop leaders would spend hours manually plotting
             which driver should go where, optimizing by hand on a map. The result was rarely optimal, and the
             process was exhausting before delivery day even began.
           </p>
-          <p style={{ color: 'var(--t2)', lineHeight: 1.75, fontSize: '.95rem', marginTop: '.85rem' }}>
+          <p style={{ marginTop: '.85rem' }}>
             Routed solves that problem completely. Administrators add drivers and their bag capacities, and
             Routed handles the rest — instantly generating optimized routes, tracking delivery progress in real
             time, and allowing re-routing mid-delivery if circumstances change.
           </p>
         </div>
 
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1rem', marginBottom: '2.5rem' }}>
+        <div className="mkt-stat-grid">
           {STATS.map(({ value, label }) => (
-            <div key={label} className="card" style={{ textAlign: 'center', padding: '1.25rem .75rem' }}>
-              <div style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.3rem,2.5vw,1.8rem)', fontWeight: 800, color: 'var(--gold-dk)', marginBottom: '.3rem' }}>{value}</div>
-              <div style={{ fontSize: '.75rem', color: 'var(--t3)', lineHeight: 1.4 }}>{label}</div>
+            <div key={label} className="mkt-glass-card mkt-stat-card">
+              <div className="mkt-stat-value">{value}</div>
+              <div className="mkt-stat-label">{label}</div>
             </div>
           ))}
         </div>
 
-        {/* Features grid */}
-        <h2 style={{ fontFamily: 'var(--serif)', fontSize: '1.6rem', marginBottom: '1.1rem' }}>What Routed Does</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: '.85rem', marginBottom: '2.5rem' }}>
+        <h2 className="mkt-section-title">What Routed Does</h2>
+        <div className="mkt-feature-grid">
           {FEATURES.map(({ icon, title, body }) => (
-            <div key={title} className="card">
-              <div style={{ fontSize: '1.8rem', marginBottom: '.6rem' }}>{icon}</div>
-              <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', marginBottom: '.5rem' }}>{title}</h3>
-              <p style={{ color: 'var(--t3)', fontSize: '.875rem', lineHeight: 1.6 }}>{body}</p>
+            <div key={title} className="mkt-glass-card mkt-feature-card">
+              <div className="mkt-feature-icon">{icon}</div>
+              <h3>{title}</h3>
+              <p>{body}</p>
             </div>
           ))}
         </div>
 
-        {/* How it works timeline */}
-        <h2 style={{ fontFamily: 'var(--serif)', fontSize: '1.6rem', marginBottom: '1.1rem' }}>Fundraiser Lifecycle</h2>
-        <div style={{ position: 'relative', marginBottom: '2.5rem' }}>
-          {[
-            { n: '1', title: 'Setup', body: 'Admin creates the fundraiser, adds products, sets dates and contact info.' },
-            { n: '2', title: 'Sell', body: 'Vendors share their codes. Customers order online from the fundraiser page.' },
-            { n: '3', title: 'Prepare', body: 'Admin adds drivers with bag capacities before delivery day.' },
-            { n: '4', title: 'Deliver', body: 'Generate routes with one click. Drivers follow their optimized stop lists.' },
-            { n: '5', title: 'Complete', body: 'Delivery finishes. Admin reviews order reports and past fundraiser data.' },
-          ].map((step, i, arr) => (
-            <div key={step.n} style={{ display: 'flex', gap: '1.1rem', marginBottom: i < arr.length - 1 ? '1.1rem' : 0 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--gold)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '.9rem', flexShrink: 0 }}>
-                  {step.n}
-                </div>
-                {i < arr.length - 1 && <div style={{ width: 2, flex: 1, background: 'var(--border-lt)', marginTop: 4 }} />}
+        <h2 className="mkt-section-title">Fundraiser Lifecycle</h2>
+        <div className="mkt-timeline">
+          {LIFECYCLE.map((step, i, arr) => (
+            <div key={step.n} className="mkt-timeline-step">
+              <div className="mkt-timeline-rail">
+                <div className="mkt-timeline-num">{step.n}</div>
+                {i < arr.length - 1 && <div className="mkt-timeline-line" />}
               </div>
-              <div style={{ paddingBottom: i < arr.length - 1 ? '1.1rem' : 0 }}>
-                <p style={{ fontWeight: 700, marginBottom: '.2rem' }}>{step.title}</p>
-                <p style={{ color: 'var(--t3)', fontSize: '.9rem' }}>{step.body}</p>
+              <div className="mkt-timeline-body">
+                <strong>{step.title}</strong>
+                <p>{step.body}</p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Privacy callout */}
-        <div className="card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', marginBottom: '2rem' }}>
-          <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.1rem', marginBottom: '.5rem' }}>Privacy &amp; Security</h3>
-          <p style={{ color: 'var(--t3)', fontSize: '.9rem', lineHeight: 1.65 }}>
+        <div className="mkt-glass-card mkt-callout mkt-callout--green">
+          <h3>Privacy &amp; Security</h3>
+          <p>
             Routed never stores credit card or banking information. All payment data is handled by a secure third-party processor.
             Customer delivery addresses are encrypted at rest and only accessible to authorized administrators and drivers actively on route.
             Driver OTP codes are single-use and expire after route completion.
           </p>
         </div>
 
-        {/* CTA */}
-        <div style={{ textAlign: 'center', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link to="/help" className="btn btn-gold btn-lg">View Help Guide</Link>
-          <Link to="/request-access" className="btn btn-outline btn-lg">Request Admin Access</Link>
+        <div className="mkt-cta-row">
+          <Link to="/help" className="glass-btn glass-btn--gold">
+            View Help Guide <ArrowRight size={16} />
+          </Link>
+          <Link to="/request-access" className="glass-btn">
+            Request Admin Access <ArrowRight size={16} />
+          </Link>
         </div>
       </main>
-
-      <style>{`
-        @media(max-width:640px){
-          div[style*="repeat(4,1fr)"]{ grid-template-columns: 1fr 1fr !important; }
-        }
-      `}</style>
     </div>
   );
 }

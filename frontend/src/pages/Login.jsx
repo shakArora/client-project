@@ -1,10 +1,18 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
+import { ArrowRight } from 'lucide-react';
+import SiteNav from '../components/SiteNav';
 import { authApi, driverApi } from '../lib/api';
 import { useAuth, ROLES } from '../lib/auth';
 
 const TABS = ['Vendor', 'Administrator'];
+
+const ROLE_CARDS = [
+  { icon: '🔗', title: 'Vendor', desc: 'Track your personal sales and share your shop link.' },
+  { icon: '⚙️', title: 'Administrator', desc: 'Manage fundraisers, routes, and your whole troop.' },
+  { icon: '🚚', title: 'Driver', desc: 'Enter your 6-character code for your delivery route.' },
+];
 
 export default function Login() {
   const { login } = useAuth();
@@ -19,7 +27,6 @@ export default function Login() {
 
   const otpRefs = useRef([]);
 
-  // ── Email / password login ─────────────────────────
   async function handleSubmit(e) {
     e.preventDefault();
     setError(''); setLoading(true);
@@ -27,11 +34,11 @@ export default function Login() {
       const { data } = await authApi.login(email, password);
 
       if (tab === 'Vendor' && data.user.role === ROLES.ADMIN) {
-        setError('These are administrator credentials. Switch to the Administrator tab to sign in.');
+        setError('These are administrator credentials. Switch to the Administrator tab.');
         return;
       }
       if (tab === 'Administrator' && data.user.role === ROLES.VENDOR) {
-        setError('These are vendor credentials. Switch to the Vendor tab to sign in.');
+        setError('These are vendor credentials. Switch to the Vendor tab.');
         return;
       }
 
@@ -46,7 +53,6 @@ export default function Login() {
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
-  // ── Google login (admin only) ─────────────────────
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResp) => {
       setError(''); setLoading(true);
@@ -63,7 +69,6 @@ export default function Login() {
     onError: () => setError('Google login cancelled.'),
   });
 
-  // ── Driver OTP login ──────────────────────────────
   async function handleOtpSubmit(e) {
     e.preventDefault();
     const code = otp.join('').toUpperCase();
@@ -94,116 +99,146 @@ export default function Login() {
   }
 
   return (
-    <div className="page login-page">
-      <nav className="navbar">
-        <Link to="/" className="navbar-brand">Routed<span>.</span></Link>
-        <div className="navbar-links hide-mobile">
-          <Link to="/shop">Shop</Link>
-          <Link to="/about">About</Link>
-        </div>
-        <Link to="/request-access" className="btn btn-outline btn-sm">Request Access</Link>
-      </nav>
+    <div className="landing-page login-page">
+      <div className="login-page-bg" aria-hidden="true" />
+      <div className="login-page-glow" aria-hidden="true" />
 
-      <div className="login-split">
-        <div className="login-panel-dark">
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(2rem,4vw,3rem)', color: '#fff', marginBottom: '.75rem', position: 'relative' }}>
-            Welcome Back.
-          </h1>
-          <p style={{ color: '#c8b89a', lineHeight: 1.6, marginBottom: '1.8rem', fontSize: '.95rem', maxWidth: 380, position: 'relative' }}>
-            Sign in to manage your fundraiser, track your sales, or access your delivery route.
-          </p>
-          {[
-            { icon: '🔗', text: 'Vendor — track your personal sales' },
-            { icon: '⚙️', text: 'Administrator — manage your fundraiser' },
-            { icon: '🚚', text: 'Driver — enter your route code' },
-          ].map(({ icon, text }) => (
-            <div key={text} className="login-feature" style={{ position: 'relative' }}>
-              <span style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(195,162,86,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.95rem', flexShrink: 0 }}>{icon}</span>
-              <span>{text}</span>
+      <SiteNav
+        subpage
+        actionLabel="Request Access"
+        actionTo="/request-access"
+      />
+
+      <main className="login-page-main">
+        <div className="login-page-grid">
+          <section className="login-page-hero">
+            <div className="landing-eyebrow">
+              <span className="landing-eyebrow-dot" />
+              Portal access
             </div>
-          ))}
-        </div>
-
-        <div className="login-panel-form">
-          <div className="login-form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-          {/* Role tabs */}
-          <div className="tab-bar">
-            {TABS.map(t => (
-              <button key={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)}>{t}</button>
-            ))}
-          </div>
-
-          {/* Error banner */}
-          {error && (
-            <div style={{ background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 'var(--r2)', padding: '.7rem .9rem', color: 'var(--red)', fontSize: '.88rem' }}>
-              {error}
-            </div>
-          )}
-
-          {/* Credentials form */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '.9rem' }}>
-            <div className="field">
-              <label>Email Address</label>
-              <input type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
-            </div>
-            <div className="field">
-              <label>Password</label>
-              <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password" />
-            </div>
-            <div style={{ textAlign: 'right', marginTop: '-.4rem' }}>
-              <Link to="/reset-password" style={{ fontSize: '.83rem', color: 'var(--t3)' }}>Forgot password?</Link>
-            </div>
-            <button type="submit" className="btn btn-gold btn-lg btn-full" disabled={loading} style={{ textTransform: 'uppercase', letterSpacing: '.05em' }}>
-              {loading ? 'Signing In…' : 'Sign In'}
-            </button>
-
-            {tab === 'Administrator' && googleClientId && (
-              <div style={{ padding: '.9rem', border: '1.5px dashed var(--border)', borderRadius: 'var(--r3)', textAlign: 'center' }}>
-                <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '.7rem' }}>Or sign in with Google (admin only)</p>
-                <button type="button" onClick={() => googleLogin()} className="btn btn-outline btn-full" disabled={loading}>
-                  Sign in with Google
-                </button>
-              </div>
-            )}
-          </form>
-
-          {/* Driver OTP */}
-          <div style={{ background: 'var(--surface-2)', borderRadius: 'var(--r3)', padding: '1rem 1.1rem', border: '1px solid var(--border)' }}>
-            <p style={{ fontSize: '.7rem', textTransform: 'uppercase', letterSpacing: '.1em', fontWeight: 700, color: 'var(--t3)', marginBottom: '.75rem' }}>
-              Driver? Enter Your Code
+            <h1 className="landing-headline login-headline">
+              Welcome <em>back.</em>
+            </h1>
+            <p className="landing-sub login-sub">
+              Sign in to manage your fundraiser, track sales, or open your delivery route — all in one place.
             </p>
-            <form onSubmit={handleOtpSubmit}>
-              <div className="otp-group" style={{ marginBottom: '.7rem' }}>
-                {otp.map((ch, i) => (
-                  <input
-                    key={i}
-                    ref={el => otpRefs.current[i] = el}
-                    value={ch}
-                    onChange={e => handleOtpChange(e.target.value, i)}
-                    maxLength={1}
-                    style={{
-                      width: 46, height: 50, borderRadius: 'var(--r2)',
-                      border: '1.5px solid var(--border)', background: '#FFFDF6',
-                      textAlign: 'center', fontSize: '1.1rem', fontWeight: 700,
-                      textTransform: 'uppercase', outline: 'none',
-                    }}
-                    onFocus={e => e.target.select()}
-                  />
+
+            <div className="login-role-grid">
+              {ROLE_CARDS.map(({ icon, title, desc }) => (
+                <div key={title} className="login-role-card">
+                  <span className="login-role-icon">{icon}</span>
+                  <div>
+                    <strong>{title}</strong>
+                    <p>{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="login-panel">
+            <div className="login-glass-card">
+              <div className="login-card-header">
+                <h2>Sign in</h2>
+                <p>Choose your role and enter your credentials.</p>
+              </div>
+
+              <div className="login-tab-switch">
+                {TABS.map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={tab === t ? 'active' : ''}
+                    onClick={() => { setTab(t); setError(''); }}
+                  >
+                    {t}
+                  </button>
                 ))}
               </div>
-              <button type="submit" className="btn btn-dark btn-full btn-sm" disabled={loading}>
-                {loading ? 'Checking…' : 'Access My Route →'}
-              </button>
-            </form>
-          </div>
 
-          <p style={{ textAlign: 'center', fontSize: '.83rem', color: 'var(--t3)' }}>
-            Need admin access?{' '}
-            <Link to="/request-access" style={{ color: 'var(--gold-dk)', fontWeight: 700 }}>Request it here</Link>
-          </p>
-          </div>
+              {error && <div className="login-alert">{error}</div>}
+
+              <form className="login-form" onSubmit={handleSubmit}>
+                <label className="login-field">
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    placeholder="you@email.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </label>
+                <label className="login-field">
+                  <span>Password</span>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                  />
+                </label>
+                <div className="login-forgot-row">
+                  <Link to="/reset-password">Forgot password?</Link>
+                </div>
+                <button type="submit" className="glass-btn glass-btn--gold login-submit" disabled={loading}>
+                  {loading ? 'Signing in…' : 'Sign In'}
+                  {!loading && <ArrowRight size={18} />}
+                </button>
+
+                {tab === 'Administrator' && googleClientId && (
+                  <div className="login-divider">
+                    <span>or</span>
+                  </div>
+                )}
+                {tab === 'Administrator' && googleClientId && (
+                  <button
+                    type="button"
+                    className="glass-btn login-google-btn"
+                    onClick={() => googleLogin()}
+                    disabled={loading}
+                  >
+                    Sign in with Google
+                  </button>
+                )}
+              </form>
+            </div>
+
+            <div className="login-glass-card login-driver-card">
+              <p className="login-driver-title">Driver access</p>
+              <p className="login-driver-desc">Enter the 6-character code from your administrator.</p>
+              <form onSubmit={handleOtpSubmit}>
+                <div className="login-otp-row">
+                  {otp.map((ch, i) => (
+                    <input
+                      key={i}
+                      ref={el => otpRefs.current[i] = el}
+                      className="login-otp-cell"
+                      value={ch}
+                      onChange={e => handleOtpChange(e.target.value, i)}
+                      maxLength={1}
+                      aria-label={`Driver code character ${i + 1}`}
+                      onFocus={e => e.target.select()}
+                    />
+                  ))}
+                </div>
+                <button type="submit" className="glass-btn login-driver-btn" disabled={loading}>
+                  {loading ? 'Checking…' : 'Access My Route'}
+                  {!loading && <ArrowRight size={16} />}
+                </button>
+              </form>
+            </div>
+
+            <p className="login-footer">
+              Need admin access?{' '}
+              <Link to="/request-access">Request it here</Link>
+            </p>
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
