@@ -20,6 +20,10 @@ const fundraiserSchema = new mongoose.Schema(
     contactPhone: { type: String, trim: true },
     // Delivery instructions shown at checkout
     deliveryNotes: { type: String, trim: true },
+    // Where customer payments go (shown at checkout)
+    paymentMethod:      { type: String, trim: true }, // Venmo, Zelle, PayPal, Check, Cash, Other
+    paymentDestination: { type: String, trim: true }, // @handle, email, link, or payee name
+    paymentNotes:       { type: String, trim: true },
     coverImageUrl: { type: String, trim: true },
     startDate:    { type: Date },
     endDate:      { type: Date },

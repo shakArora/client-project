@@ -4,13 +4,16 @@ import { Link } from 'react-router-dom';
 import { fundraiserApi, productApi, vendorApi, adminApi, orderApi, driverApi } from '../lib/api';
 import { US_STATES } from '../lib/usStates';
 import { downloadCsv, downloadJson, downloadTemplateCsv, parseCsv } from '../lib/csv';
-import { IMPORT_BEHAVIOR, ORDERS_CSV, VENDORS_CSV, pickField } from '../lib/importFormats';
+import { isPastFundraiser } from '../lib/dates';
+import { ORDERS_CSV, VENDORS_CSV, pickField } from '../lib/importFormats';
 import AddressSelect from '../components/AddressSelect';
 import { SkeletonFundraiserDetail, SkeletonList } from '../components/Skeleton';
 
 const FRONTEND = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 
-const TABS = ['Fundraiser Details', 'Products', 'Vendors', 'Orders', 'Drivers', 'Import / Export'];
+const TABS = ['Fundraiser Details', 'Products', 'Vendors', 'Orders', 'Drivers'];
+
+const IMPORT_OPTIONS = { orders: 'append', vendors: 'skip-existing', drivers: 'skip-existing', products: 'upsert' };
 
 /* ───────────────────────── helpers ─────────────────────── */
 const STATUS_COLOR = {
@@ -39,6 +42,7 @@ function checks(fr, productCount) {
     { label: 'Delivery date set',     ok: !!fr.deliveryDate },
     { label: 'Contact info added',    ok: !!(fr.contactName && (fr.contactEmail || fr.contactPhone)) },
     { label: 'Delivery notes added',  ok: !!fr.deliveryNotes },
+    { label: 'Payment info added',    ok: !!(fr.paymentMethod && fr.paymentDestination) },
     { label: 'Cover image added',     ok: isValidCover(fr.coverImageUrl) },
     { label: 'Fundraiser address',    ok: !!((fr.deliveryHubAddress && fr.deliveryHubCoords?.lat) || (fr.pickupAddress && fr.pickupCoords?.lat)) },
     { label: 'At least 1 product',    ok: productCount > 0 },
@@ -83,6 +87,8 @@ function DetailsTab({ fr, onSaved }) {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem' }}>
       {/* Edit form */}
       <form onSubmit={handleSave}>
+        <MigrationPackageSection fr={fr} onImported={onSaved} />
+
         <section style={{ marginBottom: '1.75rem' }}>
           <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', marginBottom: '1rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--border-lt)' }}>
             Basic Info
@@ -153,6 +159,42 @@ function DetailsTab({ fr, onSaved }) {
               <img src={form.coverImageUrl} alt="Cover preview" style={{ width: '100%', objectFit: 'cover', maxHeight: 160 }} onError={e => { e.target.style.display = 'none'; }} />
             </div>
           )}
+        </section>
+
+        <section style={{ marginBottom: '1.75rem' }}>
+          <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', marginBottom: '1rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--border-lt)' }}>
+            Troop Payment Info ⚠️ Shown at checkout
+          </h3>
+          <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginTop: '-.5rem', marginBottom: '1rem', lineHeight: 1.5 }}>
+            Tell customers where to send payment so funds go to your troop.
+          </p>
+          <Field label="Payment method *">
+            <select
+              value={form.paymentMethod || ''}
+              onChange={set('paymentMethod')}
+              style={{ width: '100%', border: '2px solid var(--border)', borderRadius: 10, padding: '.6rem .75rem', fontSize: '.92rem', background: '#fff' }}
+            >
+              <option value="">Select how customers pay</option>
+              {['Venmo', 'Zelle', 'PayPal', 'Check', 'Cash', 'Other'].map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Where payments go *">
+            <input
+              value={form.paymentDestination || ''}
+              onChange={set('paymentDestination')}
+              placeholder="e.g. @Troop1094Mulch, treasurer@troop.org, or PayPal.me/troop1094"
+            />
+          </Field>
+          <Field label="Payment instructions (optional)">
+            <textarea
+              rows={2}
+              value={form.paymentNotes || ''}
+              onChange={set('paymentNotes')}
+              placeholder="e.g. Include your last name in the payment note. Pay at delivery if you prefer cash."
+            />
+          </Field>
         </section>
 
         <section style={{ marginBottom: '1.75rem' }}>
@@ -247,23 +289,187 @@ function FundraiserToggleButton({ fr, allGood, onToggled, compact, onIncomplete 
 
 function CustomerLinkBar({ fr }) {
   const publicUrl = `${FRONTEND}/fundraiser/${fr.slug}`;
+  const done = isPastFundraiser(fr);
+  const [exporting, setExporting] = useState(false);
+
+  async function exportPackage() {
+    setExporting(true);
+    try {
+      const { data } = await fundraiserApi.export(fr._id);
+      downloadJson(`${fr.slug || 'fundraiser'}-routed-export.json`, data);
+    } catch {
+      alert('Export failed. Try again.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
-    <div style={{ background: '#fffbeb', borderBottom: '1px solid #fde68a', padding: '.75rem clamp(1rem,4vw,2.5rem)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-      <div style={{ minWidth: 0 }}>
-        <span style={{ fontSize: '.72rem', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.06em' }}>Customer page for </span>
-        <strong style={{ color: '#78350f', marginLeft: '.25rem' }}>{fr.title}</strong>
-        <div style={{ marginTop: '.25rem' }}>
-          <a href={publicUrl} target="_blank" rel="noreferrer" style={{ fontSize: '.82rem', color: 'var(--gold-dk)', wordBreak: 'break-all' }}>{publicUrl}</a>
-        </div>
+    <div className="customer-link-bar">
+      <div className="customer-link-bar-info">
+        <span className="customer-link-bar-label">Customer page for </span>
+        <strong className="customer-link-bar-title">{fr.title}</strong>
+        <a href={publicUrl} target="_blank" rel="noreferrer" className="customer-link-bar-url">{publicUrl}</a>
       </div>
-      <button
-        type="button"
-        onClick={() => navigator.clipboard?.writeText(publicUrl)}
-        style={{ fontSize: '.78rem', background: '#fff', border: '1px solid #fde68a', borderRadius: 8, padding: '.35rem .75rem', cursor: 'pointer', color: '#92400e', fontWeight: 600, flexShrink: 0 }}
-      >
-        Copy link
-      </button>
+      <div className="customer-link-bar-actions">
+        {done && (
+          <button type="button" className="customer-link-bar-export" disabled={exporting} onClick={exportPackage}>
+            {exporting ? 'Exporting…' : '↓ Export package'}
+          </button>
+        )}
+        <button
+          type="button"
+          className="customer-link-bar-copy"
+          onClick={() => navigator.clipboard?.writeText(publicUrl)}
+        >
+          Copy link
+        </button>
+      </div>
     </div>
+  );
+}
+
+/* ═══════════════════════ CSV / BACKUP HELPERS ═════════════ */
+function formatImportResult(stats) {
+  const d = stats.details || {};
+  const parts = [];
+  if (d.orders) {
+    parts.push(`${d.orders.created || stats.orders || 0} order(s) added`);
+    if (d.orders.duplicates) parts.push(`${d.orders.duplicates} duplicate(s) skipped`);
+    if (d.orders.skipped) parts.push(`${d.orders.skipped} row(s) skipped`);
+  } else if (stats.orders) parts.push(`${stats.orders} order(s) added`);
+  if (d.vendors) {
+    parts.push(`${d.vendors.created || stats.vendors || 0} vendor(s) added`);
+    if (d.vendors.skipped) parts.push(`${d.vendors.skipped} existing vendor(s) skipped`);
+  } else if (stats.vendors) parts.push(`${stats.vendors} vendor(s) added`);
+  return parts.join(' · ');
+}
+
+function parseOrdersCsvRows(rows) {
+  const valid = [];
+  const problems = [];
+  rows.forEach((r, i) => {
+    const customer = pickField(r, ORDERS_CSV.aliases.customer);
+    const address  = pickField(r, ORDERS_CSV.aliases.address);
+    if (!customer || !address) {
+      problems.push(`Row ${i + 2}: missing Customer or Address`);
+      return;
+    }
+    const bags  = Number(pickField(r, ORDERS_CSV.aliases.bags) || 1);
+    const total = Number(pickField(r, ORDERS_CSV.aliases.total) || 0);
+    const product = pickField(r, ORDERS_CSV.aliases.product) || 'Imported';
+    valid.push({
+      customerName: customer,
+      customerEmail: pickField(r, ORDERS_CSV.aliases.email) || 'import@routed.local',
+      customerPhone: pickField(r, ORDERS_CSV.aliases.phone),
+      deliveryAddress: address,
+      totalBags: bags,
+      totalAmount: total,
+      status: pickField(r, ORDERS_CSV.aliases.status) || 'pending',
+      referralCode: pickField(r, ORDERS_CSV.aliases.referral) || undefined,
+      comments: pickField(r, ORDERS_CSV.aliases.comments),
+      items: [{ productName: product, quantity: bags, unitPrice: total / Math.max(1, bags) }],
+    });
+  });
+  return { valid, problems };
+}
+
+function parseVendorsCsvRows(rows) {
+  const valid = [];
+  const problems = [];
+  rows.forEach((r, i) => {
+    const name  = pickField(r, VENDORS_CSV.aliases.name);
+    const email = pickField(r, VENDORS_CSV.aliases.email);
+    if (!name || !email) {
+      problems.push(`Row ${i + 2}: missing Name or Email`);
+      return;
+    }
+    valid.push({
+      name,
+      email,
+      referralCode: pickField(r, VENDORS_CSV.aliases.referral) || undefined,
+    });
+  });
+  return { valid, problems };
+}
+
+function CsvFormatPopover({ spec, open, onClose }) {
+  if (!open) return null;
+  return (
+    <div className="csv-format-popover">
+      <p className="csv-format-popover-title">Expected columns</p>
+      <p className="csv-format-popover-cols">{spec.headers.join(' · ')}</p>
+      <p className="csv-format-popover-req">Required: {spec.required.join(', ')}</p>
+      <ul className="csv-format-popover-notes">
+        {spec.notes.slice(0, 4).map(n => <li key={n}>{n}</li>)}
+      </ul>
+      <button type="button" className="csv-format-popover-close" onClick={onClose}>Got it</button>
+    </div>
+  );
+}
+
+function CompactCsvBar({ spec, onExport, onImport, exportDisabled, busy, importOnly }) {
+  const [showFormat, setShowFormat] = useState(false);
+  return (
+    <div className="tab-csv-bar">
+      <button type="button" className="btn btn-outline btn-sm" onClick={() => downloadTemplateCsv(spec.filename, spec.headers, spec.example)}>
+        Template
+      </button>
+      {!importOnly && (
+        <button type="button" className="btn btn-outline btn-sm" disabled={exportDisabled} onClick={onExport}>
+          Export CSV
+        </button>
+      )}
+      <label className="btn btn-outline btn-sm" style={{ cursor: busy ? 'not-allowed' : 'pointer' }}>
+        Import CSV
+        <input type="file" accept=".csv,text/csv" style={{ display: 'none' }} disabled={busy} onChange={e => { onImport(e.target.files?.[0]); e.target.value = ''; }} />
+      </label>
+      <button type="button" className="btn btn-outline btn-sm tab-csv-format-btn" onClick={() => setShowFormat(s => !s)}>
+        Format ?
+      </button>
+      <CsvFormatPopover spec={spec} open={showFormat} onClose={() => setShowFormat(false)} />
+    </div>
+  );
+}
+
+function MigrationPackageSection({ fr, onImported }) {
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function importPackage(file) {
+    if (!file) return;
+    if (!window.confirm(
+      'Import migration package?\n\n' +
+      '• Brings in products, vendors, orders, and drivers from a Routed export file.\n' +
+      '• Orders are added only — existing orders are never changed or deleted.\n' +
+      '• Duplicate orders are skipped automatically.'
+    )) return;
+    setBusy(true); setMsg('');
+    try {
+      const payload = JSON.parse(await file.text());
+      const { data } = await fundraiserApi.import(fr._id, { ...payload, options: IMPORT_OPTIONS });
+      setMsg(`Imported — ${formatImportResult(data.stats)}`);
+      onImported();
+    } catch (err) {
+      setMsg(err.response?.data?.message || 'Import failed. Use a Routed export JSON file.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="migration-package-section">
+      <h3>Full migration package</h3>
+      <p>
+        Moving an existing fundraiser to Routed? Import a JSON export from another instance — includes settings, products, vendors, orders, and driver routes.
+        When this fundraiser is finished, use <strong>Export package</strong> in the customer link bar above to download your data.
+      </p>
+      <label className="btn btn-dark btn-sm" style={{ cursor: busy ? 'not-allowed' : 'pointer' }}>
+        ↑ Import JSON package
+        <input type="file" accept=".json,application/json" style={{ display: 'none' }} disabled={busy} onChange={e => { importPackage(e.target.files?.[0]); e.target.value = ''; }} />
+      </label>
+      {msg && <p className={`tab-csv-msg ${msg.includes('failed') ? 'tab-csv-msg--err' : 'tab-csv-msg--ok'}`}>{msg}</p>}
+    </section>
   );
 }
 
@@ -402,6 +608,8 @@ function VendorsTab({ fr }) {
   const [form,     setForm]     = useState({ name:'', email:'', password:'' });
   const [saving,   setSaving]   = useState(false);
   const [msg,      setMsg]      = useState('');
+  const [csvMsg,   setCsvMsg]   = useState('');
+  const [csvBusy,  setCsvBusy]  = useState(false);
   const publicUrl = `${FRONTEND}/fundraiser/${fr.slug}`;
 
   const load = useCallback(() => {
@@ -432,12 +640,52 @@ function VendorsTab({ fr }) {
     }
   }
 
+  async function importVendorsCsv(file) {
+    if (!file) return;
+    const rows = parseCsv(await file.text());
+    const { valid, problems } = parseVendorsCsvRows(rows);
+    if (!valid.length) {
+      setCsvMsg(problems[0] || 'No valid rows — check template format.');
+      return;
+    }
+    const preview = [
+      `${valid.length} vendor(s) to import`,
+      problems.length ? `${problems.length} row(s) skipped` : null,
+      'Existing emails are skipped',
+    ].filter(Boolean).join(' · ');
+    if (!window.confirm(`Import vendors?\n${preview}`)) return;
+
+    setCsvBusy(true); setCsvMsg('');
+    try {
+      const { data } = await fundraiserApi.import(fr._id, { vendors: valid, options: IMPORT_OPTIONS });
+      setCsvMsg(formatImportResult(data.stats));
+      load();
+    } catch (err) {
+      setCsvMsg(err.response?.data?.message || 'Import failed.');
+    } finally {
+      setCsvBusy(false);
+    }
+  }
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '.75rem' }}>
-        <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.1rem' }}>Vendors</h3>
-        <button onClick={() => { setShowForm(true); setMsg(''); }} className="btn btn-gold" style={{ fontSize: '.85rem' }}>+ Add Vendor</button>
+      <div className="tab-toolbar">
+        <h3>Vendors</h3>
+        <div className="tab-toolbar-actions">
+          <CompactCsvBar
+            spec={VENDORS_CSV}
+            busy={csvBusy}
+            exportDisabled={!vendors.length}
+            onExport={() => downloadCsv(`vendors-${fr.slug}.csv`,
+              ['Name', 'Email', 'Referral Code', 'Bags Sold', 'Revenue'],
+              vendors.map(v => [v.name, v.email, v.referralCode, v.bagsSold || 0, (v.totalRevenue || 0).toFixed(2)])
+            )}
+            onImport={importVendorsCsv}
+          />
+          <button type="button" onClick={() => { setShowForm(true); setMsg(''); }} className="btn btn-gold btn-sm">+ Add Vendor</button>
+        </div>
       </div>
+      {csvMsg && <p className={`tab-csv-msg ${csvMsg.includes('failed') || csvMsg.includes('No valid') ? 'tab-csv-msg--err' : 'tab-csv-msg--ok'}`}>{csvMsg}</p>}
 
       {/* Customer link reminder */}
       <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '.85rem 1rem', marginBottom: '1.25rem', fontSize: '.83rem' }}>
@@ -497,6 +745,8 @@ function OrdersTab({ fr }) {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [confirming, setConfirming] = useState(null);
+  const [csvMsg,  setCsvMsg]  = useState('');
+  const [csvBusy, setCsvBusy] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -517,9 +767,47 @@ function OrdersTab({ fr }) {
   const total = orders.reduce((s, o) => s + o.totalAmount, 0);
   const paid  = orders.filter(o => ['paid','fulfilled','delivered'].includes(o.status)).length;
 
+  async function importOrdersCsv(file) {
+    if (!file) return;
+    const rows = parseCsv(await file.text());
+    const { valid, problems } = parseOrdersCsvRows(rows);
+    if (!valid.length) {
+      setCsvMsg(problems[0] || 'No valid rows — check template format.');
+      return;
+    }
+    const preview = [
+      `${valid.length} order(s) to import`,
+      problems.length ? `${problems.length} row(s) skipped` : null,
+      'Existing orders are never changed',
+      'Duplicates (same email + address + bags) are skipped',
+    ].filter(Boolean).join(' · ');
+    if (!window.confirm(`Import orders?\n${preview}`)) return;
+
+    setCsvBusy(true); setCsvMsg('');
+    try {
+      const { data } = await fundraiserApi.import(fr._id, { orders: valid, options: IMPORT_OPTIONS });
+      const skipped = data.stats.skipped?.length ? ` ${data.stats.skipped.slice(0, 3).join('; ')}` : '';
+      setCsvMsg(`${formatImportResult(data.stats)}.${skipped}`);
+      load();
+    } catch (err) {
+      setCsvMsg(err.response?.data?.message || 'Import failed.');
+    } finally {
+      setCsvBusy(false);
+    }
+  }
+
   return (
     <div>
-      <h3 style={{ fontFamily: 'var(--serif)', fontSize: '1.1rem', marginBottom: '1rem' }}>Orders</h3>
+      <div className="tab-toolbar">
+        <h3>Orders</h3>
+        <CompactCsvBar
+          spec={ORDERS_CSV}
+          busy={csvBusy}
+          importOnly
+          onImport={importOrdersCsv}
+        />
+      </div>
+      {csvMsg && <p className={`tab-csv-msg ${csvMsg.includes('failed') || csvMsg.includes('No valid') ? 'tab-csv-msg--err' : 'tab-csv-msg--ok'}`}>{csvMsg}</p>}
       <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {[['Total Orders', orders.length], ['Paid', paid], ['Revenue', `$${total.toFixed(2)}`]].map(([l,v]) => (
           <div key={l} style={{ background: '#fff', borderRadius: 12, padding: '.85rem 1.25rem', boxShadow: '0 1px 8px rgba(0,0,0,.06)' }}>
@@ -783,292 +1071,6 @@ function DriversTab({ fr }) {
   );
 }
 
-/* ═══════════════════════ IMPORT / EXPORT TAB ════════════════ */
-function FormatGuide({ spec, behavior }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="import-format-guide">
-      <p className="import-format-behavior">{behavior}</p>
-      <button type="button" className="import-format-toggle" onClick={() => setOpen(o => !o)}>
-        {open ? 'Hide' : 'Show'} expected spreadsheet format
-      </button>
-      {open && (
-        <div className="import-format-details">
-          <table className="import-format-table">
-            <thead>
-              <tr><th>Column</th><th>Required</th><th>Notes</th></tr>
-            </thead>
-            <tbody>
-              {spec.headers.map(h => (
-                <tr key={h}>
-                  <td><code>{h}</code></td>
-                  <td>{spec.required.includes(h) ? 'Yes' : 'No'}</td>
-                  <td>{h === 'Status' ? 'pending, paid, fulfilled, delivered, refunded, cancelled' : h === 'Product' ? 'Must match a product name on this fundraiser' : h === 'Referral' || h === 'Referral Code' ? 'Vendor referral code' : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <ul className="import-format-notes">
-            {spec.notes.map(n => <li key={n}>{n}</li>)}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function parseOrdersCsvRows(rows) {
-  const valid = [];
-  const problems = [];
-  rows.forEach((r, i) => {
-    const customer = pickField(r, ORDERS_CSV.aliases.customer);
-    const address  = pickField(r, ORDERS_CSV.aliases.address);
-    if (!customer || !address) {
-      problems.push(`Row ${i + 2}: missing Customer or Address`);
-      return;
-    }
-    const bags  = Number(pickField(r, ORDERS_CSV.aliases.bags) || 1);
-    const total = Number(pickField(r, ORDERS_CSV.aliases.total) || 0);
-    const product = pickField(r, ORDERS_CSV.aliases.product) || 'Imported';
-    valid.push({
-      customerName: customer,
-      customerEmail: pickField(r, ORDERS_CSV.aliases.email) || 'import@routed.local',
-      customerPhone: pickField(r, ORDERS_CSV.aliases.phone),
-      deliveryAddress: address,
-      totalBags: bags,
-      totalAmount: total,
-      status: pickField(r, ORDERS_CSV.aliases.status) || 'pending',
-      referralCode: pickField(r, ORDERS_CSV.aliases.referral) || undefined,
-      comments: pickField(r, ORDERS_CSV.aliases.comments),
-      items: [{ productName: product, quantity: bags, unitPrice: total / Math.max(1, bags) }],
-    });
-  });
-  return { valid, problems };
-}
-
-function parseVendorsCsvRows(rows) {
-  const valid = [];
-  const problems = [];
-  rows.forEach((r, i) => {
-    const name  = pickField(r, VENDORS_CSV.aliases.name);
-    const email = pickField(r, VENDORS_CSV.aliases.email);
-    if (!name || !email) {
-      problems.push(`Row ${i + 2}: missing Name or Email`);
-      return;
-    }
-    valid.push({
-      name,
-      email,
-      referralCode: pickField(r, VENDORS_CSV.aliases.referral) || undefined,
-    });
-  });
-  return { valid, problems };
-}
-
-function formatImportResult(stats) {
-  const d = stats.details || {};
-  const parts = [];
-  if (d.orders) {
-    parts.push(`${d.orders.created || stats.orders || 0} order(s) added`);
-    if (d.orders.duplicates) parts.push(`${d.orders.duplicates} duplicate(s) skipped`);
-    if (d.orders.skipped) parts.push(`${d.orders.skipped} row(s) skipped`);
-  } else if (stats.orders) parts.push(`${stats.orders} order(s) added`);
-  if (d.vendors) {
-    parts.push(`${d.vendors.created || stats.vendors || 0} vendor(s) added`);
-    if (d.vendors.skipped) parts.push(`${d.vendors.skipped} existing vendor(s) skipped`);
-  } else if (stats.vendors) parts.push(`${stats.vendors} vendor(s) added`);
-  if (stats.products) parts.push(`${stats.products} product(s) processed`);
-  if (stats.drivers) parts.push(`${stats.drivers} driver(s) processed`);
-  return parts.join(' · ');
-}
-
-function DataTab({ fr, onImported }) {
-  const [msg, setMsg] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [vendors, setVendors] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [products, setProducts] = useState([]);
-
-  useEffect(() => {
-    vendorApi.list({ fundraiserId: fr._id }).then(r => setVendors(r.data || [])).catch(() => {});
-    orderApi.list({ fundraiserId: fr._id }).then(r => setOrders(r.data || [])).catch(() => {});
-    productApi.list(fr._id).then(r => setProducts((r.data || []).filter(p => p.isActive))).catch(() => {});
-  }, [fr._id]);
-
-  const importOptions = { orders: 'append', vendors: 'skip-existing', drivers: 'skip-existing', products: 'upsert' };
-
-  async function exportPackage() {
-    setBusy(true);
-    setMsg('');
-    try {
-      const { data } = await fundraiserApi.export(fr._id);
-      downloadJson(`${fr.slug || 'fundraiser'}-routed-export.json`, data);
-      setMsg('✅ Full backup downloaded.');
-    } catch {
-      setMsg('❌ Export failed.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function importPackage(file) {
-    if (!file) return;
-    const ok = window.confirm(
-      'Import this JSON file?\n\n' +
-      '• Orders are ADDED only — existing orders are never changed or deleted.\n' +
-      '• Duplicate orders (same email + address + bags) are skipped.\n' +
-      '• Only sections in the file are imported (products, vendors, orders, drivers).'
-    );
-    if (!ok) return;
-    setBusy(true);
-    setMsg('');
-    try {
-      const payload = JSON.parse(await file.text());
-      const { data } = await fundraiserApi.import(fr._id, { ...payload, options: importOptions });
-      const summary = formatImportResult(data.stats);
-      const skipped = data.stats.skipped?.length ? ` Skipped: ${data.stats.skipped.slice(0, 3).join('; ')}${data.stats.skipped.length > 3 ? '…' : ''}` : '';
-      setMsg(`✅ Import complete — ${summary}.${skipped}`);
-      onImported();
-    } catch (err) {
-      setMsg(err.response?.data?.message || '❌ Import failed. Use a Routed export JSON file.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function importOrdersCsv(file) {
-    if (!file) return;
-    const rows = parseCsv(await file.text());
-    const { valid, problems } = parseOrdersCsvRows(rows);
-    if (!valid.length) {
-      setMsg(`❌ No valid rows. ${problems[0] || 'Check the template format.'}`);
-      return;
-    }
-    const preview = [
-      `${valid.length} order(s) ready to import`,
-      problems.length ? `${problems.length} row(s) will be skipped (missing required columns)` : null,
-      'Existing orders are never modified or deleted',
-      'Duplicates (same email + address + bags) are skipped automatically',
-    ].filter(Boolean).join('\n• ');
-    if (!window.confirm(`Import orders from spreadsheet?\n\n• ${preview}`)) return;
-
-    setBusy(true);
-    setMsg('');
-    try {
-      const { data } = await fundraiserApi.import(fr._id, { orders: valid, options: importOptions });
-      const summary = formatImportResult(data.stats);
-      const skipped = data.stats.skipped?.length ? ` Issues: ${data.stats.skipped.slice(0, 4).join('; ')}${data.stats.skipped.length > 4 ? '…' : ''}` : '';
-      setMsg(`✅ ${summary}.${skipped}`);
-      onImported();
-    } catch (err) {
-      setMsg(err.response?.data?.message || '❌ Orders import failed.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function importVendorsCsv(file) {
-    if (!file) return;
-    const rows = parseCsv(await file.text());
-    const { valid, problems } = parseVendorsCsvRows(rows);
-    if (!valid.length) {
-      setMsg(`❌ No valid rows. ${problems[0] || 'Check the template format.'}`);
-      return;
-    }
-    const preview = [
-      `${valid.length} vendor(s) ready to import`,
-      problems.length ? `${problems.length} row(s) missing Name or Email` : null,
-      'Vendors with an existing email are skipped',
-    ].filter(Boolean).join('\n• ');
-    if (!window.confirm(`Import vendors from spreadsheet?\n\n• ${preview}`)) return;
-
-    setBusy(true);
-    setMsg('');
-    try {
-      const { data } = await fundraiserApi.import(fr._id, { vendors: valid, options: importOptions });
-      setMsg(`✅ ${formatImportResult(data.stats)}.`);
-      onImported();
-    } catch (err) {
-      setMsg(err.response?.data?.message || '❌ Vendors import failed.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const productNames = products.map(p => p.name).join(', ') || 'none yet';
-
-  return (
-    <div className="import-export-tab">
-      <p className="import-export-intro">
-        Back up your fundraiser, export spreadsheets for review, or bulk-add orders and vendors from a CSV.
-        Imports are additive — existing orders are never replaced or deleted.
-      </p>
-
-      <div className="app-card import-export-section">
-        <h4>Full backup (JSON)</h4>
-        <p className="import-export-desc">
-          Download everything — settings, products, vendors, orders, and driver routes. Re-import to restore or copy to another instance.
-          Only sections present in the file are applied; orders are always appended.
-        </p>
-        <div className="import-export-actions">
-          <button type="button" onClick={exportPackage} disabled={busy} className="btn btn-gold">↓ Download backup</button>
-          <label className="btn btn-dark" style={{ cursor: 'pointer' }}>
-            ↑ Import backup
-            <input type="file" accept=".json,application/json" style={{ display: 'none' }} disabled={busy} onChange={e => { importPackage(e.target.files?.[0]); e.target.value = ''; }} />
-          </label>
-        </div>
-      </div>
-
-      <div className="import-export-grid">
-        <div className="app-card import-export-section">
-          <h4>Orders spreadsheet</h4>
-          <FormatGuide spec={ORDERS_CSV} behavior={IMPORT_BEHAVIOR.orders} />
-          {products.length > 0 && (
-            <p className="import-export-products">Active products on this fundraiser: <strong>{productNames}</strong></p>
-          )}
-          <div className="import-export-actions">
-            <button type="button" className="btn btn-outline" onClick={() => downloadTemplateCsv(ORDERS_CSV.filename, ORDERS_CSV.headers, ORDERS_CSV.example)}>
-              ↓ Download template
-            </button>
-            <button type="button" className="btn btn-outline" disabled={!orders.length} onClick={() => downloadCsv(`orders-${fr.slug}.csv`,
-              ORDERS_CSV.headers,
-              orders.map(o => [
-                o.customerName, o.customerEmail, o.customerPhone || '', o.deliveryAddress,
-                o.totalBags, o.totalAmount.toFixed(2), o.status, o.referralCode || '',
-                o.items?.[0]?.productName || '', o.comments || '',
-              ])
-            )}>Export current orders</button>
-            <label className="btn btn-gold" style={{ cursor: 'pointer' }}>
-              ↑ Import orders CSV
-              <input type="file" accept=".csv,text/csv" style={{ display: 'none' }} disabled={busy} onChange={e => { importOrdersCsv(e.target.files?.[0]); e.target.value = ''; }} />
-            </label>
-          </div>
-        </div>
-
-        <div className="app-card import-export-section">
-          <h4>Vendors spreadsheet</h4>
-          <FormatGuide spec={VENDORS_CSV} behavior={IMPORT_BEHAVIOR.vendors} />
-          <div className="import-export-actions">
-            <button type="button" className="btn btn-outline" onClick={() => downloadTemplateCsv(VENDORS_CSV.filename, VENDORS_CSV.headers, VENDORS_CSV.example)}>
-              ↓ Download template
-            </button>
-            <button type="button" className="btn btn-outline" disabled={!vendors.length} onClick={() => downloadCsv(`vendors-${fr.slug}.csv`,
-              ['Name', 'Email', 'Referral Code', 'Bags Sold', 'Revenue'],
-              vendors.map(v => [v.name, v.email, v.referralCode, v.bagsSold || 0, (v.totalRevenue || 0).toFixed(2)])
-            )}>Export current vendors</button>
-            <label className="btn btn-gold" style={{ cursor: 'pointer' }}>
-              ↑ Import vendors CSV
-              <input type="file" accept=".csv,text/csv" style={{ display: 'none' }} disabled={busy} onChange={e => { importVendorsCsv(e.target.files?.[0]); e.target.value = ''; }} />
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {msg && <p className={`import-export-msg ${msg.startsWith('✅') ? 'import-export-msg--ok' : 'import-export-msg--err'}`}>{msg}</p>}
-    </div>
-  );
-}
-
 /* ═══════════════════════ FIELD COMPONENT ════════════════════ */
 function Field({ label, children }) {
   return (
@@ -1155,7 +1157,6 @@ export default function AdminFundraiserDetail() {
         {tab === 'Vendors'            && <VendorsTab  fr={fr} />}
         {tab === 'Orders'             && <OrdersTab   fr={fr} />}
         {tab === 'Drivers'            && <DriversTab  fr={fr} />}
-        {tab === 'Import / Export'    && <DataTab fr={fr} onImported={reload} />}
       </div>
 
       <style>{`

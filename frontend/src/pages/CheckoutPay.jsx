@@ -41,7 +41,12 @@ export default function CheckoutPay() {
         comments: info.comments || undefined,
         items: cart.items,
       });
-      sessionStorage.setItem('routed_order', JSON.stringify(data));
+      sessionStorage.setItem('routed_order', JSON.stringify({
+        ...data,
+        paymentMethod: cart.paymentMethod,
+        paymentDestination: cart.paymentDestination,
+        paymentNotes: cart.paymentNotes,
+      }));
       sessionStorage.removeItem('routed_cart');
       navigate('/shop/confirmation');
     } catch (err) {
@@ -103,9 +108,21 @@ export default function CheckoutPay() {
 
             <div className="checkout-summary">
               <p className="checkout-summary-label">Payment</p>
-              <p style={{ color: 'var(--t3)', fontSize: '.9rem', textAlign: 'center', padding: '1.25rem 0' }}>
-                PayPal / Card — secure checkout
-              </p>
+              {cart.paymentMethod && cart.paymentDestination ? (
+                <div style={{ padding: '.5rem 0' }}>
+                  <SummaryRow label="Method" value={cart.paymentMethod} />
+                  <SummaryRow label="Send to" value={cart.paymentDestination} gold />
+                  {cart.paymentNotes && (
+                    <p style={{ fontSize: '.85rem', color: 'var(--t2)', lineHeight: 1.5, marginTop: '.75rem', paddingTop: '.75rem', borderTop: '1px solid var(--border-lt)' }}>
+                      {cart.paymentNotes}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p style={{ color: 'var(--t3)', fontSize: '.9rem', padding: '1rem 0', lineHeight: 1.5 }}>
+                  Payment details will be provided by your troop organizer.
+                </p>
+              )}
             </div>
 
             <div className="checkout-actions checkout-actions--inline hide-mobile" style={{ flexDirection: 'column' }}>

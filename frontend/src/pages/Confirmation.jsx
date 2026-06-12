@@ -48,6 +48,14 @@ export default function Confirmation() {
             : 'your email address'}.
         </p>
 
+        {order?.paymentMethod && order?.paymentDestination && (
+          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '1rem 1.15rem', marginBottom: '1.25rem', textAlign: 'left' }}>
+            <p style={{ fontSize: '.72rem', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '.5rem' }}>Send payment to</p>
+            <p style={{ fontWeight: 700, color: '#78350f', marginBottom: '.2rem' }}>{order.paymentMethod}: {order.paymentDestination}</p>
+            {order.paymentNotes && <p style={{ fontSize: '.88rem', color: '#92400e', lineHeight: 1.5 }}>{order.paymentNotes}</p>}
+          </div>
+        )}
+
         {order && (
           <div className="checkout-summary" style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
             {[

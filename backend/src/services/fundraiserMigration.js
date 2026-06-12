@@ -128,7 +128,8 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
     const allowed = [
       "title", "description", "location", "pickupAddress", "pickupCoords",
       "deliveryHubAddress", "deliveryHubCoords", "contactName", "contactEmail",
-      "contactPhone", "deliveryNotes", "coverImageUrl", "startDate", "endDate", "deliveryDate",
+      "contactPhone", "deliveryNotes", "paymentMethod", "paymentDestination", "paymentNotes",
+      "coverImageUrl", "startDate", "endDate", "deliveryDate",
     ];
     for (const key of allowed) {
       if (payload.fundraiser[key] !== undefined) fr[key] = payload.fundraiser[key];

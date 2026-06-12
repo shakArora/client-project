@@ -12,6 +12,7 @@ export function publishChecklist(fundraiser, productCount = 0) {
     { key: "deliveryDate",  label: "Delivery date set",     ok: !!fundraiser.deliveryDate },
     { key: "contact",       label: "Contact info added",    ok: !!(fundraiser.contactName && (fundraiser.contactEmail || fundraiser.contactPhone)) },
     { key: "deliveryNotes", label: "Delivery notes added",    ok: !!fundraiser.deliveryNotes },
+    { key: "paymentInfo",   label: "Payment info added",      ok: !!(fundraiser.paymentMethod && fundraiser.paymentDestination) },
     { key: "coverImage",    label: "Cover image added",     ok: isValidCoverUrl(fundraiser.coverImageUrl) },
     { key: "deliveryHub",   label: "Fundraiser address",    ok: !!((fundraiser.deliveryHubAddress && fundraiser.deliveryHubCoords?.lat) || (fundraiser.pickupAddress && fundraiser.pickupCoords?.lat)) },
     { key: "products",      label: "At least 1 product",    ok: productCount > 0 },

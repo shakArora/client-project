@@ -19,6 +19,7 @@ function statusChecks(fr) {
     { label: 'Delivery date set',      ok: !!fr.deliveryDate },
     { label: 'Contact info added',     ok: !!(fr.contactName && (fr.contactEmail || fr.contactPhone)) },
     { label: 'Delivery notes added',   ok: !!fr.deliveryNotes },
+    { label: 'Payment info added',     ok: !!(fr.paymentMethod && fr.paymentDestination) },
     { label: 'Cover image added',      ok: isValidCover(fr.coverImageUrl) },
   ];
 }
