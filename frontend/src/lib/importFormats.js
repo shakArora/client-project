@@ -1,7 +1,7 @@
 /** Column specs and behavior notes for fundraiser import/export */
 
 export const IMPORT_BEHAVIOR = {
-  orders: 'Adds new orders only. Existing orders are never modified or deleted. Duplicate rows (same email + address + bags) are skipped.',
+  orders: 'Adds new orders only. Existing orders are never modified or deleted. Duplicate rows (same email + address + bags) are skipped. Addresses are kept as entered in the CSV.',
   vendors: 'Creates new vendor accounts. Rows with an email that already exists on this fundraiser are skipped.',
   products: 'Creates new products or updates matching product names. Does not delete existing products.',
   drivers: 'Creates new driver routes. Existing driver codes are left unchanged.',
@@ -11,29 +11,30 @@ export const IMPORT_BEHAVIOR = {
 
 export const ORDERS_CSV = {
   filename: 'orders-template.csv',
-  headers: ['Customer', 'Email', 'Phone', 'Address', 'Bags', 'Total', 'Status', 'Referral', 'Product', 'Comments'],
-  example: ['Jane Smith', 'jane@email.com', '555-0100', '123 Oak St, Springfield, IL 62701', '4', '32.00', 'paid', 'ABCD', 'Hardwood Mulch', 'Leave by garage'],
+  headers: ['Customer', 'Email', 'Phone', 'Address', '# of Product', 'Total', 'Status', 'Referral', 'Product', 'Comments'],
+  example: ['Jane Smith', 'jane@email.com', '555-0100', '123 Oak St, Springfield, IL 62701', '4', '32.00', 'paid', 'ABCD', 'Natural Hardwood Mulch', 'Leave by garage'],
   required: ['Customer', 'Address'],
-  optional: ['Email', 'Phone', 'Bags', 'Total', 'Status', 'Referral', 'Product', 'Comments'],
+  optional: ['Email', 'Phone', '# of Product', 'Total', 'Status', 'Referral', 'Product', 'Comments'],
   notes: [
     'Header row required. Column names are case-insensitive.',
     'Customer and Address are required on every row.',
-    'Product should match an existing product name (e.g. Hardwood Mulch). If blank, Routed uses your first active product.',
+    'Bags accepts: Bags, Quantity, # of Product, or similar quantity columns.',
+    'Product names in the sheet are created automatically if they do not exist yet (price from Total ÷ quantity).',
     'Status: pending, paid, fulfilled, delivered, refunded, or cancelled. Defaults to pending.',
     'Referral must match a vendor code on this fundraiser to credit the sale.',
-    'Addresses are geocoded on import. Rows with invalid addresses are skipped.',
+    'Addresses are imported exactly as written in your spreadsheet.',
   ],
   aliases: {
     customer: ['customer', 'customername', 'name'],
     email: ['email', 'customeremail'],
     phone: ['phone', 'customerphone'],
-    address: ['address', 'deliveryaddress', 'delivery address'],
-    bags: ['bags', 'totalbags', 'quantity'],
-    total: ['total', 'totalamount', 'amount'],
+    address: ['address', 'deliveryaddress', 'delivery address', 'street', 'street address'],
+    bags: ['bags', 'totalbags', 'quantity', 'qty', 'of product', 'number of product', 'num of product', 'of bags', 'bags ordered'],
+    total: ['total', 'totalamount', 'amount', 'order total', 'price'],
     status: ['status'],
     referral: ['referral', 'referralcode', 'referral code', 'code'],
-    product: ['product', 'productname', 'item'],
-    comments: ['comments', 'notes'],
+    product: ['product', 'productname', 'item', 'product name'],
+    comments: ['comments', 'notes', 'delivery notes', 'instructions'],
   },
 };
 
@@ -55,6 +56,22 @@ export const VENDORS_CSV = {
     referral: ['referral', 'referralcode', 'referral code', 'code'],
   },
 };
+
+/** Normalize spreadsheet column headers for matching */
+export function normalizeCsvHeader(h) {
+  return String(h)
+    .toLowerCase()
+    .replace(/^"|"$/g, '')
+    .replace(/#/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function parseCsvNumber(val, fallback = 0) {
+  if (val === '' || val == null) return fallback;
+  const n = Number(String(val).replace(/[$,\s]/g, '').trim());
+  return Number.isFinite(n) ? n : fallback;
+}
 
 export function pickField(row, aliases) {
   for (const key of aliases) {
