@@ -75,6 +75,47 @@ export function normalizeImportAddressVariants(raw) {
   return [...variants];
 }
 
+/**
+ * Strip city/state from a comma-separated address when the city may be wrong.
+ * e.g. "19908 Tygart Ln, Gaithersburg, MD 20879" → "19908 Tygart Ln"
+ */
+export function extractStreetOnly(raw) {
+  const s = preprocessImportAddress(raw);
+  if (!s) return null;
+
+  const parts = s.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length >= 2 && looksLikeStreetAddress(parts[0])) {
+    return parts[0];
+  }
+
+  const noComma = s.match(/^(.+?\d[\w\s.'#-]*?)\s+[A-Za-z][A-Za-z\s.'-]+\s+[A-Z]{2}(?:\s+(\d{5}(?:-\d{4})?))?\s*$/i);
+  if (noComma && looksLikeStreetAddress(noComma[1].trim())) {
+    return noComma[1].trim();
+  }
+
+  return null;
+}
+
+/** ZIP from the original string (not the house number). */
+export function extractZip(raw) {
+  const s = String(raw || "").trim();
+  const afterState = s.match(/,\s*[A-Z]{2}\s+(\d{5})(?:-\d{4})?\s*$/i);
+  if (afterState) return afterState[1];
+  const trailing = s.match(/,\s*(\d{5})(?:-\d{4})?\s*$/);
+  if (trailing) return trailing[1];
+  return null;
+}
+
+export function streetOnlyGeocodeVariants(raw) {
+  const street = extractStreetOnly(raw);
+  if (!street) return [];
+
+  const variants = [street];
+  const zip = extractZip(raw);
+  if (zip) variants.push(`${street}, ${zip}`);
+  return variants;
+}
+
 export function addressImportErrorMessage(raw, reason) {
   if (reason === "not_a_street_address") {
     return `Address does not look like a street address — include a house number (got "${raw}")`;
@@ -132,6 +173,16 @@ export async function geocodeImportAddress(raw, { regionHint } = {}) {
     const result = await geocodeAddress(query);
     if (result?.lat != null && result?.lon != null) {
       return { ok: true, coords: result, input, query, queriesTried };
+    }
+  }
+
+  // Wrong city in CSV is common — retry with street (+ optional ZIP) only, first Nominatim hit.
+  for (const query of streetOnlyGeocodeVariants(input)) {
+    if (queriesTried.includes(query)) continue;
+    queriesTried.push(query);
+    const result = await geocodeAddress(query);
+    if (result?.lat != null && result?.lon != null) {
+      return { ok: true, coords: result, input, query, queriesTried, matchedVia: "street_only" };
     }
   }
 
