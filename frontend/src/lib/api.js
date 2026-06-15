@@ -70,6 +70,7 @@ export const orderApi = {
   validateAddress: (address)    => api.post("/orders/validate-address", { address }),
   searchAddresses: (q)          => api.get("/orders/address-search", { params: { q } }),
   updateStatus:    (id, status) => api.patch(`/orders/${id}/status`, { status }),
+  updateAddress:   (id, deliveryAddress) => api.patch(`/orders/${id}/address`, { deliveryAddress }),
   refund:          (id)         => api.post(`/orders/${id}/refund`),
   delete:          (id)         => api.delete(`/orders/${id}`),
 };

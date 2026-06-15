@@ -30,7 +30,6 @@ async function autoGenerateRoutes(fundraiserId) {
   if (!orders.length) return { drivers, message: "No orders" };
 
   const fr = await Fundraiser.findById(fundraiserId).lean();
-  const hubAddress = fr?.deliveryHubAddress || fr?.pickupAddress || null;
 
   for (const d of drivers) {
     d.stops = [];
@@ -40,13 +39,15 @@ async function autoGenerateRoutes(fundraiserId) {
   }
 
   let plan = null;
+  let hubCoords = fr?.deliveryHubCoords || fr?.pickupCoords || null;
   try {
-    plan = await optimizeRoutes({ hubAddress, orders, drivers });
+    plan = await optimizeRoutes({ orders, drivers, fundraiser: fr });
+    hubCoords = plan?.hubCoords || hubCoords;
   } catch (err) {
-    console.error("OSRM optimization failed, using capacity fallback:", err);
+    console.error("Route optimization failed, using capacity fallback:", err);
   }
   if (!plan) {
-    plan = capacityFallback({ orders, drivers });
+    plan = capacityFallback({ orders, drivers, hubCoords });
   }
 
   plan.stopsByDriver.forEach((orderList, i) => {
@@ -54,7 +55,7 @@ async function autoGenerateRoutes(fundraiserId) {
   });
 
   if (plan.unassigned?.length) {
-    const fb = capacityFallback({ orders: plan.unassigned, drivers });
+    const fb = capacityFallback({ orders: plan.unassigned, drivers, hubCoords });
     fb.stopsByDriver.forEach((orderList, i) => {
       drivers[i].stops.push(...buildStopsFromOrders(orderList));
     });

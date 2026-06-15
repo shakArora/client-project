@@ -797,6 +797,17 @@ function OrdersTab({ fr }) {
   const [confirming, setConfirming] = useState(null);
   const [csvMsg,  setCsvMsg]  = useState('');
   const [csvBusy, setCsvBusy] = useState(false);
+  const [addressDraft, setAddressDraft] = useState('');
+  const [addressCoords, setAddressCoords] = useState(null);
+  const [addressSaving, setAddressSaving] = useState(false);
+  const [addressMsg, setAddressMsg] = useState('');
+
+  useEffect(() => {
+    if (!selected) return;
+    setAddressDraft(selected.deliveryAddress || '');
+    setAddressCoords(selected.coords?.lat != null ? selected.coords : null);
+    setAddressMsg('');
+  }, [selected]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -822,6 +833,26 @@ function OrdersTab({ fr }) {
       setSelected(null);
     } catch (err) {
       alert(err.response?.data?.message || 'Delete failed.');
+    }
+  }
+
+  async function saveAddress() {
+    if (!selected) return;
+    if (!addressCoords?.lat) {
+      setAddressMsg('Pick a verified address from the dropdown, or fix the spelling and try again.');
+      return;
+    }
+    setAddressSaving(true);
+    setAddressMsg('');
+    try {
+      const { data } = await orderApi.updateAddress(selected._id, addressDraft);
+      setSelected(data);
+      load();
+      setAddressMsg(data.addressNeedsReview ? 'Saved, but address still could not be verified.' : 'Address verified and saved.');
+    } catch (err) {
+      setAddressMsg(err.response?.data?.message || 'Failed to save address.');
+    } finally {
+      setAddressSaving(false);
     }
   }
 
@@ -955,19 +986,49 @@ function OrdersTab({ fr }) {
             <h3 style={{ fontFamily: 'var(--serif)', marginBottom: '1rem' }}>Order Details</h3>
             {needsAddressReview(selected) && (
               <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '.85rem 1rem', marginBottom: '1rem', fontSize: '.84rem', color: '#9a3412' }}>
-                <strong>Address not verified.</strong> This address could not be matched for routing. Fix the spelling in your CSV and re-import, or update the address below before generating routes.
+                <strong>Address not verified.</strong> Use the address editor below to pick a verified match from the dropdown, then click Save address.
               </div>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem .85rem', marginBottom: '1.25rem' }}>
-              {[['Customer', selected.customerName], ['Email', selected.customerEmail], ['Phone', selected.customerPhone||' - '], ['Address', selected.deliveryAddress], ['Referral', selected.referralCode||' - '], ['Status', '']].map(([l,v]) => (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem .85rem', marginBottom: '1rem' }}>
+              {[['Customer', selected.customerName], ['Email', selected.customerEmail], ['Phone', selected.customerPhone||' - '], ['Referral', selected.referralCode||' - '], ['Status', '']].map(([l,v]) => (
                 <div key={l}>
                   <div style={{ fontSize: '.7rem', color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{l}</div>
-                  {l === 'Status' ? <Badge status={selected.status} /> : <div style={{ fontSize: '.9rem', fontWeight: 600 }}>{v}</div>}
+                  {l === 'Status' ? <Badge status={selected.status} /> : <div style={{ fontSize: '.9rem', fontWeight: 600 }}>{v || ' - '}</div>}
                 </div>
               ))}
             </div>
 
-            {selected.comments && <p style={{ background: 'var(--surface)', borderRadius: 8, padding: '.75rem', fontSize: '.85rem', marginBottom: '1rem' }}><strong>Notes: </strong>{selected.comments}</p>}
+            <AddressSelect
+              label="Delivery Address"
+              value={addressDraft}
+              coords={addressCoords}
+              required
+              hint="Start typing, select a match from the list, then save."
+              onChange={({ address, coords }) => {
+                setAddressDraft(address);
+                setAddressCoords(coords);
+                setAddressMsg('');
+              }}
+            />
+            {addressMsg && (
+              <p style={{
+                fontSize: '.82rem',
+                color: addressMsg.startsWith('Address verified') ? '#059669' : addressMsg.startsWith('Saved, but') ? '#9a3412' : '#dc2626',
+                marginBottom: '1rem',
+                fontWeight: 600,
+              }}>
+                {addressMsg}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={saveAddress}
+              disabled={addressSaving || !addressCoords?.lat}
+              className="btn btn-gold"
+              style={{ width: '100%', marginBottom: '1.25rem' }}
+            >
+              {addressSaving ? 'Saving…' : 'Save address'}
+            </button>
 
             <div style={{ borderTop: '1px solid var(--border-lt)', paddingTop: '1rem', marginBottom: '1.25rem' }}>
               {(selected.items || []).map((item, i) => (
@@ -980,6 +1041,8 @@ function OrdersTab({ fr }) {
                 <span>Total</span><span>${selected.totalAmount.toFixed(2)}</span>
               </div>
             </div>
+
+            {selected.comments && <p style={{ background: 'var(--surface)', borderRadius: 8, padding: '.75rem', fontSize: '.85rem', marginBottom: '1rem' }}><strong>Notes: </strong>{selected.comments}</p>}
 
             {/* Status actions */}
             <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>

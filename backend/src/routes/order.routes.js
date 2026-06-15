@@ -7,6 +7,7 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { ROLES } from "../models/User.js";
 import { geocodeImportAddress, searchAddresses } from "../utils/geocode.js";
 import { deleteOrderById } from "../services/fundraiserCleanup.js";
+import { DriverRoute } from "../models/DriverRoute.js";
 
 const router = express.Router();
 
@@ -171,6 +172,55 @@ router.patch("/:id/status", requireAuth, requireRole(ROLES.ADMIN), async (req, r
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ message: "Invalid status" });
     res.status(500).json({ message: "Unable to update order status" });
+  }
+});
+
+// ── Admin: update delivery address ────────────────────
+router.patch("/:id/address", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const { deliveryAddress } = z.object({
+      deliveryAddress: z.string().min(5).trim(),
+    }).parse(req.body);
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    const fr = await Fundraiser.findOne({ _id: order.fundraiserId, adminId: req.user.sub });
+    if (!fr) return res.status(404).json({ message: "Order not found" });
+
+    const parsed = await geocodeImportAddress(deliveryAddress, {
+      regionHint: fr.location || fr.pickupAddress || fr.deliveryHubAddress,
+    });
+
+    if (parsed.ok) {
+      order.deliveryAddress = parsed.coords.display;
+      order.coords = parsed.coords;
+      order.addressNeedsReview = false;
+    } else {
+      order.deliveryAddress = deliveryAddress;
+      order.coords = undefined;
+      order.addressNeedsReview = true;
+    }
+    await order.save();
+
+    if (parsed.ok) {
+      const routes = await DriverRoute.find({ fundraiserId: order.fundraiserId, "stops.orderId": order._id });
+      for (const route of routes) {
+        let changed = false;
+        for (const stop of route.stops) {
+          if (String(stop.orderId) === String(order._id)) {
+            stop.deliveryAddress = order.deliveryAddress;
+            changed = true;
+          }
+        }
+        if (changed) await route.save();
+      }
+    }
+
+    res.json(order);
+  } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ message: "Invalid address" });
+    res.status(500).json({ message: "Unable to update address" });
   }
 });
 
