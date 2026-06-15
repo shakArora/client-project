@@ -1,4 +1,4 @@
-import { logic } from "../../../src/logic.js";
+import { logic } from "./routingLogic.js";
 import { geocodeImportAddress, formatRegionHint } from "./geocode.js";
 
 const HUB_LABEL = "__HUB__";

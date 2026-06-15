@@ -1,2 +1,306 @@
-/** Re-export canonical routing engine from /src/logic.js */
-export * from "../../../src/logic.js";
+// LOGIC FOR ROUTED HERE — keep in sync with /src/logic.js
+
+const wait = (ms) => {
+  if (process.env.NODE_ENV === 'test') return Promise.resolve();
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+async function geocode(address, skipWait = false) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=jsonv2&limit=1`;
+  const response = await fetch(url, {
+    headers: { 'User-Agent': 'Routed/1.0 (arorashivum@gmail.com)' },
+  });
+  const data = await response.json();
+  if (!skipWait) await wait(1100);
+  if (!data || data.length === 0) throw new Error(`Could not geocode address: ${address}`);
+  return { lat: data[0].lat, lon: data[0].lon };
+}
+
+function haversineKm(a, b) {
+  const R = 6371;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(Number(b.lat) - Number(a.lat));
+  const dLon = toRad(Number(b.lon) - Number(a.lon));
+  const la1 = toRad(a.lat);
+  const la2 = toRad(b.lat);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+function haversineMatrix(coordList) {
+  const n = coordList.length;
+  const matrix = Array.from({ length: n }, () => Array(n).fill(0));
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const km = haversineKm(coordList[i], coordList[j]);
+      matrix[i][j] = km;
+      matrix[j][i] = km;
+    }
+  }
+  return matrix;
+}
+
+async function fetchOsrmMatrix(coordList, mode = 'duration') {
+  if (mode !== 'duration' && mode !== 'distance') throw new Error('Invalid mode.');
+  const coordString = coordList.map((c) => `${Number(c.lon)},${Number(c.lat)}`).join(';');
+  const url = `https://router.project-osrm.org/table/v1/driving/${coordString}?annotations=${mode}`;
+  const response = await fetch(url, {
+    headers: { 'User-Agent': 'Routed/1.0 (arorashivum@gmail.com)' },
+  });
+  if (!response.ok) throw new Error(`OSRM API request failed with status ${response.status}`);
+  const data = await response.json();
+  if (data.code !== 'Ok') throw new Error(`OSRM Error: ${data.code}`);
+  const key = mode === 'duration' ? 'durations' : 'distances';
+  return data[key];
+}
+
+/** Build NxN matrix from lat/lon (OSRM driving times, haversine fallback). */
+async function distMatrixFromCoords(coordList, mode = 'duration') {
+  if (!coordList?.length) return [];
+  try {
+    return await fetchOsrmMatrix(coordList, mode);
+  } catch {
+    return haversineMatrix(coordList);
+  }
+}
+
+async function distMatrix(addresses, mode = 'duration') {
+  const coords = [];
+  for (const addr of addresses) {
+    coords.push(await geocode(addr, process.env.NODE_ENV === 'test'));
+  }
+  return distMatrixFromCoords(coords, mode);
+}
+
+async function clusterAddressesWithCapacity(addresses, weights, distanceMatrix, carCapacities, options = {}) {
+  const { disableSplit = false } = options;
+  if (!addresses || !weights || !distanceMatrix || !carCapacities) {
+    throw new Error('Missing required parameters');
+  }
+  if (addresses.length !== weights.length) {
+    weights = [];
+    for (const i of addresses) {
+      weights.push(i.weight);
+    }
+    const addrTemp = [];
+    for (const i of addresses) {
+      addrTemp.push(i.address);
+    }
+    addresses = addrTemp;
+  }
+  if (addresses.length === 0) {
+    return {
+      assignments: [],
+      clusters: [],
+      unassignedAddresses: [],
+      summary: {
+        totalAddresses: 0,
+        assignedAddresses: 0,
+        vehiclesUsed: 0,
+        vehicleLoads: [],
+      },
+    };
+  }
+
+  let finalAddresses = [];
+  let finalWeights = [];
+  let finalMatrix = [];
+  let originIndices = [];
+
+  if (disableSplit) {
+    finalAddresses = [...addresses];
+    finalWeights = [...weights];
+    finalMatrix = distanceMatrix.map((row) => [...row]);
+    originIndices = addresses.map((_, i) => i);
+  } else {
+    const maxCarCapacity = Math.max(...carCapacities);
+    const splitThreshold = maxCarCapacity / 2;
+
+    for (let i = 0; i < addresses.length; i++) {
+      let currentWeight = weights[i];
+      const addressName = addresses[i];
+
+      if (currentWeight > splitThreshold) {
+        let partIndex = 1;
+        while (currentWeight > 0) {
+          const chunkWeight = Math.min(currentWeight, splitThreshold);
+          finalAddresses.push(`${addressName} (Part ${partIndex})`);
+          finalWeights.push(chunkWeight);
+          originIndices.push(i);
+          currentWeight -= chunkWeight;
+          partIndex++;
+        }
+      } else {
+        finalAddresses.push(addressName);
+        finalWeights.push(currentWeight);
+        originIndices.push(i);
+      }
+    }
+
+    for (let i = 0; i < originIndices.length; i++) {
+      const row = [];
+      const originalRowIndex = originIndices[i];
+      for (let j = 0; j < originIndices.length; j++) {
+        const originalColIndex = originIndices[j];
+        row.push(distanceMatrix[originalRowIndex][originalColIndex]);
+      }
+      finalMatrix.push(row);
+    }
+  }
+
+  const originalAddressesCount = addresses.length;
+  const originalWeights = [...weights];
+  const originalAddresses = [...addresses];
+
+  addresses = finalAddresses;
+  weights = finalWeights;
+  distanceMatrix = finalMatrix;
+
+  const n = addresses.length;
+  const assignments = new Array(n).fill(-1);
+  const clusters = [];
+  const unassigned = new Set(Array.from({ length: n }, (_, i) => i));
+
+  const sortedCars = carCapacities
+    .map((cap, idx) => ({ capacity: cap, index: idx }))
+    .sort((a, b) => b.capacity - a.capacity);
+
+  for (const car of sortedCars) {
+    if (unassigned.size === 0) break;
+
+    const vehicleAddresses = [];
+    let vehicleLoad = 0;
+    let currentIndex = [...unassigned].reduce((best, idx) =>
+      distanceMatrix[0][idx] < distanceMatrix[0][best] ? idx : best,
+    );
+
+    while (unassigned.size > 0 && currentIndex !== null) {
+      if (vehicleLoad + weights[currentIndex] <= car.capacity) {
+        vehicleAddresses.push(currentIndex);
+        vehicleLoad += weights[currentIndex];
+        assignments[currentIndex] = car.index;
+        unassigned.delete(currentIndex);
+
+        let nextIndex = null;
+        let minDistance = Infinity;
+
+        for (const idx of unassigned) {
+          const distance = distanceMatrix[currentIndex][idx];
+          if (distance < minDistance) {
+            minDistance = distance;
+            nextIndex = idx;
+          }
+        }
+        currentIndex = nextIndex;
+      } else {
+        let found = false;
+        let bestFit = null;
+        let bestFitDistance = Infinity;
+
+        for (const idx of unassigned) {
+          if (vehicleLoad + weights[idx] <= car.capacity) {
+            const distance = distanceMatrix[currentIndex][idx];
+            if (distance < bestFitDistance) {
+              bestFitDistance = distance;
+              bestFit = idx;
+              found = true;
+            }
+          }
+        }
+
+        if (found) {
+          currentIndex = bestFit;
+        } else {
+          break;
+        }
+      }
+    }
+
+    if (vehicleAddresses.length > 0) {
+      clusters.push({
+        vehicleIndex: car.index,
+        addressIndices: vehicleAddresses,
+        addresses: vehicleAddresses.map((i) => addresses[i]),
+        totalWeight: vehicleLoad,
+        capacity: car.capacity,
+        utilizationRate: `${(vehicleLoad / car.capacity * 100).toFixed(2)}%`,
+      });
+    }
+  }
+
+  const mappedAssignments = new Array(originalAddressesCount).fill(-1);
+  for (let i = 0; i < assignments.length; i++) {
+    const parentIndex = originIndices[i];
+    if (assignments[i] !== -1) {
+      mappedAssignments[parentIndex] = assignments[i];
+    }
+  }
+
+  const parentUnassignedIndices = new Set();
+  for (const idx of unassigned) {
+    parentUnassignedIndices.add(originIndices[idx]);
+  }
+
+  const remainingWeight = [...originalWeights];
+  for (let i = 0; i < assignments.length; i++) {
+    if (assignments[i] !== -1) remainingWeight[originIndices[i]] -= weights[i];
+  }
+
+  const unassignedAddresses = Array.from(parentUnassignedIndices)
+    .filter((parentIdx) => remainingWeight[parentIdx] > 0)
+    .map((parentIdx) => ({
+      index: parentIdx,
+      address: originalAddresses[parentIdx],
+      weight: remainingWeight[parentIdx],
+    }));
+
+  return {
+    assignments: mappedAssignments,
+    clusters,
+    unassignedAddresses,
+    summary: {
+      totalAddresses: originalAddressesCount,
+      assignedAddresses: originalAddressesCount - unassignedAddresses.length,
+      vehiclesUsed: clusters.length,
+      totalWeightAssigned: clusters.reduce((sum, c) => sum + c.totalWeight, 0),
+      totalCapacity: clusters.reduce((sum, c) => sum + c.capacity, 0),
+      vehicleLoads: clusters.map((c) => ({
+        vehicleIndex: c.vehicleIndex,
+        weight: c.totalWeight,
+        capacity: c.capacity,
+        utilization: c.utilizationRate,
+        addressCount: c.addressIndices.length,
+      })),
+    },
+  };
+}
+
+async function logic(addresses, amountPerAddress, carCapacities, options = {}) {
+  const { coords, disableSplit = false } = options;
+  const distanceMatrix = coords?.length
+    ? await distMatrixFromCoords(coords)
+    : await distMatrix(addresses);
+  const clusterOpts = { disableSplit };
+  let result = await clusterAddressesWithCapacity(addresses, amountPerAddress, distanceMatrix, carCapacities, clusterOpts);
+  const newClusters = [result];
+  while (result.unassignedAddresses?.length > 0) {
+    const remaining = result.unassignedAddresses;
+    const remainingAddresses = remaining.map((u) => u.address);
+    const remainingWeights = remaining.map((u) => u.weight);
+    const remainingIndices = remaining.map((u) => u.index);
+    const remainingMatrix = remainingIndices.map((i) =>
+      remainingIndices.map((j) => distanceMatrix[i][j]),
+    );
+    result = await clusterAddressesWithCapacity(
+      remainingAddresses,
+      remainingWeights,
+      remainingMatrix,
+      carCapacities,
+      clusterOpts,
+    );
+    newClusters.push(result);
+  }
+  return newClusters;
+}
+
+export { geocode, distMatrix, distMatrixFromCoords, haversineMatrix, clusterAddressesWithCapacity, logic };

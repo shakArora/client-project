@@ -1,4 +1,4 @@
-// LOGIC FOR ROUTED HERE
+// LOGIC FOR ROUTED HERE — keep in sync with backend/src/utils/routingLogic.js
 
 const wait = (ms) => {
   if (process.env.NODE_ENV === 'test') return Promise.resolve();
