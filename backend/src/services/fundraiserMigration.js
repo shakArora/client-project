@@ -30,6 +30,15 @@ function escapeRegex(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+const ORDER_STATUSES = new Set([
+  "pending", "paid", "fulfilled", "delivered", "refunded", "cancelled",
+]);
+
+function normalizeOrderStatus(raw) {
+  const s = String(raw || "").trim().toLowerCase();
+  return ORDER_STATUSES.has(s) ? s : "pending";
+}
+
 function emptyStats() {
   return {
     products: 0,
@@ -343,7 +352,7 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
       items,
       totalBags: o.totalBags || items.reduce((s, i) => s + i.quantity, 0),
       totalAmount: o.totalAmount || items.reduce((s, i) => s + i.quantity * i.unitPrice, 0),
-      status: o.status || "pending",
+      status: normalizeOrderStatus(o.status),
     });
     stats.details.orders.created++;
     stats.orders++;

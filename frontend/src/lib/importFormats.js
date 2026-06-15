@@ -1,5 +1,39 @@
 /** Column specs and behavior notes for fundraiser import/export */
 
+export const ORDER_STATUSES = new Set([
+  'pending', 'paid', 'fulfilled', 'delivered', 'refunded', 'cancelled',
+]);
+
+export function normalizeOrderStatus(raw) {
+  const s = String(raw || '').trim().toLowerCase();
+  return ORDER_STATUSES.has(s) ? s : 'pending';
+}
+
+/** Recover product/status when CSV rows skip empty Status/Referral columns. */
+export function resolveOrderCsvFields({ statusRaw, productRaw, referralRaw, commentsRaw }) {
+  let status = String(statusRaw || '').trim();
+  let product = String(productRaw || '').trim();
+  let referral = String(referralRaw || '').trim();
+  let comments = String(commentsRaw || '').trim();
+  let shifted = false;
+
+  if (status && !ORDER_STATUSES.has(status.toLowerCase())) {
+    if (!product) product = status;
+    if (!comments && referral) comments = referral;
+    referral = '';
+    status = '';
+    shifted = true;
+  }
+
+  return {
+    status: normalizeOrderStatus(status),
+    product: product || 'Imported',
+    referralCode: referral || undefined,
+    comments: comments || undefined,
+    shifted,
+  };
+}
+
 export const IMPORT_BEHAVIOR = {
   orders: 'Adds new orders only. Existing orders are never modified or deleted. Duplicate rows (same customer + address + bags) are skipped. Email and phone are optional. Each address is validated before import; fix any errors in your CSV and re-upload.',
   vendors: 'Creates new vendor accounts. Rows with an email that already exists on this fundraiser are skipped.',
@@ -20,7 +54,7 @@ export const ORDERS_CSV = {
     'Customer and Address are required on every row. Email and Phone are optional.',
     'Bags accepts: Bags, Quantity, # of Product, or similar quantity columns.',
     'Product names in the sheet are created automatically if they do not exist yet (price from Total ÷ quantity).',
-    'Status: pending, paid, fulfilled, delivered, refunded, or cancelled. Defaults to pending.',
+    'Status is optional (pending, paid, fulfilled, delivered, refunded, cancelled). Leave blank if unknown — do not put product names here.',
     'Referral is optional. Leave blank if the order was not referred by a vendor. If provided, it must match a vendor code on this fundraiser.',
     'Address: street number + street name, city, and state (ZIP optional). Example: 14508 Brookmead Dr, Darnestown, MD',
     'Addresses without a ZIP code are OK. Routed validates each address before import; rows that cannot be parsed must be fixed and re-uploaded.',

@@ -28,13 +28,44 @@ export function downloadCsv(filename, headers, rows) {
   URL.revokeObjectURL(url);
 }
 
+/** Parse one CSV line, preserving empty fields and quoted commas. */
+export function parseCsvLine(line) {
+  const values = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ',') {
+      values.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  values.push(current.trim());
+  return values;
+}
+
 export function parseCsv(text) {
   const lines = text.trim().split(/\r?\n/).filter(Boolean);
   if (!lines.length) return [];
-  const headers = lines[0].split(',').map(h => normalizeCsvHeader(h.trim()));
+  const headers = parseCsvLine(lines[0]).map(h => normalizeCsvHeader(h));
   return lines.slice(1).map(line => {
-    const cells = line.match(/("([^"]|"")*"|[^,]+)/g) || [];
-    const values = cells.map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
+    const values = parseCsvLine(line);
     const row = {};
     headers.forEach((h, i) => { row[h] = values[i] || ''; });
     return row;

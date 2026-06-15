@@ -5,7 +5,7 @@ import { fundraiserApi, productApi, vendorApi, adminApi, orderApi, driverApi } f
 import { US_STATES } from '../lib/usStates';
 import { downloadCsv, downloadJson, downloadTemplateCsv, parseCsv } from '../lib/csv';
 import { isPastFundraiser } from '../lib/dates';
-import { ORDERS_CSV, VENDORS_CSV, pickField, parseCsvNumber } from '../lib/importFormats';
+import { ORDERS_CSV, VENDORS_CSV, pickField, parseCsvNumber, resolveOrderCsvFields } from '../lib/importFormats';
 import AddressSelect from '../components/AddressSelect';
 import { SkeletonFundraiserDetail, SkeletonList } from '../components/Skeleton';
 
@@ -350,9 +350,17 @@ function parseOrdersCsvRows(rows) {
     const bagsRaw = pickField(r, ORDERS_CSV.aliases.bags);
     const bags  = Math.max(1, Math.round(parseCsvNumber(bagsRaw, 1)));
     const total = parseCsvNumber(pickField(r, ORDERS_CSV.aliases.total), 0);
-    const product = pickField(r, ORDERS_CSV.aliases.product) || 'Imported';
+    const resolved = resolveOrderCsvFields({
+      statusRaw: pickField(r, ORDERS_CSV.aliases.status),
+      productRaw: pickField(r, ORDERS_CSV.aliases.product),
+      referralRaw: pickField(r, ORDERS_CSV.aliases.referral),
+      commentsRaw: pickField(r, ORDERS_CSV.aliases.comments),
+    });
+    if (resolved.shifted) {
+      problems.push(`Row ${i + 2}: columns look shifted — treated "${resolved.product}" as product (status defaults to pending)`);
+    }
     const unitPrice = bags > 0 && total > 0 ? Math.round((total / bags) * 100) / 100 : 0;
-    const referralRaw = pickField(r, ORDERS_CSV.aliases.referral);
+    const referralRaw = resolved.referralCode;
     valid.push({
       row: i + 2,
       customerName: customer,
@@ -361,10 +369,10 @@ function parseOrdersCsvRows(rows) {
       deliveryAddress: address,
       totalBags: bags,
       totalAmount: total,
-      status: pickField(r, ORDERS_CSV.aliases.status) || 'pending',
+      status: resolved.status,
       referralCode: referralRaw?.trim() ? referralRaw.trim().toUpperCase() : undefined,
-      comments: pickField(r, ORDERS_CSV.aliases.comments),
-      items: [{ productName: product, quantity: bags, unitPrice }],
+      comments: resolved.comments,
+      items: [{ productName: resolved.product, quantity: bags, unitPrice }],
     });
   });
   return { valid, problems };
