@@ -25,7 +25,7 @@ router.get("/", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
 // ── Vendor: get own profile ───────────────────────────
 router.get("/me", requireAuth, requireRole(ROLES.VENDOR), async (req, res) => {
   try {
-    const vendor = await Vendor.findOne({ userId: req.user.sub }).populate("fundraiserId", "title slug isActive endDate").lean();
+    const vendor = await Vendor.findOne({ userId: req.user.sub }).populate("fundraiserId", "title slug isActive startDate endDate").lean();
     if (!vendor) return res.status(404).json({ message: "Vendor profile not found" });
     res.json(vendor);
   } catch {
@@ -111,7 +111,7 @@ router.patch("/me", requireAuth, requireRole(ROLES.VENDOR), async (req, res) => 
       revenueGoal: z.coerce.number().min(0).optional(),
     }).parse(req.body);
     const vendor = await Vendor.findOneAndUpdate({ userId: req.user.sub }, body, { new: true })
-      .populate("fundraiserId", "title slug isActive endDate");
+      .populate("fundraiserId", "title slug isActive startDate endDate");
     if (!vendor) return res.status(404).json({ message: "Vendor profile not found" });
     res.json(vendor);
   } catch (error) {

@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vendorApi } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import VendorNav from '../components/VendorNav';
 import AppPage from '../components/AppPage';
 import { SkeletonVendorPage } from '../components/Skeleton';
+import VendorQrCode, { downloadQrPng, getQrSvgElement } from '../components/VendorQrCode';
 
 export default function VendorCodes() {
   const { user } = useAuth();
@@ -12,6 +13,7 @@ export default function VendorCodes() {
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const qrWrapRef = useRef(null);
 
   useEffect(() => {
     vendorApi.me()
@@ -32,12 +34,18 @@ export default function VendorCodes() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  async function share() {
+  async function shareLink() {
     if (navigator.share) {
       await navigator.share({ title: fundraiser?.title, url: shopUrl }).catch(() => {});
     } else {
       copy();
     }
+  }
+
+  function saveQr() {
+    const svg = getQrSvgElement(qrWrapRef.current);
+    const code = vendor?.referralCode || 'vendor';
+    downloadQrPng(svg, `${code}-shop-qr.png`);
   }
 
   const name = user?.name?.split(' ')[0] || 'Vendor';
@@ -73,7 +81,7 @@ export default function VendorCodes() {
                 <input readOnly value={shopUrl} className="vendor-link-input" />
                 <div className="vendor-link-actions">
                   <button type="button" className="btn btn-gold btn-sm" onClick={copy}>{copied ? 'Copied' : 'Copy'}</button>
-                  <button type="button" className="btn btn-dark btn-sm" onClick={share}>Share</button>
+                  <button type="button" className="btn btn-dark btn-sm" onClick={shareLink}>Share</button>
                 </div>
               </div>
               <p style={{ fontSize: '.8rem', color: 'var(--t3)', marginTop: '.6rem' }}>
@@ -88,30 +96,22 @@ export default function VendorCodes() {
                   <span style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(2rem,8vw,2.8rem)', fontWeight: 800, color: 'var(--gold-dk)', letterSpacing: '.06em' }}>
                     {vendor?.referralCode || ' -  - '}
                   </span>
-                  <button type="button" className="btn btn-dark btn-sm" onClick={share}>Share</button>
+                  <button type="button" className="btn btn-dark btn-sm" onClick={shareLink}>Share</button>
                 </div>
               </div>
 
               <div className="card" style={{ textAlign: 'center' }}>
                 <p className="card-label">QR Code</p>
-                <button type="button" onClick={share} style={{ background: 'var(--surface-2)', borderRadius: 'var(--r3)', padding: '1.4rem', display: 'inline-flex', border: 'none', cursor: 'pointer', marginBottom: '.6rem' }}>
-                  <svg width="56" height="56" viewBox="0 0 10 10" style={{ imageRendering: 'pixelated' }} aria-hidden>
-                    <rect x="0" y="0" width="4" height="4" fill="#3A2510" rx=".5"/>
-                    <rect x="1" y="1" width="2" height="2" fill="var(--bg)"/>
-                    <rect x="6" y="0" width="4" height="4" fill="#3A2510" rx=".5"/>
-                    <rect x="7" y="1" width="2" height="2" fill="var(--bg)"/>
-                    <rect x="0" y="6" width="4" height="4" fill="#3A2510" rx=".5"/>
-                    <rect x="1" y="7" width="2" height="2" fill="var(--bg)"/>
-                    <rect x="5" y="5" width="1" height="1" fill="#3A2510"/>
-                    <rect x="7" y="5" width="1" height="1" fill="#3A2510"/>
-                    <rect x="6" y="6" width="1" height="1" fill="#3A2510"/>
-                    <rect x="8" y="6" width="1" height="1" fill="#3A2510"/>
-                    <rect x="5" y="7" width="2" height="1" fill="#3A2510"/>
-                    <rect x="8" y="8" width="2" height="2" fill="#3A2510" rx=".3"/>
-                    <rect x="5" y="9" width="2" height="1" fill="#3A2510"/>
-                  </svg>
-                </button>
-                <p style={{ fontSize: '.78rem', color: 'var(--t3)' }}>Tap to save or share your QR code</p>
+                <div ref={qrWrapRef} style={{ marginBottom: '.75rem' }}>
+                  <VendorQrCode value={shopUrl} size={168} label={`QR code for ${vendor?.referralCode || 'vendor'} shop link`} />
+                </div>
+                <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '.65rem' }}>
+                  Scan to open your shop with referral tracking.
+                </p>
+                <div style={{ display: 'flex', gap: '.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button type="button" className="btn btn-gold btn-sm" onClick={saveQr}>Download QR</button>
+                  <button type="button" className="btn btn-outline btn-sm" onClick={shareLink}>Share link</button>
+                </div>
               </div>
 
               <div className="card">
