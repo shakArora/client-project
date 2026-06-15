@@ -1,9 +1,3 @@
-/**
- * Imports all of the pages on the app and routes urls to pages (jsx UIs). All of these are in a folder called pages. This file also accounts for OTP gated driver pages. 
- * @author Shivum Arora
- * @date 6/9/2026
- */
-
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 

@@ -1,9 +1,3 @@
-/**
- * Validates whether a fundraiser meets all requirements before it can go live.
- * Builds a publish checklist (dates, contact, payment, cover image, hub address, products) and exposes an isPublishReady helper.
- * @author Shivum Arora
- * @date 6/11/2026
- */
 export function isValidCoverUrl(url) {
   if (!url || typeof url !== "string") return false;
   const trimmed = url.trim();

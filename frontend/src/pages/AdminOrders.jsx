@@ -1,9 +1,3 @@
-/**
- * Admin order management table scoped to the active fundraiser with search and status filtering.
- * Opens a detail modal to inspect line items and update order status through the orders API.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useState, useEffect } from 'react';
 import AdminShell from '../components/AdminShell';
 import { orderApi } from '../lib/api';

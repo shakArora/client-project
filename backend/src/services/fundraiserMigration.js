@@ -1,9 +1,3 @@
-/**
- * Service for exporting a fundraiser bundle (settings, products, vendors, orders, drivers) and importing it back.
- * Supports merge/append/skip-existing strategies per entity type, with geocoding and duplicate detection during import.
- * @author Shivum Arora
- * @date 6/11/2026
- */
 import bcrypt from "bcryptjs";
 import { Fundraiser } from "../models/Fundraiser.js";
 import { Product } from "../models/Product.js";

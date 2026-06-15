@@ -1,9 +1,3 @@
-/**
- * Mongoose schema for a sellable product belonging to a fundraiser.
- * Includes name, description, price, optional emoji/image, and an isActive flag for catalog visibility.
- * @author Shivum Arora
- * @date 6/5/2026
- */
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(

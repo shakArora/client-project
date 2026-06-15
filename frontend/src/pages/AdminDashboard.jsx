@@ -1,9 +1,3 @@
-/**
- * Primary administrator home showing fundraiser cards grouped by active, draft, and past status.
- * Lets admins create fundraisers, review publish checklists, toggle live status, open detail views, and delete campaigns.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';

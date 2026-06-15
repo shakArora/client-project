@@ -1,9 +1,3 @@
-/**
- * AdminShell page for listing and creating fundraisers with a simple inline form.
- * Uses the active-fundraiser hook to load the admin's campaigns and create or edit basic fundraiser metadata.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useState } from 'react';
 import AdminShell from '../components/AdminShell';
 import { fundraiserApi } from '../lib/api';

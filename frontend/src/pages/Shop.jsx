@@ -1,9 +1,3 @@
-/**
- * Legacy /shop entry point that resolves the active fundraiser and redirects to its canonical slug URL.
- * Falls back to a demo product grid when no active fundraiser exists, preserving referral query parameters.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';

@@ -1,9 +1,3 @@
-/**
- * Three-step checkout progress indicator for Shop, Details, and Pay stages.
- * Highlights the current step and marks completed steps for customer orientation during checkout.
- * @author Shivum Arora
- * @date 6/9/2026
- */
 const LABELS = ['Shop', 'Details', 'Pay'];
 
 export default function CheckoutStepper({ step }) {

@@ -1,9 +1,3 @@
-/**
- * Main marketing landing page with hero, features, how-it-works, FAQ, and call-to-action sections.
- * Introduces Routed to new visitors and routes them toward login, help, or getting started.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ArrowRight } from 'lucide-react';

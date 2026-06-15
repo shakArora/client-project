@@ -1,9 +1,3 @@
-/**
- * Mongoose schema for application users with role-based access (administrator, vendor, driver).
- * Supports password and Google OAuth identities plus basic profile fields (name, email, phone).
- * @author Shivum Arora
- * @date 6/5/2026
- */
 import mongoose from "mongoose";
 
 export const ROLES = {

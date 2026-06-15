@@ -1,9 +1,3 @@
-/**
- * Mobile-first driver delivery UI listing stops with color-coded pending, current, and delivered status.
- * Loads the route by stored OTP and lets drivers mark individual stops complete via the driver API.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { driverApi } from '../lib/api';

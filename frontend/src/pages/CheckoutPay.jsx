@@ -1,9 +1,3 @@
-/**
- * Final checkout step showing order summary, fundraiser payment instructions, and a place-order action.
- * Submits the cart to the orders API and stores the confirmed order for the confirmation page.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';

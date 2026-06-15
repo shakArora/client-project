@@ -1,9 +1,3 @@
-/**
- * Express router for user authentication: login, Google admin sign-in, and password-reset request/confirm flows.
- * Public self-registration is disabled; accounts are provisioned by the admin team, with JWT issuance and role-aware login validation.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import express from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";

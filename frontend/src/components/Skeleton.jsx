@@ -1,9 +1,5 @@
-/**
- * Shimmer skeleton primitives and composed loading placeholders for lists, cards, and page layouts.
- * Used across admin, vendor, customer, and driver views to avoid blank screens while data loads.
- * @author Shivum Arora
- * @date 6/11/2026
- */
+/** Shimmer skeleton primitives for loading states */
+
 export function Skeleton({ className = '', style, width, height, circle, rounded }) {
   return (
     <div

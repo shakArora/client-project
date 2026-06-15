@@ -1,9 +1,3 @@
-/**
- * Browser utilities for downloading JSON/CSV exports and parsing uploaded CSV files.
- * Powers admin fundraiser import templates and bulk data export from the fundraiser detail page.
- * @author Shivum Arora
- * @date 6/11/2026
- */
 export function downloadJson(filename, data) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);

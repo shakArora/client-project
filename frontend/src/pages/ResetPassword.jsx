@@ -1,9 +1,3 @@
-/**
- * Password-reset request form that emails a reset link to the user.
- * Calls the auth API and shows a confirmation state after a successful reset-request submission.
- * @author Shivum Arora
- * @date 6/5/2026
- */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authApi } from '../lib/api';

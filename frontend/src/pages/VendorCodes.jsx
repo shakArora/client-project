@@ -1,9 +1,3 @@
-/**
- * Vendor dashboard page showing the scout's referral code, shareable shop link, and QR code.
- * Loads the signed-in vendor profile and provides one-click copy for link distribution.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vendorApi } from '../lib/api';
