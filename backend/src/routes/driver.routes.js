@@ -1,3 +1,9 @@
+/**
+ * Express router for driver route management: OTP-based access, stop completion, and admin route generation.
+ * Distributes paid orders across drivers using OSRM route optimization with a capacity-based fallback when optimization fails.
+ * @author Shivum Arora
+ * @date 6/11/2026
+ */
 import express from "express";
 import { z } from "zod";
 import { DriverRoute } from "../models/DriverRoute.js";

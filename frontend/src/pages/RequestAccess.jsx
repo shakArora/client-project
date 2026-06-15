@@ -1,3 +1,9 @@
+/**
+ * Page for prospective administrators to request a Routed admin account.
+ * Provides a mailto link to contact the Routed team and points existing users to the login page.
+ * @author Shivum Arora
+ * @date 6/14/2026
+ */
 import { Link } from 'react-router-dom';
 import SiteNav from '../components/SiteNav';
 

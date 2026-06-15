@@ -1,3 +1,9 @@
+/**
+ * Lightweight health-check endpoint reporting API status, service name, and MongoDB connection state.
+ * Used by deploy monitors and load balancers to verify the backend process and database are reachable.
+ * @author Shivum Arora
+ * @date 6/6/2026
+ */
 import express from "express";
 import mongoose from "mongoose";
 

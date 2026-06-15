@@ -1,3 +1,9 @@
+/**
+ * Admin product catalog page for the active fundraiser with create/edit forms and emoji picker.
+ * Lists all products and lets administrators add, update, or remove items from the sale catalog.
+ * @author Shivum Arora
+ * @date 6/14/2026
+ */
 import { useState, useEffect } from 'react';
 import AdminShell from '../components/AdminShell';
 import { productApi } from '../lib/api';

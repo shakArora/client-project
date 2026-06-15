@@ -1,3 +1,9 @@
+/**
+ * Mongoose schema linking a user to a fundraiser as a selling scout with a unique referral code.
+ * Denormalizes contact info and maintains running sales totals (bags sold, revenue, order count, goal).
+ * @author Shivum Arora
+ * @date 6/9/2026
+ */
 import mongoose from "mongoose";
 
 const vendorSchema = new mongoose.Schema(

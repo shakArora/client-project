@@ -1,3 +1,9 @@
+/**
+ * Express router for customer order placement, address search/validation, and role-scoped order listing and updates.
+ * Supports public checkout, admin-wide order management, vendor-filtered views, and status/refund operations.
+ * @author Shivum Arora
+ * @date 6/11/2026
+ */
 import express from "express";
 import { z } from "zod";
 import { Order } from "../models/Order.js";

@@ -1,3 +1,9 @@
+/**
+ * Mongoose schema for a driver's delivery route tied to a fundraiser, identified by a 6-character OTP.
+ * Stores ordered stops (customer, address, bags, status), capacity, and route start/completion timestamps.
+ * @author Shivum Arora
+ * @date 6/9/2026
+ */
 import mongoose from "mongoose";
 
 const stopSchema = new mongoose.Schema(

@@ -1,3 +1,9 @@
+/**
+ * This is the home page for the Routed Application, which contains navigation to other pages and logins. This page also describes our focus and mission in creating this app. 
+ * @author Shivum Arora
+ * @date 5/27/2026
+ */
+
 import './App.css'
 
 function App() {

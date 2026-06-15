@@ -1,3 +1,9 @@
+/**
+ * Layout wrapper for admin pages with a persistent dark sidebar and top bar.
+ * Provides navigation across admin sections, displays the active fundraiser context, and handles logout.
+ * @author Shivum Arora
+ * @date 6/14/2026
+ */
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 

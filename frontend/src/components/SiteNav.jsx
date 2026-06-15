@@ -1,3 +1,9 @@
+/**
+ * Marketing-site navigation with scroll-aware styling for the landing page and simpler links on subpages.
+ * Supports anchor links, mobile drawer menu, and a login/dashboard call-to-action based on auth state.
+ * @author Shivum Arora
+ * @date 6/14/2026
+ */
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';

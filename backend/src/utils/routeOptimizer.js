@@ -1,3 +1,9 @@
+/**
+ * High-level route optimizer that assigns paid orders to drivers using OSRM distance matrices.
+ * Wraps the clustering logic with capacity-based fallback when OSRM optimization is unavailable.
+ * @author Shivum Arora
+ * @date 6/11/2026
+ */
 import { logic } from "./routingLogic.js";
 
 function stripPartSuffix(addr) {

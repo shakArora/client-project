@@ -1,3 +1,9 @@
+/**
+ * Tabbed admin workspace for a single fundraiser covering details, products, vendors, orders, and drivers.
+ * Supports CSV/JSON import-export, inline editing, route generation, and live delivery progress tracking.
+ * @author Shivum Arora
+ * @date 6/14/2026
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';

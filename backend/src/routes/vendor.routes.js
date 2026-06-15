@@ -1,3 +1,9 @@
+/**
+ * Express router for vendor profiles, referral codes, sales stats, and admin provisioning of vendor accounts.
+ * Lets vendors fetch their own profile and orders while admins list, create, and manage vendors per fundraiser.
+ * @author Shivum Arora
+ * @date 6/9/2026
+ */
 import express from "express";
 import { z } from "zod";
 import { Vendor } from "../models/Vendor.js";

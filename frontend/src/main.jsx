@@ -1,3 +1,9 @@
+/**
+ * Renders all login/oauth functions. Uses Google OAuth to login. 
+ * @author Shivum Arora
+ * @date 6/6/2026
+ */
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { GoogleOAuthProvider } from "@react-oauth/google";

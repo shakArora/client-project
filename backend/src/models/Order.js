@@ -1,3 +1,9 @@
+/**
+ * Mongoose schema for a customer order with line items, totals, delivery address, and referral attribution.
+ * Tracks lifecycle status (pending through delivered/refunded) and optional geocoded delivery coordinates.
+ * @author Shivum Arora
+ * @date 6/9/2026
+ */
 import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema(

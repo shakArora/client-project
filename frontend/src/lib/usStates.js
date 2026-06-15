@@ -1,3 +1,9 @@
+/**
+ * Static list of US state abbreviations and full names as [code, label] pairs.
+ * Populates state dropdowns in admin fundraiser create/edit forms.
+ * @author Shivum Arora
+ * @date 6/11/2026
+ */
 export const US_STATES = [
   ['AL', 'Alabama'], ['AK', 'Alaska'], ['AZ', 'Arizona'], ['AR', 'Arkansas'],
   ['CA', 'California'], ['CO', 'Colorado'], ['CT', 'Connecticut'], ['DE', 'Delaware'],

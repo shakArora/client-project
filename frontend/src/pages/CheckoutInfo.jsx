@@ -1,3 +1,9 @@
+/**
+ * Second checkout step where customers enter contact info, validated delivery address, and optional referral code.
+ * Persists cart customer details in sessionStorage and advances the three-step checkout flow toward payment.
+ * @author Shivum Arora
+ * @date 6/11/2026
+ */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';

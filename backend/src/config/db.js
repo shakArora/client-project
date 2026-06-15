@@ -1,3 +1,9 @@
+/**
+ * Mongoose connection helpers for the MongoDB database.
+ * Provides a single connect call and a retry wrapper used at server startup on Railway.
+ * @author Shivum Arora
+ * @date 6/6/2026
+ */
 import mongoose from "mongoose";
 import { env } from "./env.js";
 

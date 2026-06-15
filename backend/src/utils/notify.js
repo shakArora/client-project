@@ -1,3 +1,9 @@
+/**
+ * Outbound notification helper for password-reset delivery over email (SMTP) or SMS (Twilio).
+ * Gracefully no-ops when the chosen channel or provider credentials are not configured in the environment.
+ * @author Shivum Arora
+ * @date 6/5/2026
+ */
 import nodemailer from "nodemailer";
 import twilio from "twilio";
 import { env } from "../config/env.js";

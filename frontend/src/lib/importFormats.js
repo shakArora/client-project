@@ -1,5 +1,9 @@
-/** Column specs and behavior notes for fundraiser import/export */
-
+/**
+ * Column specs, aliases, and behavior notes for fundraiser CSV import templates (orders, vendors, products, drivers).
+ * Documents merge rules and field requirements used by the admin import UI and backend migration service.
+ * @author Shivum Arora
+ * @date 6/14/2026
+ */
 export const IMPORT_BEHAVIOR = {
   orders: 'Adds new orders only. Existing orders are never modified or deleted. Duplicate rows (same email + address + bags) are skipped.',
   vendors: 'Creates new vendor accounts. Rows with an email that already exists on this fundraiser are skipped.',
