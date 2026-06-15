@@ -19,7 +19,7 @@ const driverRouteSchema = new mongoose.Schema(
     otp:             { type: String, required: true, trim: true, uppercase: true },
     driverName:      { type: String, trim: true },
     driverPhone:     { type: String, trim: true },
-    capacity:        { type: Number, default: 999, min: 1 },
+    capacity:        { type: Number, default: 999, min: 1, max: 9999 },
     stops:           { type: [stopSchema], default: [] },
     completedStops:  { type: Number, default: 0, min: 0 },
     startedAt:       { type: Date },

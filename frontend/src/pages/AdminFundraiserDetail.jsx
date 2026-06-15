@@ -1263,7 +1263,7 @@ function DriversTab({ fr }) {
             <Field label="Driver Name *"><input value={form.driverName} onChange={set('driverName')} required /></Field>
             <Field label="Phone (optional)"><input type="tel" value={form.driverPhone} onChange={set('driverPhone')} /></Field>
             <Field label="Bag Capacity *">
-              <input type="number" min="1" value={form.capacity} onChange={set('capacity')} required placeholder="How many bags can this driver deliver?" />
+              <input type="number" min="1" max="9999" value={form.capacity} onChange={set('capacity')} required placeholder="How many bags can this driver deliver?" />
             </Field>
             <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '1.25rem' }}>A unique driver code will be auto-generated.</p>
             {msg && <p style={{ color: '#dc2626', fontSize: '.85rem', marginBottom: '.75rem' }}>{msg}</p>}

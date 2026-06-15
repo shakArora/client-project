@@ -145,7 +145,7 @@ router.post("/drivers", requireAuth, requireRole(ROLES.ADMIN), async (req, res) 
     const body = z.object({
       fundraiserId: z.string().min(10),
       driverName:   z.string().min(2).trim(),
-      capacity:     z.coerce.number().int().min(1).max(999),
+      capacity:     z.coerce.number().int().min(1).max(9999),
       driverPhone:  z.string().optional(),
     }).parse(req.body);
 
