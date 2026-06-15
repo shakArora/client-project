@@ -152,7 +152,7 @@ export default function DriverRoute() {
                 {/* Action buttons for current stop */}
                 {isCurrent && (
                   <div style={{ marginTop: '1rem', display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-                    <a href={`https://maps.google.com/?q=${encodeURIComponent(stop.deliveryAddress)}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">🗺 Google Maps</a>
+                    <a href={`https://maps.google.com/?q=${encodeURIComponent(stop.deliveryAddress)}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">Google Maps</a>
                     <a href={`maps://maps.apple.com/?q=${encodeURIComponent(stop.deliveryAddress)}`} className="btn btn-outline btn-sm">🍎 Apple Maps</a>
                     <a href={`https://waze.com/ul?q=${encodeURIComponent(stop.deliveryAddress)}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">📡 Waze</a>
                   </div>
@@ -163,7 +163,7 @@ export default function DriverRoute() {
 
           {stops.length === 0 && (
             <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--t3)' }}>
-              <p style={{ fontSize: '2rem', marginBottom: '.75rem' }}>🗺</p>
+              <p style={{ fontWeight: 700, marginBottom: '.75rem' }}>No stops on this route yet.</p>
               <p>No stops assigned yet. Check back once routes are generated.</p>
             </div>
           )}

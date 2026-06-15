@@ -2,12 +2,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 
 const SIDEBAR_LINKS = [
-  { icon: '📊', label: 'Overview',       to: '/admin' },
-  { icon: '📣', label: 'Fundraisers',    to: '/admin/fundraisers' },
-  { icon: '📦', label: 'Products',       to: '/admin/products' },
-  { icon: '👥', label: 'Vendors',        to: '/admin/vendors' },
-  { icon: '🛒', label: 'Orders',         to: '/admin/orders' },
-  { icon: '🗺️', label: 'Route Planning', to: '/admin/routes' },
+  { label: 'Overview',       to: '/admin' },
+  { label: 'Fundraisers',    to: '/admin/fundraisers' },
+  { label: 'Products',       to: '/admin/products' },
+  { label: 'Vendors',        to: '/admin/vendors' },
+  { label: 'Orders',         to: '/admin/orders' },
+  { label: 'Route Planning', to: '/admin/routes' },
 ];
 
 export default function AdminShell({ children, fundraiser }) {
@@ -57,11 +57,10 @@ export default function AdminShell({ children, fundraiser }) {
 
         {/* Nav links */}
         <nav style={{ flex: 1, padding: '.5rem 0' }}>
-          {SIDEBAR_LINKS.map(({ icon, label, to }) => {
+          {SIDEBAR_LINKS.map(({ label, to }) => {
             const active = isActive(to);
             return (
               <Link key={to} to={to} style={{ display: 'flex', alignItems: 'center', gap: '.6rem', padding: '.68rem 1.1rem', color: active ? '#fff' : '#b0a090', fontWeight: active ? 700 : 500, fontSize: '.87rem', background: active ? 'rgba(195,162,86,.18)' : 'transparent', borderLeft: active ? '3px solid var(--gold)' : '3px solid transparent', textDecoration: 'none', transition: 'background .15s' }}>
-                <span style={{ fontSize: '.95rem' }}>{icon}</span>
                 {label}
               </Link>
             );

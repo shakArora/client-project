@@ -14,10 +14,10 @@ export default function Confirmation() {
   }, []);
 
   const firstName = order?.customerName?.split(' ')[0] || '';
-  const orderCode = order ? `#${(order._id || '').slice(-8).toUpperCase()}` : '—';
+  const orderCode = order ? `#${(order._id || '').slice(-8).toUpperCase()}` : ' - ';
   const itemSummary = order
     ? (order.items || []).map(i => `${i.productName} × ${i.quantity}`).join(', ')
-    : '—';
+    : ' - ';
 
   const deliveryDate = order?.fundraiserId?.deliveryDate
     ? new Date(order.fundraiserId.deliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })

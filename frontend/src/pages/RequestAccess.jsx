@@ -7,7 +7,6 @@ export default function RequestAccess() {
       <SiteNav subpage actionLabel="Log In" actionTo="/login" />
       <main className="marketing-page-main marketing-page-main--narrow">
         <div className="marketing-page-hero">
-        <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✉️</div>
         <h1>Request Admin Access</h1>
         <p style={{ marginBottom: '1.8rem' }}>
           Routed admin accounts are created by our team to ensure your fundraiser runs smoothly.
@@ -19,7 +18,7 @@ export default function RequestAccess() {
           className="btn btn-gold btn-lg"
           style={{ marginBottom: '1rem', display: 'inline-flex' }}
         >
-          Email contact.routed@gmail.com →
+          Email contact.routed@gmail.com
         </a>
 
         <p style={{ color: 'var(--t3)', fontSize: '.85rem', marginTop: '1.5rem' }}>

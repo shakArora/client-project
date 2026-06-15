@@ -117,7 +117,6 @@ export default function CustomerPage() {
       <Navbar links={NAV} actionLabel="Log In" actionTo="/login" />
       <main className="shop-main shop-main--customer">
         <div className="empty-state" style={{ marginTop: '2rem' }}>
-          <div className="empty-state-icon">🔍</div>
           <h2>Fundraiser not found</h2>
           <p>{error}</p>
         </div>
@@ -163,9 +162,9 @@ export default function CustomerPage() {
               Choose a product below, type how many bags you need, then tap Next to enter your delivery address.
             </p>
           </div>
-          {/* Cart summary pill — desktop only (reserved space to prevent layout shift) */}
+          {/* Cart summary pill, desktop only (reserved space to prevent layout shift) */}
           <div className={`cart-pill-desktop ${totalBags > 0 ? 'cart-pill-desktop--visible' : ''}`}>
-            🛒 Cart ({totalBags}) · ${totalAmount.toFixed(2)}
+            Cart ({totalBags}) · ${totalAmount.toFixed(2)}
           </div>
         </div>
 
@@ -198,7 +197,7 @@ export default function CustomerPage() {
               ))}
             </div>
 
-            {/* NEXT button — desktop */}
+            {/* NEXT button, desktop */}
             <div className="desktop-next" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '.5rem' }}>
               <button onClick={handleCheckout} disabled={totalBags === 0} className="btn btn-dark btn-lg" style={{ textTransform: 'uppercase', letterSpacing: '.06em', opacity: totalBags === 0 ? .4 : 1, minWidth: 220 }}>
                 Next: Enter Details →
@@ -209,8 +208,7 @@ export default function CustomerPage() {
 
         {!isClosed && products.length === 0 && (
           <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--t3)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</div>
-            <p>Products coming soon — check back shortly!</p>
+            <p>Products coming soon. Check back shortly.</p>
           </div>
         )}
       </main>

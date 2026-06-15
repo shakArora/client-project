@@ -51,9 +51,9 @@ export default function CheckoutPay() {
       navigate('/shop/confirmation');
     } catch (err) {
       if (!err.response) {
-        setError('Network error — check your connection and try again.');
+        setError('Network error, check your connection and try again.');
       } else if (err.response?.status >= 500) {
-        setError('Server error — please try again in a moment.');
+        setError('Server error, please try again in a moment.');
       } else {
         setError(err.response?.data?.message || 'Failed to place order. Please try again.');
       }
@@ -100,10 +100,10 @@ export default function CheckoutPay() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="checkout-summary hide-mobile" style={{ marginBottom: 0 }}>
               <p className="checkout-summary-label">Delivery To</p>
-              <SummaryRow label="Name" value={info.name || '—'} />
-              <SummaryRow label="Email" value={info.email || '—'} />
+              <SummaryRow label="Name" value={info.name || ' - '} />
+              <SummaryRow label="Email" value={info.email || ' - '} />
               {info.phone && <SummaryRow label="Phone" value={info.phone} />}
-              <SummaryRow label="Address" value={info.address || '—'} />
+              <SummaryRow label="Address" value={info.address || ' - '} />
             </div>
 
             <div className="checkout-summary">

@@ -58,13 +58,13 @@ export default function VendorCodes() {
         ) : (
           <>
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.4rem,4vw,2.2rem)', marginBottom: '.2rem', lineHeight: 1.2 }}>
-              {fundraiser ? `${fundraiser.title}${seasonLabel ? ` — ${seasonLabel}` : ''}` : 'Your Fundraiser'}
+              {fundraiser ? `${fundraiser.title}${seasonLabel ? `, ${seasonLabel}` : ''}` : 'Your Fundraiser'}
             </h1>
             <p style={{ color: 'var(--t3)', fontSize: '.88rem', marginBottom: '1.1rem' }}>{endLabel}</p>
 
             <div className="tab-bar vendor-tab-bar">
-              <button type="button" className="active">🔗 My Codes</button>
-              <button type="button" onClick={() => navigate('/vendor/sales')}>📊 My Sales</button>
+              <button type="button" className="active">My Codes</button>
+              <button type="button" onClick={() => navigate('/vendor/sales')}>My Sales</button>
             </div>
 
             <div className="card" style={{ marginBottom: '1rem' }}>
@@ -72,12 +72,12 @@ export default function VendorCodes() {
               <div className="vendor-link-row">
                 <input readOnly value={shopUrl} className="vendor-link-input" />
                 <div className="vendor-link-actions">
-                  <button type="button" className="btn btn-gold btn-sm" onClick={copy}>{copied ? '✓ Copied!' : '📋 Copy'}</button>
+                  <button type="button" className="btn btn-gold btn-sm" onClick={copy}>{copied ? 'Copied' : 'Copy'}</button>
                   <button type="button" className="btn btn-dark btn-sm" onClick={share}>Share</button>
                 </div>
               </div>
               <p style={{ fontSize: '.8rem', color: 'var(--t3)', marginTop: '.6rem' }}>
-                Share this link — sales are credited to you automatically.
+                Share this link, sales are credited to you automatically.
               </p>
             </div>
 
@@ -86,7 +86,7 @@ export default function VendorCodes() {
                 <p className="card-label">Your Referral Code</p>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
                   <span style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(2rem,8vw,2.8rem)', fontWeight: 800, color: 'var(--gold-dk)', letterSpacing: '.06em' }}>
-                    {vendor?.referralCode || '——'}
+                    {vendor?.referralCode || ' -  - '}
                   </span>
                   <button type="button" className="btn btn-dark btn-sm" onClick={share}>Share</button>
                 </div>

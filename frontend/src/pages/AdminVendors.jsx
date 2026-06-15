@@ -118,7 +118,7 @@ export default function AdminVendors() {
             <tbody>
               {visible.length === 0 ? (
                 <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--t3)' }}>
-                  {vendors.length === 0 ? 'No vendors yet — add one above.' : 'No vendors match your search.'}
+                  {vendors.length === 0 ? 'No vendors yet, add one above.' : 'No vendors match your search.'}
                 </td></tr>
               ) : visible.map(v => {
                 const initials = v.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();

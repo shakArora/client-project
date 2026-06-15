@@ -60,7 +60,6 @@ function FundraiserCard({ fr, onToggle, onDelete, showDelete }) {
         <div className="fundraiser-card-checklist">
           {checks.map(c => (
             <div key={c.label} className={`fundraiser-card-check ${c.ok ? 'fundraiser-card-check--ok' : 'fundraiser-card-check--no'}`}>
-              <span>{c.ok ? '✅' : '❌'}</span>
               <span>{c.label}</span>
             </div>
           ))}
@@ -189,7 +188,7 @@ export default function AdminDashboard() {
       <div className="app-main">
         <div className="page-header">
           <div>
-            <h1>{greeting}, {name} 👋</h1>
+            <h1>{greeting}, {name}</h1>
             <p>Manage your fundraisers below.</p>
           </div>
           <button type="button" onClick={() => setCreating(true)} className="btn btn-gold">+ New Fundraiser</button>
@@ -253,14 +252,12 @@ export default function AdminDashboard() {
           <SkeletonDashboard />
         ) : error ? (
           <div className="error-banner">
-            <p style={{ fontSize: '1.5rem', marginBottom: '.5rem' }}>⚠️</p>
             <p style={{ fontWeight: 700, marginBottom: '.3rem' }}>Could not load fundraisers</p>
             <p style={{ fontSize: '.88rem', marginBottom: '1rem' }}>Check your internet connection and try again.</p>
             <button type="button" onClick={load} className="btn btn-outline" style={{ fontSize: '.85rem' }}>Retry</button>
           </div>
         ) : display.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">{viewTab === 'past' ? '🗂' : viewTab === 'drafts' ? '📝' : '📣'}</div>
             <h2>
               {viewTab === 'past' ? 'No past fundraisers' : viewTab === 'drafts' ? 'No drafts' : 'No active fundraisers'}
             </h2>

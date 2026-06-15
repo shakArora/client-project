@@ -135,7 +135,6 @@ export default function AdminFundraisers() {
         <p style={{ color: 'var(--t3)', textAlign: 'center', padding: '3rem 0' }}>Loading…</p>
       ) : list.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--t3)' }}>
-          <p style={{ fontSize: '2rem', marginBottom: '.75rem' }}>📣</p>
           <p style={{ marginBottom: '.5rem', fontWeight: 700 }}>No fundraisers yet</p>
           <p style={{ fontSize: '.9rem' }}>Create your first fundraiser to get started.</p>
         </div>

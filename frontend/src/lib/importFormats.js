@@ -6,7 +6,7 @@ export const IMPORT_BEHAVIOR = {
   products: 'Creates new products or updates matching product names. Does not delete existing products.',
   drivers: 'Creates new driver routes. Existing driver codes are left unchanged.',
   fundraiser: 'Merges settings into this fundraiser. Does not delete any records.',
-  json: 'Imports only the sections present in the file. Orders are always appended — never replaced.',
+  json: 'Imports only the sections present in the file. Orders are always appended, never replaced.',
 };
 
 export const ORDERS_CSV = {
@@ -46,7 +46,7 @@ export const VENDORS_CSV = {
   notes: [
     'Header row required. Column names are case-insensitive.',
     'Name and Email are required. Email must be unique per fundraiser.',
-    'Referral Code is optional — Routed generates one if left blank.',
+    'Referral Code is optional, Routed generates one if left blank.',
     'Existing vendors (same email) are skipped, not updated.',
   ],
   aliases: {

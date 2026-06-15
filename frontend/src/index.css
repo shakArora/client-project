@@ -2103,11 +2103,21 @@ input, textarea, select { font-family: var(--sans); }
 }
 .fundraiser-card-check {
   display: flex;
-  align-items: center;
-  gap: .4rem;
+  align-items: flex-start;
+  gap: .5rem;
   font-size: .8rem;
   padding: .18rem 0;
 }
+.fundraiser-card-check::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: .38rem;
+}
+.fundraiser-card-check--ok::before { background: #059669; }
+.fundraiser-card-check--no::before { background: #d97706; }
 .fundraiser-card-check--ok { color: #047857; }
 .fundraiser-card-check--no { color: #b45309; }
 .fundraiser-card-linkbox {

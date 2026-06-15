@@ -4,10 +4,10 @@ import Navbar from '../components/Navbar';
 const NAV = [{ label: 'About', to: '/about' }];
 
 const FEATURES = [
-  { icon: '📦', title: 'Create Fundraisers',  body: 'Build your selling page, set products & prices' },
-  { icon: '👥', title: 'Manage Vendors',       body: 'Invite scouts, view individual sales' },
-  { icon: '🚚', title: 'Route Planning',       body: 'Auto-assign delivery routes to drivers' },
-  { icon: '📊', title: 'Reports & History',    body: 'View past fundraiser performance' },
+  { title: 'Create Fundraisers',  body: 'Build your selling page, set products and prices' },
+  { title: 'Manage Vendors',       body: 'Invite scouts, view individual sales' },
+  { title: 'Route Planning',       body: 'Auto-assign delivery routes to drivers' },
+  { title: 'Reports & History',    body: 'View past fundraiser performance' },
 ];
 
 export default function GetStarted() {
@@ -32,9 +32,8 @@ export default function GetStarted() {
 
         {/* Feature list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.65rem', marginBottom: '1.8rem' }}>
-          {FEATURES.map(({ icon, title, body }) => (
+          {FEATURES.map(({ title, body }) => (
             <div key={title} className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.1rem' }}>
-              <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>{icon}</span>
               <div>
                 <p style={{ fontWeight: 700, fontSize: '.95rem', marginBottom: '.15rem' }}>{title}</p>
                 <p style={{ color: 'var(--t3)', fontSize: '.84rem' }}>{body}</p>
@@ -49,7 +48,7 @@ export default function GetStarted() {
           className="btn btn-dark btn-full btn-lg"
           style={{ textTransform: 'uppercase', letterSpacing: '.08em' }}
         >
-          Join as Admin →
+          Join as Admin
         </Link>
       </main>
     </div>

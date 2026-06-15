@@ -179,7 +179,7 @@ export default function AdminOrders() {
                     <p style={{ fontWeight: 600, fontSize: '.88rem' }}>{o.customerName}</p>
                     <p style={{ color: 'var(--t3)', fontSize: '.76rem' }}>{o.customerEmail}</p>
                   </td>
-                  <td style={{ fontFamily: 'monospace', color: 'var(--gold-dk)', fontWeight: 700, letterSpacing: '.08em' }}>{o.referralCode || '—'}</td>
+                  <td style={{ fontFamily: 'monospace', color: 'var(--gold-dk)', fontWeight: 700, letterSpacing: '.08em' }}>{o.referralCode || ' - '}</td>
                   <td style={{ fontWeight: 700 }}>{o.totalBags}</td>
                   <td style={{ fontWeight: 700 }}>${(o.totalAmount || 0).toFixed(2)}</td>
                   <td><Badge status={o.status} /></td>

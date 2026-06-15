@@ -65,14 +65,14 @@ export default function VendorSales() {
         ) : (
           <>
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.6rem,3.5vw,2.4rem)', marginBottom: '.2rem' }}>
-              {fundraiser ? `${fundraiser.title}${seasonLabel ? ` — ${seasonLabel}` : ''}` : 'Your Fundraiser'}
+              {fundraiser ? `${fundraiser.title}${seasonLabel ? `, ${seasonLabel}` : ''}` : 'Your Fundraiser'}
             </h1>
             <p style={{ color: 'var(--t3)', fontSize: '.9rem', marginBottom: '1.4rem' }}>{endLabel}</p>
 
             {/* Tab bar */}
             <div className="tab-bar" style={{ maxWidth: 440, marginBottom: '1.5rem' }}>
-              <button onClick={() => navigate('/vendor/codes')}>🔗 My Codes</button>
-              <button className="active">📊 My Sales</button>
+              <button onClick={() => navigate('/vendor/codes')}>My Codes</button>
+              <button className="active">My Sales</button>
             </div>
 
             {/* Stats */}
@@ -95,7 +95,7 @@ export default function VendorSales() {
             <div className="card" style={{ marginBottom: '1.1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.85rem', flexWrap: 'wrap', gap: '.5rem' }}>
                 <p style={{ fontSize: '.7rem', textTransform: 'uppercase', letterSpacing: '.1em', fontWeight: 700, color: 'var(--t3)' }}>Revenue Goal</p>
-                {goal > 0 && <span style={{ fontSize: '.82rem', fontWeight: 700, color: pct >= 100 ? 'var(--green)' : 'var(--gold-dk)' }}>{pct}% {pct >= 100 ? '🎉 Reached!' : 'of goal'}</span>}
+                {goal > 0 && <span style={{ fontSize: '.82rem', fontWeight: 700, color: pct >= 100 ? 'var(--green)' : 'var(--gold-dk)' }}>{pct}% {pct >= 100 ? 'Goal reached' : 'of goal'}</span>}
               </div>
               {goal > 0 && (
                 <div style={{ marginBottom: '.75rem' }}>
@@ -122,7 +122,7 @@ export default function VendorSales() {
               </p>
               {orders.length === 0 ? (
                 <p style={{ color: 'var(--t3)', textAlign: 'center', padding: '1.5rem 0', fontSize: '.92rem' }}>
-                  No orders yet — share your link to get started!
+                  No orders yet, share your link to get started!
                 </p>
               ) : (
                 <div>
@@ -150,7 +150,7 @@ export default function VendorSales() {
             <div className="card" style={{ marginTop: '1rem' }}>
               <p style={{ fontSize: '.7rem', textTransform: 'uppercase', letterSpacing: '.1em', fontWeight: 700, color: 'var(--t3)', marginBottom: '.6rem' }}>Questions? Contact Administrator</p>
               <p style={{ fontSize: '.9rem', color: 'var(--t2)', lineHeight: 1.6 }}>
-                {fundraiser?.contactName && <><strong>{fundraiser.contactName}</strong> — </>}
+                {fundraiser?.contactName && <><strong>{fundraiser.contactName}</strong>, </>}
                 {fundraiser?.contactPhone && <a href={`tel:${fundraiser.contactPhone}`} style={{ color: 'var(--gold-dk)' }}>{fundraiser.contactPhone}</a>}
                 {fundraiser?.contactPhone && fundraiser?.contactEmail && ' · '}
                 {fundraiser?.contactEmail && <a href={`mailto:${fundraiser.contactEmail}`} style={{ color: 'var(--gold-dk)' }}>{fundraiser.contactEmail}</a>}
@@ -172,7 +172,7 @@ export default function VendorSales() {
               {[
                 ['Customer', selected.customerName],
                 ['Email', selected.customerEmail],
-                ['Phone', selected.customerPhone || '—'],
+                ['Phone', selected.customerPhone || ' - '],
                 ['Date', new Date(selected.createdAt).toLocaleDateString()],
                 ['Address', selected.deliveryAddress],
                 ['Status', selected.status],
@@ -194,7 +194,7 @@ export default function VendorSales() {
                 <span>Total</span><span style={{ color: 'var(--gold-dk)' }}>${selected.totalAmount?.toFixed(2)}</span>
               </div>
             </div>
-            {selected.comments && <p style={{ background: 'var(--surface)', borderRadius: 8, padding: '.65rem .85rem', fontSize: '.85rem', marginBottom: '1rem' }}>📝 {selected.comments}</p>}
+            {selected.comments && <p style={{ background: 'var(--surface)', borderRadius: 8, padding: '.65rem .85rem', fontSize: '.85rem', marginBottom: '1rem' }}><strong>Notes:</strong> {selected.comments}</p>}
             <button onClick={() => setSelected(null)} className="btn btn-outline btn-full">Close</button>
           </div>
         </div>

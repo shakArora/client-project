@@ -6,11 +6,10 @@ import SiteNav from '../components/SiteNav';
 const ROLES = [
   {
     id: 'admin',
-    icon: '⚙️',
     role: 'Administrator',
     steps: [
       { title: 'Create a Fundraiser', body: 'Log in and click "New Fundraiser" on your dashboard. Fill in the name, location, sale start/end dates, and delivery date. Upload a cover image and add contact info.' },
-      { title: 'Add Products', body: 'Go to the Products tab and add each item for sale (e.g. Black Mulch, Red Mulch). Set the price per bag and choose an emoji or image.' },
+      { title: 'Add Products', body: 'Go to the Products tab and add each item for sale (e.g. Black Mulch, Red Mulch). Set the price per bag and add an image if you have one.' },
       { title: 'Create Vendor Accounts', body: 'In the Vendors tab, create accounts for each Scout selling on behalf of the fundraiser. Each vendor receives a unique referral code to share with customers.' },
       { title: 'Publish the Fundraiser', body: 'Once all checklist items are complete (dates, contact, products), toggle the fundraiser to Live so customers can place orders.' },
       { title: 'View Orders', body: 'Monitor all incoming orders in the Orders tab. Confirm payment, update statuses, and issue refunds if needed.' },
@@ -21,19 +20,17 @@ const ROLES = [
   },
   {
     id: 'vendor',
-    icon: '🔗',
     role: 'Vendor / Scout',
     steps: [
       { title: 'Log In', body: 'Use the username and password provided by your administrator to log in to Routed.' },
       { title: 'Share Your Code & Link', body: 'Go to My Codes to find your unique referral code and shop link. Share the QR code or link with neighbors so their orders are credited to you.' },
       { title: 'Set a Revenue Goal', body: 'On the My Sales page, enter a dollar goal. Routed tracks your progress with a live progress bar so you always know how close you are.' },
-      { title: 'View Your Customers', body: 'See every order placed through your code — customer name, address, items ordered, and total spent. Tap any row for full order details.' },
+      { title: 'View Your Customers', body: 'See every order placed through your code, customer name, address, items ordered, and total spent. Tap any row for full order details.' },
       { title: 'Contact the Administrator', body: 'Use the contact section at the bottom of My Sales to reach your fundraiser organizer by phone or email if you have any questions.' },
     ],
   },
   {
     id: 'customer',
-    icon: '🛒',
     role: 'Customer',
     steps: [
       { title: 'Find Your Fundraiser', body: 'Use the link or QR code your Scout shared, or navigate to the fundraiser page directly. No account required to order.' },
@@ -45,11 +42,10 @@ const ROLES = [
   },
   {
     id: 'driver',
-    icon: '🚚',
     role: 'Driver',
     steps: [
       { title: 'Get Your Code', body: 'The administrator will give you a unique 6-character one-time code (OTP) before delivery day.' },
-      { title: 'Access Your Route', body: 'Go to the Driver Portal at Routed/driver and enter your 6-character code — or use the direct link Routed/driver/[YOUR-CODE] to jump straight to your route.' },
+      { title: 'Access Your Route', body: 'Go to the Driver Portal at Routed/driver and enter your 6-character code, or use the direct link Routed/driver/[YOUR-CODE] to jump straight to your route.' },
       { title: 'Follow the Stop List', body: 'Stops are listed in delivery order. The current stop is highlighted in yellow. Tap Google Maps, Apple Maps, or Waze to open navigation for that address.' },
       { title: 'Mark Stops Complete', body: 'After each delivery, tap "Mark Delivered" at the bottom of the screen. The stop turns green and the next stop becomes your current stop automatically.' },
       { title: 'Finish Your Route', body: 'Once all stops are marked delivered, you\'ll see a completion screen. Your administrator can see your progress in real time.' },
@@ -59,7 +55,7 @@ const ROLES = [
 
 const FAQ = [
   { q: 'Can I order without creating an account?', a: 'Yes. Customers never need an account. Just follow the fundraiser link and place your order.' },
-  { q: 'How do I get an administrator account?', a: 'Admin accounts are created by request only. Visit the Request Access page and email us — we\'ll set up your account.' },
+  { q: 'How do I get an administrator account?', a: 'Admin accounts are created by request only. Visit the Request Access page and email us, we\'ll set up your account.' },
   { q: 'Can routes be changed after delivery starts?', a: 'Yes. Administrators can click "Re-Route Mid-Delivery" at any time. Already-delivered stops stay with their driver; undelivered stops are redistributed.' },
   { q: 'What happens if I lose my driver code?', a: 'Contact your administrator to get the code re-shared. The administrator can see all OTPs in the Drivers tab.' },
   { q: 'How are delivery routes optimized?', a: 'Routed distributes orders by driver capacity and geocoded address coordinates. Each driver is assigned the maximum load they can carry in the fewest stops.' },
@@ -89,10 +85,9 @@ export default function Help() {
           </p>
         </header>
 
-        {ROLES.map(({ id, icon, role, steps }) => (
+        {ROLES.map(({ id, role, steps }) => (
           <section key={id} className="mkt-role-section">
             <div className="mkt-role-header">
-              <div className={`mkt-role-badge mkt-role-badge--${id}`}>{icon}</div>
               <h2 className={`mkt-role-title mkt-role-title--${id}`}>{role}</h2>
             </div>
             <div className="mkt-step-grid">

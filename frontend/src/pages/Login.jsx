@@ -9,9 +9,9 @@ import { useAuth, ROLES } from '../lib/auth';
 const TABS = ['Vendor', 'Administrator'];
 
 const ROLE_CARDS = [
-  { icon: '🔗', title: 'Vendor', desc: 'Track your personal sales and share your shop link.' },
-  { icon: '⚙️', title: 'Administrator', desc: 'Manage fundraisers, routes, and your whole troop.' },
-  { icon: '🚚', title: 'Driver', desc: 'Enter your 6-character code for your delivery route.' },
+  { title: 'Vendor', desc: 'Track your personal sales and share your shop link.' },
+  { title: 'Administrator', desc: 'Manage fundraisers, routes, and your whole troop.' },
+  { title: 'Driver', desc: 'Enter your 6-character code for your delivery route.' },
 ];
 
 export default function Login() {
@@ -112,13 +112,12 @@ export default function Login() {
               Welcome <em>back.</em>
             </h1>
             <p className="landing-sub login-sub">
-              Sign in to manage your fundraiser, track sales, or open your delivery route — all in one place.
+              Sign in to manage your fundraiser, track sales, or open your delivery route, all in one place.
             </p>
 
             <div className="login-role-grid">
-              {ROLE_CARDS.map(({ icon, title, desc }) => (
+              {ROLE_CARDS.map(({ title, desc }) => (
                 <div key={title} className="login-role-card">
-                  <span className="login-role-icon">{icon}</span>
                   <div>
                     <strong>{title}</strong>
                     <p>{desc}</p>

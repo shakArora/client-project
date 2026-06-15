@@ -10,8 +10,8 @@ export default function VendorNav({ userName = 'Vendor' }) {
   const [open, setOpen] = useState(false);
 
   const tabs = [
-    { label: 'My Codes', to: '/vendor/codes', icon: '🔗' },
-    { label: 'My Sales', to: '/vendor/sales', icon: '📊' },
+    { label: 'My Codes', to: '/vendor/codes' },
+    { label: 'My Sales', to: '/vendor/sales' },
   ];
 
   useEffect(() => {
@@ -42,14 +42,14 @@ export default function VendorNav({ userName = 'Vendor' }) {
                 to={tab.to}
                 className={pathname === tab.to ? 'active' : ''}
               >
-                {tab.icon} {tab.label}
+                {tab.label}
               </Link>
             ))}
           </div>
 
           <div className="vendor-nav-end">
             <button type="button" className="vendor-nav-user hide-mobile" onClick={handleLogout}>
-              Hi, {userName} <span aria-hidden>⚙️</span>
+              Hi, {userName}
             </button>
             <button
               type="button"
@@ -65,7 +65,7 @@ export default function VendorNav({ userName = 'Vendor' }) {
 
         <div className={`navbar-dropdown vendor-nav-dropdown ${open ? 'navbar-dropdown--open' : ''}`}>
           <div className="navbar-dropdown-inner">
-            <p className="vendor-nav-greeting">Hi, {userName} 👋</p>
+            <p className="vendor-nav-greeting">Hi, {userName}</p>
             {tabs.map(tab => (
               <Link
                 key={tab.to}
@@ -73,7 +73,7 @@ export default function VendorNav({ userName = 'Vendor' }) {
                 className={`navbar-dropdown-link ${pathname === tab.to ? 'active' : ''}`}
                 onClick={() => setOpen(false)}
               >
-                {tab.icon} {tab.label}
+                {tab.label}
               </Link>
             ))}
             <button type="button" className="navbar-dropdown-link navbar-dropdown-logout" onClick={handleLogout}>

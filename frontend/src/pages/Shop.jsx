@@ -83,7 +83,7 @@ export default function Shop() {
               </div>
               {totalAmount > 0 && (
                 <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r3)', padding: '.55rem .9rem', display: 'flex', alignItems: 'center', gap: '.5rem', fontWeight: 700, fontSize: '.9rem' }}>
-                  🛒 {totalBags} bags · ${totalAmount.toFixed(2)}
+                  {totalBags} bags · ${totalAmount.toFixed(2)}
                 </div>
               )}
             </div>

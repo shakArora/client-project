@@ -98,14 +98,14 @@ function DetailsTab({ fr, onSaved }) {
         <section className="admin-section">
           <h3 className="admin-section-title">Basic Info</h3>
           <Field label="Fundraiser Name *"><input value={form.title || ''} onChange={set('title')} required /></Field>
-          <Field label="Description — shown to customers on the shop page">
+          <Field label="Description, shown to customers on the shop page">
             <textarea rows={3} value={form.description || ''} onChange={set('description')} placeholder="e.g. Troop 42 is selling premium hardwood mulch to fund summer camp. Bags are delivered to your driveway on delivery day." />
           </Field>
           <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginTop: '-.5rem', marginBottom: '1rem', lineHeight: 1.5 }}>
             Tell families what you are selling, who it benefits, and when/how delivery works. Keep it friendly and specific.
           </p>
           <AddressSelect
-            label="Fundraiser address — pickup & route starting point"
+            label="Fundraiser address, pickup & route starting point"
             value={form.deliveryHubAddress || form.pickupAddress}
             coords={form.deliveryHubCoords?.lat ? form.deliveryHubCoords : form.pickupCoords}
             required
@@ -151,7 +151,7 @@ function DetailsTab({ fr, onSaved }) {
 
         <section className="admin-section">
           <h3 className="admin-section-title">Cover Image</h3>
-          <p className="admin-section-hint">Required to publish — must be an image URL.</p>
+          <p className="admin-section-hint">Required to publish, must be an image URL.</p>
           <Field label="Cover Image URL * (must be an image link, not an emoji)">
             <input value={form.coverImageUrl || ''} onChange={set('coverImageUrl')} placeholder="https://example.com/cover-photo.jpg" required />
           </Field>
@@ -164,7 +164,7 @@ function DetailsTab({ fr, onSaved }) {
 
         <section className="admin-section">
           <h3 className="admin-section-title">Troop Payment Info</h3>
-          <p className="admin-section-hint">Shown at checkout — tell customers where to send payment.</p>
+          <p className="admin-section-hint">Shown at checkout, tell customers where to send payment.</p>
           <Field label="Payment method *">
             <select
               value={form.paymentMethod || ''}
@@ -209,11 +209,10 @@ function DetailsTab({ fr, onSaved }) {
       <div id="publish-checklist" className="admin-sidebar-card">
         <p style={{ fontWeight: 700, marginBottom: '.5rem', fontSize: '.9rem' }}>Publishing Checklist</p>
         <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '.85rem', lineHeight: 1.5 }}>
-          {allGood ? 'All set — use Publish in the top bar.' : 'Complete every item. Publish stays disabled until all show ✅.'}
+          {allGood ? 'All set. Use Publish in the top bar.' : 'Complete every item before publishing.'}
         </p>
         {chks.map(c => (
           <div key={c.label} className={`fundraiser-card-check ${c.ok ? 'fundraiser-card-check--ok' : 'fundraiser-card-check--no'}`} style={{ fontSize: '.83rem' }}>
-            <span>{c.ok ? '✅' : '❌'}</span>
             <span>{c.label}</span>
           </div>
         ))}
@@ -427,14 +426,14 @@ function MigrationPackageSection({ fr, onImported }) {
     if (!window.confirm(
       'Import migration package?\n\n' +
       '• Brings in products, vendors, orders, and drivers from a Routed export file.\n' +
-      '• Orders are added only — existing orders are never changed or deleted.\n' +
+      '• Orders are added only, existing orders are never changed or deleted.\n' +
       '• Duplicate orders are skipped automatically.'
     )) return;
     setBusy(true); setMsg('');
     try {
       const payload = JSON.parse(await file.text());
       const { data } = await fundraiserApi.import(fr._id, { ...payload, options: IMPORT_OPTIONS });
-      setMsg(`Imported — ${formatImportResult(data.stats)}`);
+      setMsg(`Imported, ${formatImportResult(data.stats)}`);
       onImported();
     } catch (err) {
       setMsg(err.response?.data?.message || 'Import failed. Use a Routed export JSON file.');
@@ -447,7 +446,7 @@ function MigrationPackageSection({ fr, onImported }) {
     <section className="migration-package-section">
       <h3>Full migration package</h3>
       <p>
-        Moving an existing fundraiser to Routed? Import a JSON export from another instance — includes settings, products, vendors, orders, and driver routes.
+        Moving an existing fundraiser to Routed? Import a JSON export from another instance, includes settings, products, vendors, orders, and driver routes.
         When this fundraiser is finished, use <strong>Export package</strong> in the customer link bar above to download your data.
       </p>
       <label className="btn btn-dark btn-sm" style={{ cursor: busy ? 'not-allowed' : 'pointer' }}>
@@ -460,7 +459,7 @@ function MigrationPackageSection({ fr, onImported }) {
 }
 
 /* ═══════════════════════ PRODUCTS TAB ══════════════════════ */
-const EMOJI_GRID = ['📦','🌲','🍁','⭐','🎯','🏆','🎪','🌿','🦁','🐯','🌊','🔥','💎','🎁','🌸','🍀'];
+const EMOJI_GRID = ['📦', '🪵', '🌲', '🌿'];
 
 function ProductsTab({ fr }) {
   const [products, setProducts] = useState([]);
@@ -617,7 +616,7 @@ function VendorsTab({ fr }) {
       const res = await adminApi.createVendor({ ...form, fundraiserId: fr._id });
       setShowForm(false);
       setForm({ name:'', email:'', password:'' });
-      setMsg(`✅ Vendor added! Referral code: ${res.data.vendor?.referralCode || '—'}`);
+      setMsg(`Vendor added. Referral code: ${res.data.vendor?.referralCode || 'N/A'}`);
       load();
     } catch (err) {
       setMsg(err.response?.data?.message || 'Failed to add vendor.');
@@ -631,7 +630,7 @@ function VendorsTab({ fr }) {
     const rows = parseCsv(await file.text());
     const { valid, problems } = parseVendorsCsvRows(rows);
     if (!valid.length) {
-      setCsvMsg(problems[0] || 'No valid rows — check template format.');
+      setCsvMsg(problems[0] || 'No valid rows, check template format.');
       return;
     }
     const preview = [
@@ -680,7 +679,7 @@ function VendorsTab({ fr }) {
         <p style={{ color: '#b45309', marginTop: '.3rem', fontSize: '.78rem' }}>Each vendor's unique link uses their referral code.</p>
       </div>
 
-      {msg && <p style={{ color: msg.startsWith('✅') ? '#059669' : '#dc2626', marginBottom: '1rem', fontWeight: 600 }}>{msg}</p>}
+      {msg && <p style={{ color: msg.startsWith('Vendor added') || msg.startsWith('Imported') ? '#059669' : '#dc2626', marginBottom: '1rem', fontWeight: 600 }}>{msg}</p>}
 
       {loading ? <SkeletonList rows={4} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
@@ -708,7 +707,7 @@ function VendorsTab({ fr }) {
             <Field label="Name *"><input value={form.name} onChange={set('name')} required /></Field>
             <Field label="Email *"><input type="email" value={form.email} onChange={set('email')} required /></Field>
             <Field label="Temporary Password *">
-              <input type="password" value={form.password} onChange={set('password')} required placeholder="Any password — share with the vendor" />
+              <input type="password" value={form.password} onChange={set('password')} required placeholder="Any password, share with the vendor" />
             </Field>
             <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '1.25rem' }}>
               A unique referral code is assigned automatically. Link format: {publicUrl}?ref=CODE
@@ -758,7 +757,7 @@ function OrdersTab({ fr }) {
     const rows = parseCsv(await file.text());
     const { valid, problems } = parseOrdersCsvRows(rows);
     if (!valid.length) {
-      setCsvMsg(problems[0] || 'No valid rows — check template format.');
+      setCsvMsg(problems[0] || 'No valid rows, check template format.');
       return;
     }
     const preview = [
@@ -841,7 +840,7 @@ function OrdersTab({ fr }) {
           <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', width: '100%', maxWidth: 500 }}>
             <h3 style={{ fontFamily: 'var(--serif)', marginBottom: '1rem' }}>Order Details</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem .85rem', marginBottom: '1.25rem' }}>
-              {[['Customer', selected.customerName], ['Email', selected.customerEmail], ['Phone', selected.customerPhone||'—'], ['Address', selected.deliveryAddress], ['Referral', selected.referralCode||'—'], ['Status', '']].map(([l,v]) => (
+              {[['Customer', selected.customerName], ['Email', selected.customerEmail], ['Phone', selected.customerPhone||' - '], ['Address', selected.deliveryAddress], ['Referral', selected.referralCode||' - '], ['Status', '']].map(([l,v]) => (
                 <div key={l}>
                   <div style={{ fontSize: '.7rem', color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{l}</div>
                   {l === 'Status' ? <Badge status={selected.status} /> : <div style={{ fontSize: '.9rem', fontWeight: 600 }}>{v}</div>}
@@ -875,7 +874,7 @@ function OrdersTab({ fr }) {
             {/* Refund button */}
             {!['refunded','cancelled'].includes(selected.status) && (
               <button onClick={() => handleRefund(selected._id)} style={{ width: '100%', padding: '.6rem', borderRadius: 10, border: '2px solid #dc2626', background: '#fff', color: '#dc2626', fontWeight: 700, cursor: 'pointer', marginBottom: '1rem', fontSize: '.88rem' }}>
-                🔄 Refund This Order
+                Refund This Order
               </button>
             )}
 
@@ -932,7 +931,7 @@ function DriversTab({ fr }) {
     setGenerating(true); setMsg('');
     try {
       const res = await driverApi.generateRoutes(fr._id);
-      setMsg(`✅ ${res.data.message}`);
+      setMsg(res.data.message);
       load();
     } catch (err) {
       setMsg(err.response?.data?.message || 'Route generation failed.');
@@ -954,20 +953,20 @@ function DriversTab({ fr }) {
         <div style={{ display: 'flex', gap: '.6rem', flexWrap: 'wrap' }}>
           <button onClick={() => { setShowForm(true); setMsg(''); }} className="btn btn-outline" style={{ fontSize: '.85rem' }}>+ Add Driver</button>
           <button onClick={generateRoutes} disabled={generating || !hasRoutes} className="btn btn-gold" style={{ fontSize: '.85rem' }}>
-            {generating ? 'Generating…' : isDeliveryDay ? '🔄 Re-Route Mid-Delivery' : '🗺 Generate Routes'}
+            {generating ? 'Generating…' : isDeliveryDay ? 'Re-Route Mid-Delivery' : 'Generate Routes'}
           </button>
         </div>
       </div>
 
       {isDeliveryDay && (
         <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '.85rem 1rem', marginBottom: '1rem', fontSize: '.84rem', color: '#9a3412' }}>
-          <strong>🚚 Delivery in progress.</strong> You can re-generate routes at any time — delivered stops will be preserved and undelivered stops will be redistributed among available drivers.
+          <strong>Delivery in progress.</strong> You can re-generate routes at any time. Delivered stops will be preserved and undelivered stops will be redistributed among available drivers.
         </div>
       )}
 
       {!isDeliveryDay && (
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '.85rem 1rem', marginBottom: '1.25rem', fontSize: '.84rem', color: '#1e40af' }}>
-          <strong>How it works:</strong> Set a delivery hub address in Fundraiser Details first. Add drivers with bag capacity — codes are auto-assigned. Routes use OSRM distance optimization from your hub. Click <em>Generate Routes</em> to rebuild stops.
+          <strong>How it works:</strong> Set a delivery hub address in Fundraiser Details first. Add drivers with bag capacity, codes are auto-assigned. Routes use OSRM distance optimization from your hub. Click <em>Generate Routes</em> to rebuild stops.
         </div>
       )}
 
@@ -980,7 +979,7 @@ function DriversTab({ fr }) {
         ))}
       </div>
 
-      {msg && <p style={{ marginBottom: '1rem', fontWeight: 600, color: msg.startsWith('✅') ? '#059669' : '#dc2626' }}>{msg}</p>}
+      {msg && <p style={{ marginBottom: '1rem', fontWeight: 600, color: msg.toLowerCase().includes('fail') || msg.toLowerCase().includes('error') ? '#dc2626' : '#059669' }}>{msg}</p>}
 
       {loading ? <SkeletonList rows={4} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.85rem' }}>
@@ -1028,7 +1027,7 @@ function DriversTab({ fr }) {
                       const isCurrent   = i === currentStopIdx;
                       const dotColor    = isDelivered ? '#4E6D38' : isCurrent ? '#C9A862' : '#BF3535';
                       return (
-                        <div key={i} title={`Stop ${i+1}: ${s.customerName} — ${s.status}`} style={{
+                        <div key={i} title={`Stop ${i+1}: ${s.customerName}, ${s.status}`} style={{
                           display: 'flex', alignItems: 'center', gap: '.35rem',
                           background: isDelivered ? 'rgba(78,109,56,.08)' : isCurrent ? 'rgba(201,168,98,.12)' : 'rgba(191,53,53,.07)',
                           borderRadius: 6, padding: '.25rem .55rem', fontSize: '.74rem',
@@ -1110,7 +1109,6 @@ export default function AdminFundraiserDetail() {
     <div className="app-shell">
       <div className="app-main">
         <div className="empty-state" style={{ marginTop: '3rem' }}>
-          <div className="empty-state-icon">🔍</div>
           <h2>Fundraiser not found</h2>
           <p>This fundraiser may have been deleted or you don&apos;t have access.</p>
         </div>

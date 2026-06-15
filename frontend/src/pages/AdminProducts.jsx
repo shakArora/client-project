@@ -92,7 +92,6 @@ export default function AdminProducts() {
 
       {!fundraiser && !frLoading && (
         <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--t3)' }}>
-          <p style={{ fontSize: '2rem', marginBottom: '.75rem' }}>📣</p>
           <p style={{ fontWeight: 700, marginBottom: '.5rem' }}>No active fundraiser</p>
           <p style={{ fontSize: '.9rem' }}>Create a fundraiser first, then add products to it.</p>
         </div>
@@ -164,7 +163,6 @@ export default function AdminProducts() {
           ))}
           {products.length === 0 && fundraiser && (
             <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', color: 'var(--t3)' }}>
-              <p style={{ fontSize: '2rem', marginBottom: '.75rem' }}>📦</p>
               <p style={{ fontWeight: 700 }}>No products yet</p>
               <p style={{ fontSize: '.9rem' }}>Click "Add Product" to create your first item.</p>
             </div>

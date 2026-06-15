@@ -215,7 +215,6 @@ export default function AdminRoutes() {
         <p style={{ color: 'var(--t3)', textAlign: 'center', padding: '3rem' }}>Loading…</p>
       ) : routes.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--t3)' }}>
-          <p style={{ fontSize: '2rem', marginBottom: '.75rem' }}>🗺️</p>
           <p style={{ fontWeight: 700, marginBottom: '.4rem' }}>No routes yet</p>
           <p style={{ fontSize: '.9rem' }}>Create a route, then share the OTP code with your driver.</p>
         </div>

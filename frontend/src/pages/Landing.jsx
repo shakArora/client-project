@@ -14,9 +14,8 @@ const DYNAMIC_WORDS = ['fundraisers', 'deliveries', 'Scout troops', 'mulch sales
 
 const FEATURES = [
   {
-    icon: '🗺',
     title: 'Automatic Route Planning',
-    desc: 'Add drivers and bag capacity — Routed distributes every stop optimally.',
+    desc: 'Add drivers and bag capacity. Routed distributes every stop optimally.',
     preview: {
       title: 'One-click route generation',
       body: 'Paid orders are geocoded and split across drivers by capacity. No spreadsheets, no manual plotting.',
@@ -24,7 +23,6 @@ const FEATURES = [
     },
   },
   {
-    icon: '🔄',
     title: 'Mid-Delivery Re-Routing',
     desc: 'Finished early or running behind? Redistribute remaining stops instantly.',
     preview: {
@@ -34,7 +32,6 @@ const FEATURES = [
     },
   },
   {
-    icon: '🛒',
     title: 'Beautiful Customer Shop',
     desc: 'A modern fundraiser page customers actually want to order from.',
     preview: {
@@ -44,9 +41,8 @@ const FEATURES = [
     },
   },
   {
-    icon: '📊',
     title: 'Live Delivery Tracking',
-    desc: 'Watch every stop go from red → yellow → green in real time.',
+    desc: 'Watch every stop go from red to yellow to green in real time.',
     preview: {
       title: 'Color-coded progress',
       body: 'Admins see fleet-wide status. Drivers mark stops complete from their phone with map links.',
@@ -56,19 +52,19 @@ const FEATURES = [
 ];
 
 const ROLES = [
-  { icon: '⚙️', title: 'Administrator', desc: 'Create fundraisers, manage vendors, generate routes, track delivery day.' },
-  { icon: '🔗', title: 'Vendor / Scout', desc: 'Share your referral link, set revenue goals, and view every customer order.' },
-  { icon: '🚚', title: 'Driver', desc: 'Enter your 6-character code and get an optimized stop-by-stop route.' },
-  { icon: '🛒', title: 'Customer', desc: 'Order online from a fundraiser page — no account required.' },
+  { title: 'Administrator', desc: 'Create fundraisers, manage vendors, generate routes, track delivery day.' },
+  { title: 'Vendor / Scout', desc: 'Share your referral link, set revenue goals, and view every customer order.' },
+  { title: 'Driver', desc: 'Enter your 6-character code and get an optimized stop-by-stop route.' },
+  { title: 'Customer', desc: 'Order online from a fundraiser page. No account required.' },
 ];
 
 const FAQ = [
-  { q: 'Who is Routed built for?', a: 'Routed was built for Boy Scouts, Girl Scouts, Cub Scouts, and any youth organization running product fundraisers — especially mulch sales with complex delivery logistics.' },
+  { q: 'Who is Routed built for?', a: 'Routed was built for Boy Scouts, Girl Scouts, Cub Scouts, and any youth organization running product fundraisers, especially mulch sales with complex delivery logistics.' },
   { q: 'How does automatic routing work?', a: 'Once orders are placed and drivers are added with their bag capacity, Routed geocodes every delivery address and distributes stops across drivers to maximize load efficiency and minimize travel.' },
   { q: 'Can I re-route during delivery day?', a: 'Yes. If a driver finishes early or falls behind, administrators click Re-Route Mid-Delivery. Completed stops are preserved and remaining stops are redistributed automatically.' },
-  { q: 'Do customers need an account?', a: 'No. Customers order directly from your fundraiser link or a vendor QR code. They enter delivery info, pay, and receive a confirmation — all without signing up.' },
+  { q: 'Do customers need an account?', a: 'No. Customers order directly from your fundraiser link or a vendor QR code. They enter delivery info, pay, and receive a confirmation without signing up.' },
   { q: 'How do drivers access their routes?', a: 'Each driver gets a unique 6-character OTP from the administrator. They enter it at routed.system/driver or use a direct link like /driver/ABCD12.' },
-  { q: 'How do I get an admin account?', a: 'Admin accounts are created by request. Visit our Request Access page and email the team — we will set up your account.' },
+  { q: 'How do I get an admin account?', a: 'Admin accounts are created by request. Visit our Request Access page and email the team. We will set up your account.' },
 ];
 
 const TRUST_ORGS = [
@@ -209,7 +205,7 @@ export default function Landing() {
           </h1>
 
           <p className="landing-sub stagger-reveal" style={{ animationDelay: '240ms' }}>
-            Designed for Scout troops — built for any organization. Sell online, track orders,
+            Designed for Scout troops and built for any organization. Sell online, track orders,
             and auto-generate optimized delivery routes. Zero spreadsheets.
           </p>
 
@@ -232,7 +228,7 @@ export default function Landing() {
                 <span className="landing-dashboard-dot" style={{ background: '#ff5f57' }} />
                 <span className="landing-dashboard-dot" style={{ background: '#febc2e' }} />
                 <span className="landing-dashboard-dot" style={{ background: '#28c840' }} />
-                <span style={{ marginLeft: '.5rem', fontSize: '.72rem', color: 'var(--lp-muted)' }}>Routed Admin — Delivery Day</span>
+                <span style={{ marginLeft: '.5rem', fontSize: '.72rem', color: 'var(--lp-muted)' }}>Routed Admin, Delivery Day</span>
               </div>
               <div className="landing-dashboard-body">
                 <div className="landing-dash-sidebar">
@@ -243,7 +239,7 @@ export default function Landing() {
                   ))}
                 </div>
                 <div className="landing-dash-main">
-                  <div className="landing-dash-title">Driver Routes — 4 stops assigned</div>
+                  <div className="landing-dash-title">Driver Routes, 4 stops assigned</div>
                   <div className="landing-dash-stops">
                     {DASH_STOPS.map((s, i) => (
                       <div key={i} className="landing-dash-stop">
@@ -287,7 +283,7 @@ export default function Landing() {
             Everything your fundraiser <span className="landing-gradient-text">needs</span>
           </h2>
           <p className="landing-section-sub">
-            From the first online order to the last bag delivered — Routed handles the hard parts.
+            From the first online order to the last bag delivered, Routed handles the hard parts.
           </p>
         </div>
 
@@ -303,7 +299,6 @@ export default function Landing() {
                   setTimeout(() => { setFeatureIdx(i); setFeatureFade(true); }, 200);
                 }}
               >
-                <span className="landing-feature-icon">{f.icon}</span>
                 <div>
                   <div className="landing-feature-title">{f.title}</div>
                   <div className="landing-feature-desc">{f.desc}</div>
@@ -348,7 +343,6 @@ export default function Landing() {
         <div className="landing-roles">
           {ROLES.map((r, i) => (
             <div key={i} className="landing-role-card">
-              <div className="landing-role-icon">{r.icon}</div>
               <h3 className="landing-role-title">{r.title}</h3>
               <p className="landing-role-desc">{r.desc}</p>
             </div>
