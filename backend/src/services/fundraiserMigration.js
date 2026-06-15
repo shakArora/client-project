@@ -15,6 +15,7 @@ const DEFAULT_OPTIONS = {
   vendors:   "skip-existing",
   drivers:   "skip-existing",
   fundraiser: "merge",
+  geocode:   true,
 };
 
 function normalizeOptions(payload) {
@@ -249,7 +250,7 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
     }
 
     let coords = o.coords;
-    if (!coords?.lat && o.deliveryAddress) {
+    if (!coords?.lat && o.deliveryAddress && options.geocode !== false) {
       coords = await geocodeAddress(o.deliveryAddress);
       if (!coords) {
         stats.details.orders.skipped++;

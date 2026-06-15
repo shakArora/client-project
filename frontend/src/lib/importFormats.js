@@ -21,7 +21,7 @@ export const ORDERS_CSV = {
     'Product should match an existing product name (e.g. Hardwood Mulch). If blank, Routed uses your first active product.',
     'Status: pending, paid, fulfilled, delivered, refunded, or cancelled. Defaults to pending.',
     'Referral must match a vendor code on this fundraiser to credit the sale.',
-    'Addresses are geocoded on import. Rows with invalid addresses are skipped.',
+    'Addresses are stored as entered. Geocoding runs later when routes are generated.',
   ],
   aliases: {
     customer: ['customer', 'customername', 'name'],
