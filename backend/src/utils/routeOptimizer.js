@@ -7,6 +7,7 @@ import { logic } from "./routingLogic.js";
 import { geocodeImportAddress, formatRegionHint } from "./geocode.js";
 
 const HUB_LABEL = "__HUB__";
+export const ROUTE_MAX_BAGS = 100;
 
 function stripPartSuffix(label) {
   return String(label).replace(/ \(Part \d+\)$/, "");
@@ -73,7 +74,6 @@ function appendClusterStops(stopsByDriver, cluster, orderById, added, drivers) {
     if (orderId === HUB_LABEL) continue;
     const order = orderById.get(orderId);
     if (!order || added.has(orderId)) continue;
-    if (!canFit(stopsByDriver, drivers, drvIdx, order)) continue;
     stopsByDriver[drvIdx].push(order);
     added.add(orderId);
   }
@@ -100,7 +100,7 @@ export async function optimizeRoutes({ orders, drivers, fundraiser }) {
   const coords = useHub
     ? [{ lat: hubCoords.lat, lon: hubCoords.lon }, ...geocoded.map((o) => ({ lat: o.coords.lat, lon: o.coords.lon }))]
     : geocoded.map((o) => ({ lat: o.coords.lat, lon: o.coords.lon }));
-  const capacities = drivers.map((d) => d.capacity || 999);
+  const capacities = assignmentCapacities(drivers, orders);
 
   const results = await logic(labels, weights, capacities, { coords, disableSplit: true });
 
@@ -122,9 +122,46 @@ export async function optimizeRoutes({ orders, drivers, fundraiser }) {
   return { stopsByDriver, unassigned, optimized: true, hubCoords };
 }
 
+function assignmentCapacities(drivers, orders) {
+  const totalBags = orders.reduce((sum, o) => sum + orderBags(o), 0);
+  const share = Math.max(ROUTE_MAX_BAGS, Math.ceil(totalBags / Math.max(drivers.length, 1)));
+  return drivers.map(() => share);
+}
+
 /**
- * Greedy capacity assignment — never exceeds per-driver bag cap.
- * Pass existingStops when topping up drivers that already have orders.
+ * Assign every order to a driver (round-robin). No total cap per driver —
+ * routes are split into 100-bag legs afterward.
+ */
+export function distributeAllOrders({ orders, drivers, hubCoords, existingStops = null }) {
+  const stopsByDriver = existingStops
+    ? existingStops.map((stops) => [...stops])
+    : drivers.map(() => []);
+  const unassigned = [];
+  const sorted = [...orders];
+
+  if (hubCoords?.lat != null) {
+    sorted.sort((a, b) => {
+      const da = a.coords?.lat != null ? haversineKm(hubCoords, a.coords) : Infinity;
+      const db = b.coords?.lat != null ? haversineKm(hubCoords, b.coords) : Infinity;
+      return da - db;
+    });
+  }
+
+  let driverIdx = 0;
+  for (const order of sorted) {
+    if (orderBags(order) > ROUTE_MAX_BAGS) {
+      unassigned.push(order);
+      continue;
+    }
+    stopsByDriver[driverIdx % drivers.length].push(order);
+    driverIdx++;
+  }
+
+  return { stopsByDriver, unassigned, optimized: false };
+}
+
+/**
+ * Greedy capacity assignment — respects per-driver total cap (legacy).
  */
 export function capacityFallback({ orders, drivers, hubCoords, existingStops = null }) {
   const stopsByDriver = existingStops
@@ -174,8 +211,6 @@ export function buildStopsFromOrders(orderList) {
     }));
 }
 
-export const ROUTE_MAX_BAGS = 100;
-
 /**
  * Split a driver's optimized stop list into multiple delivery routes.
  * Each route: up to ROUTE_MAX_BAGS bags (no stop-count limit).
@@ -216,7 +251,7 @@ export function getDriverProfiles(routes) {
         driverGroupId: r.driverGroupId || r._id,
         driverName: r.driverName,
         driverPhone: r.driverPhone,
-        capacity: r.capacity || 999,
+        driverTotalCapacity: r.driverTotalCapacity || r.capacity || 999,
       });
     }
   }

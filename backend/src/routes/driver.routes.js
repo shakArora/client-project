@@ -13,7 +13,7 @@ import { ROLES } from "../models/User.js";
 import { Fundraiser } from "../models/Fundraiser.js";
 import {
   optimizeRoutes,
-  capacityFallback,
+  distributeAllOrders,
   buildStopsFromOrders,
   splitOrdersIntoRoutes,
   getDriverProfiles,
@@ -40,7 +40,7 @@ async function genUniqueOTP(fundraiserId) {
   throw new Error("Could not generate unique driver code");
 }
 
-/** Assign orders to drivers, then split each driver into ≤100-bag / ≤15-stop routes. */
+/** Assign orders to drivers, then split each driver into ≤100-bag routes. */
 async function autoGenerateRoutes(fundraiserId) {
   const existingRoutes = await DriverRoute.find({ fundraiserId }).sort({ createdAt: 1 });
   if (!existingRoutes.length) return { drivers: [], message: "No drivers" };
@@ -48,7 +48,6 @@ async function autoGenerateRoutes(fundraiserId) {
   const profiles = getDriverProfiles(existingRoutes);
   const driverSlots = profiles.map((p) => ({
     _id: p.driverGroupId,
-    capacity: p.capacity,
     driverName: p.driverName,
   }));
 
@@ -66,22 +65,24 @@ async function autoGenerateRoutes(fundraiserId) {
     plan = await optimizeRoutes({ orders, drivers: driverSlots, fundraiser: fr });
     hubCoords = plan?.hubCoords || hubCoords;
   } catch (err) {
-    console.error("Route optimization failed, using capacity fallback:", err);
+    console.error("Route optimization failed, using distribute fallback:", err);
   }
 
   if (!plan?.stopsByDriver) {
-    plan = capacityFallback({ orders, drivers: driverSlots, hubCoords });
+    plan = distributeAllOrders({ orders, drivers: driverSlots, hubCoords });
   }
 
   if (plan.unassigned?.length) {
-    const fb = capacityFallback({
-      orders: plan.unassigned,
+    const remaining = plan.unassigned.filter((o) => (o.totalBags || 0) <= ROUTE_MAX_BAGS);
+    const oversized = plan.unassigned.filter((o) => (o.totalBags || 0) > ROUTE_MAX_BAGS);
+    const fb = distributeAllOrders({
+      orders: remaining,
       drivers: driverSlots,
       hubCoords,
       existingStops: plan.stopsByDriver,
     });
     plan.stopsByDriver = fb.stopsByDriver;
-    plan.unassigned = [...fb.unassigned];
+    plan.unassigned = [...fb.unassigned, ...oversized];
   }
 
   if (!Array.isArray(plan.stopsByDriver) || plan.stopsByDriver.length !== profiles.length) {
@@ -104,6 +105,7 @@ async function autoGenerateRoutes(fundraiserId) {
         routeNumber: ri + 1,
         driverName: profile.driverName,
         driverPhone: profile.driverPhone,
+        driverTotalCapacity: profile.driverTotalCapacity,
         capacity: ROUTE_MAX_BAGS,
         stops: buildStopsFromOrders(chunks[ri].orders),
         otp: await genUniqueOTP(fundraiserId),
@@ -117,13 +119,13 @@ async function autoGenerateRoutes(fundraiserId) {
   await DriverRoute.deleteMany({ fundraiserId });
   const drivers = await DriverRoute.insertMany(routeDocs);
 
-  const method = plan.optimized ? "optimized" : "capacity";
+  const method = plan.optimized ? "optimized" : "distributed";
   const routeCount = drivers.length;
   const driverCount = profiles.length;
 
   let message = `Generated ${routeCount} route(s) for ${driverCount} driver(s) (max ${ROUTE_MAX_BAGS} bags per route, ${method})`;
   if (allUnassigned.length) {
-    message += `. ${allUnassigned.length} order(s) could not be assigned — add drivers, raise caps, or split large orders.`;
+    message += `. ${allUnassigned.length} order(s) exceed ${ROUTE_MAX_BAGS} bags and need to be split manually.`;
   }
 
   return {
@@ -196,7 +198,8 @@ router.post("/drivers", requireAuth, requireRole(ROLES.ADMIN), async (req, res) 
       otp,
       driverName:  body.driverName,
       driverPhone: body.driverPhone,
-      capacity:    body.capacity,
+      driverTotalCapacity: body.capacity,
+      capacity:    ROUTE_MAX_BAGS,
       stops:       [],
     });
 
