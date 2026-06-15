@@ -1,9 +1,3 @@
-/**
- * Route guard that requires authentication and optionally enforces a specific user role.
- * Redirects unauthenticated users to login and wrong-role users to their role-specific home path.
- * @author Shivum Arora
- * @date 6/5/2026
- */
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 

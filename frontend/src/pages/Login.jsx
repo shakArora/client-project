@@ -1,9 +1,3 @@
-/**
- * Unified login page with tabs for vendor, administrator, and driver access.
- * Supports email/password auth, Google admin sign-in, and OTP entry for drivers, redirecting by role on success.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';

@@ -1,9 +1,3 @@
-/**
- * Frontend ESLint flat config mirroring the root setup for the frontend source tree.
- * Enforces React hook rules and Vite-friendly fast refresh linting on all JS/JSX files under frontend/.
- * @author Shivum Arora
- * @date 6/5/2026
- */
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

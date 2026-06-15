@@ -1,9 +1,3 @@
-/**
- * Deep-link handler that accepts a driver OTP in the URL path.
- * Auto-validates the code, persists it, and redirects to the driver route page or shows an error.
- * @author Shivum Arora
- * @date 6/11/2026
- */
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { driverApi } from '../lib/api';

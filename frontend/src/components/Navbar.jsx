@@ -1,9 +1,3 @@
-/**
- * Top navigation bar used on customer-facing pages with configurable links and CTA button.
- * Adapts the action link to the signed-in user's dashboard and includes a responsive mobile menu.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';

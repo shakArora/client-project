@@ -1,9 +1,3 @@
-/**
- * Role-based help center with step-by-step guides for administrators, vendors, drivers, and customers.
- * Uses a tabbed layout so each user type can follow workflows from fundraiser setup through delivery day.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';

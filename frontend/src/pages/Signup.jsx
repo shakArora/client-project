@@ -1,9 +1,3 @@
-/**
- * Self-service signup form UI for creating an administrator account.
- * Attempts registration via the auth API and logs the user in on success, though the backend may block open registration.
- * @author Shivum Arora
- * @date 6/5/2026
- */
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../lib/api';

@@ -1,9 +1,3 @@
-/**
- * React context provider for client-side authentication state backed by localStorage.
- * Exposes login, logout, and useAuth hooks plus shared role constants for route guards and navigation.
- * @author Shivum Arora
- * @date 6/5/2026
- */
 import { createContext, useContext, useState, useCallback } from "react";
 
 const AuthContext = createContext(null);

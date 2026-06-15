@@ -1,9 +1,3 @@
-/**
- * Node process entry point that starts the HTTP server and triggers MongoDB connection with retries.
- * Binds the port first so deploy health checks pass, then connects to the database in the background.
- * @author Shivum Arora
- * @date 6/6/2026
- */
 import app from "./app.js";
 import { env } from "./config/env.js";
 import { connectWithRetry } from "./config/db.js";

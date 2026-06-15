@@ -1,9 +1,3 @@
-/**
- * Express router for fundraiser CRUD, public listing by slug, activation, and admin-only management endpoints.
- * Handles geocoding on save, publish-readiness checks, and fundraiser JSON export/import via the migration service.
- * @author Shivum Arora
- * @date 6/11/2026
- */
 import express from "express";
 import { z } from "zod";
 import { Fundraiser } from "../models/Fundraiser.js";

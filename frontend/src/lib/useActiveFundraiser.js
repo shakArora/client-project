@@ -1,9 +1,3 @@
-/**
- * React hook that loads the administrator's fundraisers and selects the active or first campaign.
- * Shared by AdminShell pages to scope products, orders, vendors, and routes to the current fundraiser.
- * @author Shivum Arora
- * @date 6/9/2026
- */
 import { useState, useEffect } from 'react';
 import { fundraiserApi } from './api';
 

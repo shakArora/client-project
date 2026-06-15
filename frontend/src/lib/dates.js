@@ -1,9 +1,4 @@
-/**
- * Date helpers that parse and format YYYY-MM-DD values in local time without UTC drift.
- * Includes sale-status logic and formatted date ranges for customer-facing fundraiser pages.
- * @author Shivum Arora
- * @date 6/14/2026
- */
+/** Parse YYYY-MM-DD (or ISO string) as local calendar date — avoids UTC timezone shifts. */
 export function parseLocalDate(value) {
   if (!value) return null;
   const [y, m, d] = String(value).slice(0, 10).split('-').map(Number);

@@ -1,10 +1,3 @@
-/**
- * This file contains the main clustering algorithm and logic function. 
- * This also contains geocoding functions and a function to build a distance matrix to speed up clustering operations. 
- * @author Jasraj Bhatia
- * @date 6/11/2026
- */
-
 // LOGIC FOR ROUTED HERE
 
 const wait = (ms) => {

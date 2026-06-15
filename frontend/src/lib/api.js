@@ -1,9 +1,3 @@
-/**
- * Axios client and typed API modules for auth, fundraisers, products, orders, vendors, drivers, and admin endpoints.
- * Attaches JWT tokens to requests and clears session storage on 401 responses, redirecting to login.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import axios from "axios";
 
 const BASE = import.meta.env.VITE_API_BASE_URL || "/api";

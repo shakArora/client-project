@@ -1,9 +1,3 @@
-/**
- * Admin vendor management page for creating scout accounts and viewing referral performance.
- * Provisions vendors with login credentials and unique codes, with searchable listing per active fundraiser.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useState, useEffect } from 'react';
 import AdminShell from '../components/AdminShell';
 import { vendorApi, adminApi } from '../lib/api';

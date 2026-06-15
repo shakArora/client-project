@@ -1,9 +1,3 @@
-/**
- * Express application factory that wires middleware, CORS, Helmet, and all API route modules.
- * Central entry point for HTTP handling before the server binds to a port and connects to MongoDB.
- * @author Shivum Arora
- * @date 6/6/2026
- */
 import express from "express";
 import helmet from "helmet";
 import { env } from "./config/env.js";

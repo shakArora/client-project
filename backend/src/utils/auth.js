@@ -1,9 +1,3 @@
-/**
- * JWT helpers for signing and verifying auth tokens used across protected API routes.
- * Also generates hashed password-reset tokens pairing a raw client token with a stored SHA-256 hash.
- * @author Shivum Arora
- * @date 6/5/2026
- */
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { env } from "../config/env.js";

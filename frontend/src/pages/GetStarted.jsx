@@ -1,9 +1,3 @@
-/**
- * Onboarding marketing page pitching Routed to troop administrators considering the platform.
- * Summarizes core admin capabilities and links users toward login or access request flows.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 

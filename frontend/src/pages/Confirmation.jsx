@@ -1,9 +1,3 @@
-/**
- * Post-checkout thank-you page displaying order code, item summary, and expected delivery date.
- * Reads the placed order from sessionStorage and reassures the customer their order was received.
- * @author Shivum Arora
- * @date 6/14/2026
- */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
