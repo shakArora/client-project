@@ -13,12 +13,7 @@ import { signAuthToken } from "../utils/auth.js";
 
 const router = express.Router();
 
-const adminPassword = z.string()
-  .min(8, "Password must be at least 8 characters")
-  .refine(p => /[A-Z]/.test(p), "Password must contain at least one uppercase letter")
-  .refine(p => /[a-z]/.test(p), "Password must contain at least one lowercase letter")
-  .refine(p => /[0-9]/.test(p), "Password must contain at least one number")
-  .refine(p => /[^A-Za-z0-9]/.test(p), "Password must contain at least one special character");
+const adminPassword = z.string().min(1, "Password is required");
 
 const vendorPassword = z.string().min(1, "Password is required");
 

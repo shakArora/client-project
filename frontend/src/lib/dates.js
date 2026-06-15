@@ -36,6 +36,15 @@ export function getSaleStatus(fundraiser) {
   return { closed: false, start, end: parseLocalDate(fundraiser.endDate) };
 }
 
+export function formatSaleDateRange(fundraiser) {
+  if (!fundraiser?.endDate) return '';
+  const end = formatLocalDate(fundraiser.endDate);
+  if (!fundraiser.startDate) return `Order by ${end}.`;
+  const start = formatLocalDate(fundraiser.startDate);
+  if (start === end) return `Sale on ${end}.`;
+  return `Sale runs ${start} – ${end}.`;
+}
+
 export function isPastFundraiser(fundraiser) {
   const end = endOfLocalDay(fundraiser?.endDate);
   return !!(end && new Date() > end);

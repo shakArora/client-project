@@ -69,8 +69,15 @@ function DetailsTab({ fr, onSaved }) {
     e.preventDefault();
     setSaving(true);
     setMsg('');
+    const normDate = v => (v ? String(v).slice(0, 10) : undefined);
+    const payload = {
+      ...form,
+      startDate: normDate(form.startDate),
+      endDate: normDate(form.endDate),
+      deliveryDate: normDate(form.deliveryDate),
+    };
     try {
-      await fundraiserApi.update(fr._id, form);
+      await fundraiserApi.update(fr._id, payload);
       setMsg('Saved!');
       onSaved();
     } catch (err) {
@@ -782,7 +789,22 @@ function OrdersTab({ fr }) {
         <CompactCsvBar
           spec={ORDERS_CSV}
           busy={csvBusy}
-          importOnly
+          exportDisabled={!orders.length}
+          onExport={() => downloadCsv(`orders-${fr.slug}.csv`,
+            ORDERS_CSV.headers,
+            orders.map(o => [
+              o.customerName,
+              o.customerEmail || '',
+              o.customerPhone || '',
+              o.deliveryAddress,
+              o.totalBags || 0,
+              (o.totalAmount || 0).toFixed(2),
+              o.status || 'pending',
+              o.referralCode || '',
+              (o.items || []).map(i => i.productName).join('; ') || '',
+              o.comments || '',
+            ])
+          )}
           onImport={importOrdersCsv}
         />
       </div>
@@ -1109,7 +1131,7 @@ export default function AdminFundraiserDetail() {
         <div className="admin-topbar-start">
           <Link to="/admin" className="admin-topbar-back">← All Fundraisers</Link>
           <span className="admin-topbar-divider">|</span>
-          <Link to="/" className="admin-topbar-brand">Routed<span>.</span></Link>
+          <Link to="/" className="admin-topbar-brand" onClick={() => window.scrollTo(0, 0)}>Routed<span>.</span></Link>
           <span className="admin-topbar-divider">|</span>
           <span className="admin-topbar-title">{fr.title}</span>
           <span className={`admin-badge ${fr.isActive ? 'admin-badge--topbar-live' : 'admin-badge--topbar-paused'}`}>

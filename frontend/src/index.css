@@ -663,7 +663,29 @@ input, textarea, select { font-family: var(--sans); }
   align-items: flex-end;
   justify-content: space-between;
   gap: .75rem;
-  min-height: 4.5rem;
+  min-height: 5rem;
+}
+.cart-pill-desktop {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r3);
+  padding: .55rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-weight: 700;
+  font-size: .9rem;
+  flex-shrink: 0;
+  min-width: 200px;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.cart-pill-desktop--visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 /* ─── Vendor nav ─────────────────────────────────────── */

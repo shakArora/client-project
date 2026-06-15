@@ -34,9 +34,15 @@ export default function SiteNav({
     : user?.role === ROLES.VENDOR ? '/vendor/codes'
     : null;
 
-  function goHome() {
+  function goHome(e) {
+    e.preventDefault();
     setOpen(false);
-    window.scrollTo(0, 0);
+    if (pathname === '/') {
+      window.history.replaceState(null, '', '/');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      navigate('/');
+    }
   }
 
   useEffect(() => {

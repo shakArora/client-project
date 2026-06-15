@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useAuth, ROLES } from '../lib/auth';
 
@@ -10,6 +10,7 @@ export default function Navbar({
   actionStyle = 'btn btn-gold btn-sm',
 }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const dashboardTo = user?.role === ROLES.ADMIN ? '/admin' : user?.role === ROLES.VENDOR ? '/vendor/codes' : null;
@@ -27,7 +28,16 @@ export default function Navbar({
     <>
       <nav className={`navbar ${open ? 'navbar--open' : ''}`}>
         <div className="navbar-inner">
-          <Link to="/" className="navbar-brand" onClick={() => { setOpen(false); window.scrollTo(0, 0); }}>
+          <Link to="/" className="navbar-brand" onClick={(e) => {
+            e.preventDefault();
+            setOpen(false);
+            if (pathname === '/') {
+              window.history.replaceState(null, '', '/');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+              navigate('/');
+            }
+          }}>
             Routed<span>.</span>
           </Link>
 

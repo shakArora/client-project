@@ -22,6 +22,7 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  expectedRole: z.enum([ROLES.ADMIN, ROLES.VENDOR]).optional(),
 });
 
 router.post("/register", async (_req, res) => {
@@ -67,6 +68,13 @@ router.post("/login", async (req, res) => {
     const validPassword = await bcrypt.compare(body.password, user.passwordHash);
     if (!validPassword) {
       return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if (body.expectedRole && user.role !== body.expectedRole) {
+      const hint = body.expectedRole === ROLES.VENDOR
+        ? "These are administrator credentials. Switch to the Administrator tab."
+        : "These are vendor credentials. Switch to the Vendor tab.";
+      return res.status(403).json({ message: hint });
     }
 
     const token = signAuthToken({ sub: user._id.toString(), role: user.role, email: user.email });

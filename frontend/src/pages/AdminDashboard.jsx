@@ -5,6 +5,7 @@ import { fundraiserApi } from '../lib/api';
 import { isPastFundraiser } from '../lib/dates';
 import { US_STATES } from '../lib/usStates';
 import { SkeletonDashboard } from '../components/Skeleton';
+import AddressSelect from '../components/AddressSelect';
 
 const FRONTEND = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 
@@ -79,8 +80,11 @@ function FundraiserCard({ fr, onToggle, onDelete, showDelete }) {
           )}
           <button
             type="button"
-            onClick={() => allGood ? onToggle(fr._id) : null}
-            title={!allGood ? 'Complete the checklist above to publish' : fr.isActive ? 'Pause this fundraiser' : 'Go live!'}
+            onClick={() => {
+              if (!allGood && !fr.isActive) return;
+              onToggle(fr._id);
+            }}
+            title={!allGood && !fr.isActive ? 'Complete the checklist above to publish' : fr.isActive ? 'Pause this fundraiser' : 'Go live!'}
             className={`btn-publish ${fr.isActive ? 'btn-publish--pause' : allGood ? 'btn-publish--ready' : 'btn-publish--disabled'}`}
           >
             {fr.isActive ? 'Pause' : 'Publish'}
@@ -100,6 +104,7 @@ export default function AdminDashboard() {
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newPickup, setNewPickup] = useState('');
+  const [newPickupCoords, setNewPickupCoords] = useState(null);
   const [newCity, setNewCity] = useState('');
   const [newState, setNewState] = useState('');
   const [saving,   setSaving]   = useState(false);
@@ -123,12 +128,15 @@ export default function AdminDashboard() {
       const res = await fundraiserApi.create({
         title: newTitle.trim(),
         pickupAddress: newPickup.trim() || undefined,
+        pickupCoords: newPickupCoords || undefined,
         deliveryHubAddress: newPickup.trim() || undefined,
+        deliveryHubCoords: newPickupCoords || undefined,
         location: (newCity.trim() || newState) ? { city: newCity.trim() || undefined, state: newState || undefined } : undefined,
       });
       setCreating(false);
       setNewTitle('');
       setNewPickup('');
+      setNewPickupCoords(null);
       setNewCity('');
       setNewState('');
       navigate(`/admin/fundraiser/${res.data._id}`);
@@ -169,7 +177,7 @@ export default function AdminDashboard() {
   return (
     <div className="app-shell">
       <div className="admin-topbar">
-        <Link to="/" className="admin-topbar-brand">Routed<span>.</span></Link>
+        <Link to="/" className="admin-topbar-brand" onClick={() => window.scrollTo(0, 0)}>Routed<span>.</span></Link>
         <div className="admin-topbar-end">
           <span className="admin-topbar-email">{user?.email}</span>
           <button type="button" onClick={() => { logout(); navigate('/login'); }} className="admin-topbar-logout">
@@ -208,11 +216,15 @@ export default function AdminDashboard() {
                 style={{ width: '100%', border: '2px solid var(--border)', borderRadius: 10, padding: '.75rem', fontSize: '.95rem', marginBottom: '1rem', boxSizing: 'border-box' }}
               />
               <label style={{ display: 'block', fontSize: '.82rem', fontWeight: 700, color: 'var(--t2)', marginBottom: '.35rem' }}>Fundraiser address</label>
-              <input
+              <AddressSelect
                 value={newPickup}
-                onChange={e => setNewPickup(e.target.value)}
+                coords={newPickupCoords}
                 placeholder="Pickup location & driver route starting point"
-                style={{ width: '100%', border: '2px solid var(--border)', borderRadius: 10, padding: '.75rem', fontSize: '.95rem', marginBottom: '1rem', boxSizing: 'border-box' }}
+                hint="Select a verified address from the dropdown."
+                onChange={({ address, coords }) => {
+                  setNewPickup(address);
+                  setNewPickupCoords(coords);
+                }}
               />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>

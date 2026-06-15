@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import SiteNav from '../components/SiteNav';
 
@@ -68,26 +68,17 @@ const FAQ = [
 
 export default function Help() {
   const [open, setOpen] = useState(null);
-  const { hash } = useLocation();
 
   useEffect(() => {
-    if (hash === '#guide') {
-      document.getElementById('guide')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      window.scrollTo(0, 0);
-    }
-  }, [hash]);
+    window.scrollTo(0, 0);
+  }, []);
 
   return (
     <div className="landing-page marketing-dark">
       <SiteNav subpage actionLabel="Login" actionTo="/login" />
 
       <main className="marketing-page-main">
-        <header
-          id="guide"
-          className="marketing-page-hero marketing-page-hero--left"
-          style={{ scrollMarginTop: '5.5rem' }}
-        >
+        <header className="marketing-page-hero marketing-page-hero--left">
           <div className="landing-eyebrow">
             <span className="landing-eyebrow-dot" />
             Help Center

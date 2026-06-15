@@ -355,7 +355,7 @@ export default function Landing() {
           ))}
         </div>
         <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
-          <Link to="/help#guide" className="glass-btn">
+          <Link to="/help" className="glass-btn">
             Read the full guide <ArrowRight size={16} />
           </Link>
         </div>

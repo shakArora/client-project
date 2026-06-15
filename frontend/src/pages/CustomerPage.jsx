@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 import AppPage from '../components/AppPage';
 import { SkeletonCustomerShop } from '../components/Skeleton';
 import { fundraiserApi, productApi } from '../lib/api';
-import { getSaleStatus, formatLocalDate } from '../lib/dates';
+import { getSaleStatus, formatLocalDate, formatSaleDateRange } from '../lib/dates';
 
 const NAV = [{ label: 'About', to: '/about' }];
 const BG_CYCLE = ['#B8914A', '#8B6835', '#5A7A3A', '#7A6A40', '#4A6A35', '#9B7A3A'];
@@ -48,7 +48,10 @@ export default function CustomerPage() {
 
   function closedMessage() {
     if (sale.reason === 'draft') return 'This fundraiser is not live yet.';
-    if (sale.reason === 'not_started') return `Sales begin on ${formatLocalDate(fundraiser.startDate)}.`;
+    if (sale.reason === 'not_started') {
+      const start = formatLocalDate(fundraiser.startDate);
+      return start ? `Sales begin on ${start}.` : 'Sales have not started yet.';
+    }
     if (sale.reason === 'ended') return `The sale ended on ${formatLocalDate(fundraiser.endDate)}.`;
     return 'Ordering is not available right now.';
   }
@@ -153,21 +156,17 @@ export default function CustomerPage() {
             </p>
             {!isClosed && fundraiser.endDate && (
               <p style={{ color: 'var(--t3)', fontSize: '.92rem', marginTop: '.5rem' }}>
-                {fundraiser.startDate
-                  ? `Sale runs ${formatLocalDate(fundraiser.startDate, { month: 'short', day: 'numeric' })} – ${formatLocalDate(fundraiser.endDate, { month: 'short', day: 'numeric', year: 'numeric' })}.`
-                  : `Order by ${formatLocalDate(fundraiser.endDate, { weekday: 'long', month: 'long', day: 'numeric' })}.`}
+                {formatSaleDateRange(fundraiser)}
               </p>
             )}
             <p style={{ color: 'var(--t3)', fontSize: '.88rem', marginTop: '.75rem' }}>
               Choose a product below, type how many bags you need, then tap Next to enter your delivery address.
             </p>
           </div>
-          {/* Cart summary pill — desktop only */}
-          {totalBags > 0 && (
-            <div className="cart-pill-desktop" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r3)', padding: '.55rem 1rem', display: 'flex', alignItems: 'center', gap: '.5rem', fontWeight: 700, fontSize: '.9rem', flexShrink: 0 }}>
-              🛒 Cart ({totalBags}) · ${totalAmount.toFixed(2)}
-            </div>
-          )}
+          {/* Cart summary pill — desktop only (reserved space to prevent layout shift) */}
+          <div className={`cart-pill-desktop ${totalBags > 0 ? 'cart-pill-desktop--visible' : ''}`}>
+            🛒 Cart ({totalBags}) · ${totalAmount.toFixed(2)}
+          </div>
         </div>
 
         {/* ── Products ── */}
@@ -291,9 +290,9 @@ function DesktopProductCard({ p, i, qty, onChange, onDelta }) {
           <div className="product-qty-row">
             <label style={{ display: 'block', fontSize: '.72rem', fontWeight: 700, color: 'var(--t3)', marginBottom: '.25rem' }}>Bags</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-              <button onClick={() => onDelta(-1)} style={{ width: 30, height: 30, borderRadius: '50%', border: '1.5px solid var(--border)', background: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
-              <input type="number" min="0" value={qty} onChange={e => onChange(e.target.value)} aria-label="Number of bags" style={{ width: 44, textAlign: 'center', border: '1.5px solid var(--border)', borderRadius: 8, padding: '.2rem', fontWeight: 700, fontSize: '.95rem', background: '#FFFDF6', outline: 'none' }} />
-              <button onClick={() => onDelta(1)} style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'var(--gold)', color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+              <button type="button" onClick={() => onDelta(-1)} className="qty-btn qty-btn--minus" aria-label="Decrease quantity">−</button>
+              <input type="number" min="0" value={qty} onChange={e => onChange(e.target.value)} aria-label="Number of bags" className="qty-input" />
+              <button type="button" onClick={() => onDelta(1)} className="qty-btn qty-btn--plus" aria-label="Increase quantity">+</button>
             </div>
           </div>
         </div>
