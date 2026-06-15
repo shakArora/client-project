@@ -1,3 +1,9 @@
+/**
+ * Loads environment variables and exports a typed env object for the backend.
+ * Centralizes MongoDB, JWT, SMTP, Twilio, Google OAuth, and frontend URL configuration.
+ * @author Shivum Arora
+ * @date 6/5/2026
+ */
 import dotenv from "dotenv";
 
 dotenv.config();

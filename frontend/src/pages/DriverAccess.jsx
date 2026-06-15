@@ -1,3 +1,9 @@
+/**
+ * Driver login page with a six-character OTP entry form.
+ * Validates the code against the driver API, stores it locally, and redirects to the active route view.
+ * @author Shivum Arora
+ * @date 6/11/2026
+ */
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { driverApi } from '../lib/api';

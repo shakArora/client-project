@@ -1,3 +1,9 @@
+/**
+ * Admin route-planning page for assigning delivery stops to drivers on the active fundraiser.
+ * Creates driver routes with OTP codes, manually edits stops, and uses client-side clustering logic to auto-distribute orders.
+ * @author Shivum Arora
+ * @date 6/14/2026
+ */
 import { useState, useEffect } from 'react';
 import AdminShell from '../components/AdminShell';
 import { driverApi, orderApi } from '../lib/api';

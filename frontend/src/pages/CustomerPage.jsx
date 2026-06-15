@@ -1,3 +1,9 @@
+/**
+ * Public fundraiser storefront loaded by URL slug with product picker and referral-code support.
+ * Shows sale status, fundraiser branding, and builds the session cart before routing customers into checkout.
+ * @author Shivum Arora
+ * @date 6/14/2026
+ */
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';

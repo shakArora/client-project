@@ -1,3 +1,9 @@
+/**
+ * Top navigation for vendor pages with tabs for My Codes and My Sales.
+ * Includes mobile menu support, user greeting, and logout handling within the vendor experience.
+ * @author Shivum Arora
+ * @date 6/14/2026
+ */
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';

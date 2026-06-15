@@ -1,3 +1,9 @@
+/**
+ * Express router for listing and managing fundraiser products with optional auth for admin-only visibility.
+ * Public callers see only active products; administrators can create, update, and delete catalog items.
+ * @author Shivum Arora
+ * @date 6/5/2026
+ */
 import express from "express";
 import { z } from "zod";
 import { Product } from "../models/Product.js";

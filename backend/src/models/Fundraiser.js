@@ -1,3 +1,9 @@
+/**
+ * Mongoose schema for a fundraiser campaign with slug, dates, location, contact, payment, and delivery settings.
+ * Captures pickup/delivery hub coordinates, cover image, active flag, and the administering user reference.
+ * @author Shivum Arora
+ * @date 6/11/2026
+ */
 import mongoose from "mongoose";
 
 const fundraiserSchema = new mongoose.Schema(

@@ -1,3 +1,9 @@
+/**
+ * Core clustering algorithm that partitions addresses by weight and vehicle capacity using a distance matrix.
+ * Also provides geocoding and OSRM table helpers used by the backend route optimizer.
+ * @author Jasraj Bhatia
+ * @date 6/11/2026
+ */
 // LOGIC FOR ROUTED HERE
 
 const wait = (ms) => {

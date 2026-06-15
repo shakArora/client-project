@@ -1,4 +1,9 @@
-/** Turn a fundraiser title into a URL slug segment (underscores). */
+/**
+ * Converts fundraiser titles into URL-safe underscore slugs.
+ * Ensures global uniqueness by appending _(1), _(2), etc. when a slug collision exists in the database.
+ * @author Shivum Arora
+ * @date 6/9/2026
+ */
 export function slugifyTitle(title) {
   let base = String(title || "")
     .toLowerCase()

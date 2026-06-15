@@ -1,3 +1,9 @@
+/**
+ * OpenStreetMap Nominatim client for geocoding a single address or returning autocomplete search results.
+ * Powers checkout address validation, order coordinate storage, and fundraiser hub location resolution.
+ * @author Shivum Arora
+ * @date 6/11/2026
+ */
 const USER_AGENT = "Routed/1.0 contact.routed@gmail.com";
 
 export async function geocodeAddress(address) {

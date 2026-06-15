@@ -1,3 +1,9 @@
+/**
+ * Celebration screen shown after a driver finishes all delivery stops.
+ * Displays completion messaging and summary stats with a link back to the Routed home page.
+ * @author Shivum Arora
+ * @date 6/5/2026
+ */
 import { Link } from 'react-router-dom';
 
 export default function DriverComplete() {

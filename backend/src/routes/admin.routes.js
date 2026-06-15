@@ -1,5 +1,8 @@
 /**
- * Admin-only aggregate endpoints — dashboard stats and user management.
+ * Express router for admin-only aggregate endpoints covering dashboard stats and user management.
+ * Supports vendor provisioning, referral code generation, and administrator account operations.
+ * @author Shivum Arora
+ * @date 6/14/2026
  */
 import express from "express";
 import { z } from "zod";

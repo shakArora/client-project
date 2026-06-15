@@ -1,3 +1,9 @@
+/**
+ * Express middleware for JWT authentication and role-based authorization.
+ * requireAuth verifies Bearer tokens; requireRole restricts routes to specific user roles.
+ * @author Shivum Arora
+ * @date 6/5/2026
+ */
 import { verifyAuthToken } from "../utils/auth.js";
 
 export function requireAuth(req, res, next) {

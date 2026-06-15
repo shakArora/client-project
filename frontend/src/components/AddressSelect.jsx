@@ -1,9 +1,12 @@
+/**
+ * Reusable address input with debounced autocomplete backed by the orders address-search API.
+ * Requires the user to pick a geocoded suggestion so checkout and admin forms store validated coordinates.
+ * @author Shivum Arora
+ * @date 6/11/2026
+ */
 import { useState, useEffect, useRef } from 'react';
 import { orderApi } from '../lib/api';
 
-/**
- * Address field with validated dropdown — user must pick a geocoded result.
- */
 export default function AddressSelect({
   label,
   value = '',

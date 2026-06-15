@@ -1,3 +1,9 @@
+/**
+ * Root ESLint flat config for JavaScript and JSX with recommended, React Hooks, and React Refresh rules.
+ * Targets browser globals and ignores the dist build output directory.
+ * @author Shivum Arora
+ * @date 5/27/2026
+ */
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

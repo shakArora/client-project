@@ -1,3 +1,9 @@
+/**
+ * Vendor sales dashboard listing orders credited to the scout's referral code.
+ * Shows revenue totals, a goal progress bar, order detail modal, and fundraiser administrator contact info.
+ * @author Shivum Arora
+ * @date 6/14/2026
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vendorApi } from '../lib/api';

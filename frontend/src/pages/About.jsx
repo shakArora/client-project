@@ -1,3 +1,9 @@
+/**
+ * Marketing page describing Routed's mission, feature set, and fundraiser lifecycle for prospective organizers.
+ * Highlights route optimization, vendor dashboards, customer ordering, and OTP driver access with stats and workflow steps.
+ * @author Shivum Arora
+ * @date 6/14/2026
+ */
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import SiteNav from '../components/SiteNav';
