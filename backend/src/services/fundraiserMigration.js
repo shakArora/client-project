@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
 import { Fundraiser } from "../models/Fundraiser.js";
 import { Product } from "../models/Product.js";
 import { Vendor } from "../models/Vendor.js";
@@ -6,6 +7,7 @@ import { Order } from "../models/Order.js";
 import { DriverRoute } from "../models/DriverRoute.js";
 import { User, ROLES } from "../models/User.js";
 import { geocodeImportAddress, validateImportAddresses, formatRegionHint } from "../utils/geocode.js";
+import { ROUTE_MAX_BAGS } from "../utils/routeOptimizer.js";
 
 const EXPORT_VERSION = 1;
 
@@ -394,10 +396,12 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
 
     route = await DriverRoute.create({
       fundraiserId,
+      driverGroupId: new mongoose.Types.ObjectId(),
+      routeNumber: 1,
       otp: code,
       driverName: d.driverName,
       driverPhone: d.driverPhone,
-      capacity: d.capacity || 999,
+      capacity: d.capacity || ROUTE_MAX_BAGS,
       stops: (d.stops || []).map(s => ({ ...s, status: s.status || "pending" })),
     });
     route.completedStops = route.stops.filter(s => s.status === "delivered").length;

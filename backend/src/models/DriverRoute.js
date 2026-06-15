@@ -16,10 +16,12 @@ const stopSchema = new mongoose.Schema(
 const driverRouteSchema = new mongoose.Schema(
   {
     fundraiserId:    { type: mongoose.Schema.Types.ObjectId, ref: "Fundraiser", required: true },
+    driverGroupId:   { type: mongoose.Schema.Types.ObjectId, required: true },
+    routeNumber:     { type: Number, default: 1, min: 1 },
     otp:             { type: String, required: true, trim: true, uppercase: true },
     driverName:      { type: String, trim: true },
     driverPhone:     { type: String, trim: true },
-    capacity:        { type: Number, default: 999, min: 1, max: 9999 },
+    capacity:        { type: Number, default: 100, min: 1, max: 9999 },
     stops:           { type: [stopSchema], default: [] },
     completedStops:  { type: Number, default: 0, min: 0 },
     startedAt:       { type: Date },
@@ -30,6 +32,7 @@ const driverRouteSchema = new mongoose.Schema(
 
 // OTP must be unique within a fundraiser
 driverRouteSchema.index({ fundraiserId: 1, otp: 1 }, { unique: true });
+driverRouteSchema.index({ fundraiserId: 1, driverGroupId: 1, routeNumber: 1 });
 
 driverRouteSchema.virtual("totalStops").get(function () {
   return this.stops.length;

@@ -169,6 +169,59 @@ export function buildStopsFromOrders(orderList) {
     }));
 }
 
+export const ROUTE_MAX_BAGS = 100;
+export const ROUTE_MAX_STOPS = 15;
+
+/**
+ * Split a driver's optimized stop list into multiple delivery routes.
+ * Each route: up to ROUTE_MAX_BAGS bags and ROUTE_MAX_STOPS stops.
+ */
+export function splitOrdersIntoRoutes(orders) {
+  const routes = [];
+  const unassigned = [];
+  let current = { orders: [], bags: 0 };
+
+  for (const order of orders) {
+    const bags = orderBags(order);
+    if (bags <= 0) continue;
+
+    if (bags > ROUTE_MAX_BAGS) {
+      unassigned.push(order);
+      continue;
+    }
+
+    const needsNewRoute = current.orders.length > 0
+      && (current.bags + bags > ROUTE_MAX_BAGS || current.orders.length >= ROUTE_MAX_STOPS);
+
+    if (needsNewRoute) {
+      routes.push(current);
+      current = { orders: [], bags: 0 };
+    }
+
+    current.orders.push(order);
+    current.bags += bags;
+  }
+
+  if (current.orders.length) routes.push(current);
+  return { routes, unassigned };
+}
+
+export function getDriverProfiles(routes) {
+  const groups = new Map();
+  for (const r of routes) {
+    const gid = String(r.driverGroupId || r._id);
+    if (!groups.has(gid)) {
+      groups.set(gid, {
+        driverGroupId: r.driverGroupId || r._id,
+        driverName: r.driverName,
+        driverPhone: r.driverPhone,
+        capacity: r.capacity || 999,
+      });
+    }
+  }
+  return [...groups.values()];
+}
+
 export function routeBagTotals(stopsByDriver, drivers) {
   return stopsByDriver.map((stops, i) => ({
     driverIndex: i,

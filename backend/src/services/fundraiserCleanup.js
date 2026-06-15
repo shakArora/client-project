@@ -89,8 +89,12 @@ export async function deleteDriverById(driverId, adminId) {
   const route = await DriverRoute.findById(driverId);
   if (!route) throw new Error("Driver not found");
   await assertFundraiserAdmin(route.fundraiserId, adminId);
-  await DriverRoute.findByIdAndDelete(driverId);
-  return { deleted: 1 };
+  const groupId = route.driverGroupId || route._id;
+  const result = await DriverRoute.deleteMany({
+    fundraiserId: route.fundraiserId,
+    $or: [{ driverGroupId: groupId }, { _id: groupId }],
+  });
+  return { deleted: result.deletedCount };
 }
 
 export async function deleteAllDrivers(fundraiserId, adminId) {

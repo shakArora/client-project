@@ -1169,7 +1169,7 @@ function DriversTab({ fr }) {
 
       {!isDeliveryDay && (
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '.85rem 1rem', marginBottom: '1.25rem', fontSize: '.84rem', color: '#1e40af' }}>
-          <strong>How it works:</strong> Set a delivery hub address in Fundraiser Details first. Add drivers with bag capacity, codes are auto-assigned. Routes use OSRM distance optimization from your hub. Click <em>Generate Routes</em> to rebuild stops.
+          <strong>How it works:</strong> Set a delivery hub address in Fundraiser Details first. Add drivers with their total bag capacity. Generate Routes splits work into multiple routes per driver (max 100 bags, 15 stops each) with a unique code per route.
         </div>
       )}
 
@@ -1190,20 +1190,21 @@ function DriversTab({ fr }) {
             const currentStopIdx = (r.stops || []).findIndex(s => s.status !== 'delivered');
             const driverUrl = `${FRONTEND}/driver/${r.otp}`;
             const assignedBags = (r.stops || []).reduce((sum, s) => sum + (s.bags || 0), 0);
-            const overCap = assignedBags > (r.capacity || 999);
+            const routeCap = r.capacity || 100;
+            const overCap = assignedBags > routeCap;
+            const routeLabel = r.routeNumber > 1
+              ? ` — Route ${r.routeNumber}`
+              : (routes.filter((x) => String(x.driverGroupId || x._id) === String(r.driverGroupId || r._id)).length > 1 ? ' — Route 1' : '');
             return (
               <div key={r._id} style={{ background: '#fff', borderRadius: 12, padding: '1.1rem 1.25rem', boxShadow: '0 1px 8px rgba(0,0,0,.07)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap', marginBottom: '.75rem' }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '.97rem' }}>{r.driverName}</div>
+                    <div style={{ fontWeight: 700, fontSize: '.97rem' }}>{r.driverName}{routeLabel}</div>
                     {r.driverPhone && <div style={{ fontSize: '.82rem', color: 'var(--t3)' }}>📞 {r.driverPhone}</div>}
                     <div style={{ display: 'flex', gap: '.6rem', marginTop: '.45rem', flexWrap: 'wrap', alignItems: 'center' }}>
                       <span style={{ fontSize: '.78rem', background: '#f3f4f6', borderRadius: 6, padding: '.2rem .6rem', fontFamily: 'monospace', fontWeight: 700 }}>OTP: {r.otp}</span>
                       <span style={{ fontSize: '.78rem', color: overCap ? '#dc2626' : 'var(--t3)', fontWeight: overCap ? 700 : 400 }}>
-                        {assignedBags}/{r.capacity} bags assigned
-                      </span>
-                      <span style={{ fontSize: '.78rem', color: r.completedStops === r.stops?.length && r.stops?.length > 0 ? '#059669' : 'var(--t3)', fontWeight: r.completedStops === r.stops?.length && r.stops?.length > 0 ? 700 : 400 }}>
-                        {r.completedStops || 0}/{r.stops?.length || 0} stops
+                        {assignedBags}/{routeCap} bags · {r.stops?.length || 0} stops
                       </span>
                     </div>
                     <div style={{ marginTop: '.4rem', display: 'flex', gap: '.5rem', alignItems: 'center' }}>
@@ -1265,7 +1266,7 @@ function DriversTab({ fr }) {
             <Field label="Bag Capacity *">
               <input type="number" min="1" max="9999" value={form.capacity} onChange={set('capacity')} required placeholder="How many bags can this driver deliver?" />
             </Field>
-            <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '1.25rem' }}>A unique driver code will be auto-generated.</p>
+            <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '1.25rem' }}>Total bags this driver can handle across all routes. Each route is capped at 100 bags and 15 stops with its own code.</p>
             {msg && <p style={{ color: '#dc2626', fontSize: '.85rem', marginBottom: '.75rem' }}>{msg}</p>}
             <div style={{ display: 'flex', gap: '.6rem' }}>
               <button type="button" onClick={() => setShowForm(false)} className="btn btn-outline" style={{ flex: 1 }}>Cancel</button>
