@@ -14,9 +14,31 @@ export function looksLikeStreetAddress(raw) {
   return /\d/.test(s);
 }
 
+/** Normalize messy spreadsheet address text before geocoding. */
+export function preprocessImportAddress(raw) {
+  let s = String(raw || "").trim().replace(/\s+/g, " ");
+  s = s.replace(/\b(Dr|St|Ave|Rd|Ln|Ct|Ter|Pl|Cir|Blvd)\./gi, "$1");
+  s = s.replace(/\bNO POTOMAC\b/gi, "North Potomac");
+  s = s.replace(/\bN POTOMAC\b/gi, "North Potomac");
+  return s;
+}
+
+export function formatRegionHint(regionHint) {
+  if (!regionHint) return null;
+  if (typeof regionHint === "string") {
+    const s = regionHint.trim();
+    return s || null;
+  }
+  if (typeof regionHint === "object") {
+    const parts = [regionHint.city, regionHint.state].filter(Boolean).map(String);
+    return parts.length ? parts.join(", ") : null;
+  }
+  return null;
+}
+
 /** Build geocode query variants for messy spreadsheet addresses (missing ZIP, etc.). */
 export function normalizeImportAddressVariants(raw) {
-  const s = String(raw || "").trim().replace(/\s+/g, " ");
+  const s = preprocessImportAddress(raw);
   if (!s) return [];
 
   const variants = new Set([s]);
@@ -43,6 +65,11 @@ export function normalizeImportAddressVariants(raw) {
     if (!/\d{5}/.test(v) && !/\b(USA|United States)\b/i.test(v)) {
       variants.add(`${v}, USA`);
     }
+  }
+
+  const zipPlusFour = s.match(/^(.+?\b\d{5})-\d{4}\b(.*)$/i);
+  if (zipPlusFour) {
+    variants.add(`${zipPlusFour[1]}${zipPlusFour[2]}`.trim());
   }
 
   return [...variants];
@@ -79,8 +106,9 @@ export async function geocodeAddress(address) {
 }
 
 export async function geocodeImportAddress(raw, { regionHint } = {}) {
-  const input = String(raw || "").trim();
+  const input = preprocessImportAddress(raw);
   const queriesTried = [];
+  const hint = formatRegionHint(regionHint);
 
   if (!looksLikeStreetAddress(input)) {
     return {
@@ -88,14 +116,14 @@ export async function geocodeImportAddress(raw, { regionHint } = {}) {
       reason: "not_a_street_address",
       input,
       queriesTried,
-      debug: { reason: "not_a_street_address", queriesTried, regionHint: regionHint || null },
+      debug: { reason: "not_a_street_address", queriesTried, regionHint: hint },
     };
   }
 
   const variants = normalizeImportAddressVariants(input);
-  if (regionHint) {
+  if (hint) {
     for (const v of [...variants]) {
-      variants.push(`${v}, ${regionHint}`);
+      variants.push(`${v}, ${hint}`);
     }
   }
 
@@ -112,11 +140,12 @@ export async function geocodeImportAddress(raw, { regionHint } = {}) {
     reason: "not_found",
     input,
     queriesTried,
-    debug: { reason: "not_found", queriesTried, regionHint: regionHint || null },
+    debug: { reason: "not_found", queriesTried, regionHint: hint },
   };
 }
 
 export async function validateImportAddresses(rows, { regionHint } = {}) {
+  const hint = formatRegionHint(regionHint);
   const errors = [];
   const validated = [];
   const cache = new Map();
@@ -139,13 +168,13 @@ export async function validateImportAddresses(rows, { regionHint } = {}) {
       continue;
     }
 
-    const result = await geocodeImportAddress(row.deliveryAddress, { regionHint });
+    const result = await geocodeImportAddress(row.deliveryAddress, { regionHint: hint });
     if (!result.ok) {
       const message = addressImportErrorMessage(row.deliveryAddress, result.reason);
       const debug = result.debug || {
         reason: result.reason,
         queriesTried: result.queriesTried || [],
-        regionHint: regionHint || null,
+        regionHint: hint,
       };
       cache.set(key, { ok: false, message, debug });
       errors.push({
@@ -166,7 +195,7 @@ export async function validateImportAddresses(rows, { regionHint } = {}) {
     }
   }
 
-  return { valid: errors.length === 0, errors, validated, regionHint: regionHint || null };
+  return { valid: errors.length === 0, errors, validated, regionHint: hint };
 }
 
 export async function searchAddresses(query, limit = 5) {

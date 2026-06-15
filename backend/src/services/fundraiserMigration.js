@@ -5,7 +5,7 @@ import { Vendor } from "../models/Vendor.js";
 import { Order } from "../models/Order.js";
 import { DriverRoute } from "../models/DriverRoute.js";
 import { User, ROLES } from "../models/User.js";
-import { geocodeImportAddress, validateImportAddresses, addressImportErrorMessage } from "../utils/geocode.js";
+import { geocodeImportAddress, validateImportAddresses, formatRegionHint } from "../utils/geocode.js";
 
 const EXPORT_VERSION = 1;
 
@@ -46,10 +46,11 @@ function emptyStats() {
     orders: 0,
     drivers: 0,
     skipped: [],
+    warnings: [],
     details: {
       products:  { created: 0, updated: 0 },
       vendors:   { created: 0, skipped: 0 },
-      orders:    { created: 0, skipped: 0, duplicates: 0, addressErrors: 0 },
+      orders:    { created: 0, skipped: 0, duplicates: 0, addressWarnings: 0 },
       drivers:   { created: 0, skipped: 0 },
       fundraiser: { updated: false },
     },
@@ -132,7 +133,10 @@ async function isDuplicateOrder(fundraiserId, order) {
 }
 
 function fundraiserRegionHint(fr) {
-  return fr?.location || fr?.pickupAddress || fr?.deliveryHubAddress || null;
+  return formatRegionHint(fr?.location)
+    || formatRegionHint(fr?.pickupAddress)
+    || formatRegionHint(fr?.deliveryHubAddress)
+    || null;
 }
 
 export async function validateOrderImportAddresses(fundraiserId, adminId, rows) {
@@ -300,6 +304,7 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
 
     let coords;
     let deliveryAddress = rawAddress;
+    let addressNeedsReview = false;
 
     if (o.coords?.lat != null && o.coords?.lon != null) {
       coords = {
@@ -311,17 +316,20 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
     } else if (options.geocode === false) {
       coords = undefined;
       deliveryAddress = rawAddress;
+      addressNeedsReview = true;
     } else {
       const parsed = await geocodeImportAddress(rawAddress, { regionHint: fundraiserRegionHint(fr) });
       if (!parsed.ok) {
-        stats.details.orders.addressErrors++;
-        stats.details.orders.skipped++;
-        const label = o.row ? `Row ${o.row}` : `Order ${o.customerName}`;
-        stats.skipped.push(`${label}: ${addressImportErrorMessage(rawAddress, parsed.reason)}`);
-        continue;
+        coords = undefined;
+        deliveryAddress = rawAddress;
+        addressNeedsReview = true;
+        stats.details.orders.addressWarnings++;
+        const label = o.row ? `Row ${o.row} (${o.customerName})` : `Order ${o.customerName}`;
+        stats.warnings.push(`${label}: address not verified — fix before routing (${rawAddress})`);
+      } else {
+        coords = parsed.coords;
+        deliveryAddress = parsed.coords.display;
       }
-      coords = parsed.coords;
-      deliveryAddress = parsed.coords.display;
     }
 
     let vendorId = null;
@@ -357,6 +365,7 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
       deliveryAddress,
       comments: o.comments,
       coords,
+      addressNeedsReview,
       items,
       totalBags: o.totalBags || items.reduce((s, i) => s + i.quantity, 0),
       totalAmount: o.totalAmount || items.reduce((s, i) => s + i.quantity * i.unitPrice, 0),

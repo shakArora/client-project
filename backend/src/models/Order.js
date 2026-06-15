@@ -21,6 +21,7 @@ const orderSchema = new mongoose.Schema(
     customerPhone:   { type: String, trim: true },
     comments:        { type: String, trim: true },
     coords:          { lat: Number, lon: Number, display: String },
+    addressNeedsReview: { type: Boolean, default: false },
     items:           { type: [orderItemSchema], required: true },
     totalBags:       { type: Number, default: 0, min: 0 },
     totalAmount:     { type: Number, default: 0, min: 0 },

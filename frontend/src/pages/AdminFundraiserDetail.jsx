@@ -5,7 +5,7 @@ import { fundraiserApi, productApi, vendorApi, adminApi, orderApi, driverApi } f
 import { US_STATES } from '../lib/usStates';
 import { downloadCsv, downloadJson, downloadTemplateCsv, parseCsv } from '../lib/csv';
 import { isPastFundraiser } from '../lib/dates';
-import { ORDERS_CSV, VENDORS_CSV, pickField, parseCsvNumber, resolveOrderCsvFields, formatAddressValidationError, formatApiDebug } from '../lib/importFormats';
+import { ORDERS_CSV, VENDORS_CSV, pickField, parseCsvNumber, resolveOrderCsvFields, formatApiDebug } from '../lib/importFormats';
 import AddressSelect from '../components/AddressSelect';
 import { SkeletonFundraiserDetail, SkeletonList } from '../components/Skeleton';
 
@@ -14,7 +14,6 @@ const FRONTEND = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 const TABS = ['Fundraiser Details', 'Products', 'Vendors', 'Orders', 'Drivers'];
 
 const IMPORT_OPTIONS = { orders: 'append', vendors: 'skip-existing', drivers: 'skip-existing', products: 'upsert' };
-const CSV_IMPORT_OPTIONS = { ...IMPORT_OPTIONS, geocode: false };
 
 function DeleteBtn({ onClick, label = 'Delete', small }) {
   return (
@@ -327,15 +326,20 @@ function CustomerLinkBar({ fr }) {
 }
 
 /* ═══════════════════════ CSV / BACKUP HELPERS ═════════════ */
+function needsAddressReview(o) {
+  return o.addressNeedsReview || o.coords?.lat == null;
+}
+
 function formatImportResult(stats) {
   const d = stats.details || {};
   const parts = [];
   if (d.orders) {
     parts.push(`${d.orders.created || stats.orders || 0} order(s) added`);
-    if (d.orders.addressErrors) parts.push(`${d.orders.addressErrors} address error(s)`);
+    if (d.orders.addressWarnings) parts.push(`${d.orders.addressWarnings} address warning(s)`);
     if (d.orders.duplicates) parts.push(`${d.orders.duplicates} duplicate(s) skipped`);
     if (d.orders.skipped) parts.push(`${d.orders.skipped} row(s) skipped`);
   } else if (stats.orders) parts.push(`${stats.orders} order(s) added`);
+  if (stats.warnings?.length) parts.push(`${stats.warnings.length} need address review`);
   if (d.vendors) {
     parts.push(`${d.vendors.created || stats.vendors || 0} vendor(s) added`);
     if (d.vendors.skipped) parts.push(`${d.vendors.skipped} existing vendor(s) skipped`);
@@ -836,6 +840,7 @@ function OrdersTab({ fr }) {
 
   const total = orders.reduce((s, o) => s + o.totalAmount, 0);
   const paid  = orders.filter(o => ['paid','fulfilled','delivered'].includes(o.status)).length;
+  const addressWarnings = orders.filter(needsAddressReview).length;
 
   async function importOrdersCsv(file) {
     if (!file) return;
@@ -845,51 +850,28 @@ function OrdersTab({ fr }) {
       setCsvMsg(problems[0] || 'No valid rows, check template format.');
       return;
     }
+    if (problems.length) {
+      setCsvMsg(`Fix these issues in your CSV and re-import:\n${problems.join('\n')}`);
+      return;
+    }
+
+    const preview = [
+      `${valid.length} order(s) to import`,
+      'Addresses are verified during import',
+      'Unverified addresses are imported with a warning',
+      'Duplicates (same customer + address + bags) are skipped',
+    ].join('\n');
+    if (!window.confirm(`Import orders?\n${preview}`)) return;
 
     setCsvBusy(true);
-    const uniqueAddresses = new Set(valid.map(o => o.deliveryAddress.trim().toLowerCase())).size;
-    const estSec = Math.max(5, Math.ceil(uniqueAddresses * 1.2));
-    setCsvMsg(`Validating ${uniqueAddresses} unique address(es)… may take ~${estSec}s`);
+    setCsvMsg('Importing and verifying addresses…');
     try {
-      const { data: validation } = await fundraiserApi.validateImportAddresses(
-        fr._id,
-        valid.map(o => ({ row: o.row, customerName: o.customerName, deliveryAddress: o.deliveryAddress })),
-      );
-
-      const allProblems = [...problems];
-      if (validation.errors?.length) {
-        validation.errors.forEach(e => {
-          allProblems.push(formatAddressValidationError(e));
-        });
-      }
-
-      if (allProblems.length) {
-        const debugNote = validation.regionHint ? `\n[debug] regionHint=${validation.regionHint}` : '';
-        setCsvMsg(`Fix these issues in your CSV and re-import:\n${allProblems.slice(0, 8).join('\n')}${allProblems.length > 8 ? `\n…and ${allProblems.length - 8} more` : ''}${debugNote}`);
-        return;
-      }
-
-      const coordsByRow = new Map((validation.validated || []).map(v => [v.row, v.coords]));
-      const ordersToImport = valid.map(o => {
-        const coords = coordsByRow.get(o.row);
-        return {
-          ...o,
-          coords,
-          deliveryAddress: coords?.display || o.deliveryAddress,
-        };
-      });
-
-      const preview = [
-        `${valid.length} order(s) to import`,
-        'Existing orders are never changed',
-        'Duplicates (same customer + address + bags) are skipped',
-      ].join(' · ');
-      if (!window.confirm(`Import orders?\n${preview}`)) return;
-
-      setCsvMsg('Importing orders…');
-      const { data } = await fundraiserApi.import(fr._id, { orders: ordersToImport, options: CSV_IMPORT_OPTIONS });
-      const skipped = data.stats.skipped?.length ? ` ${data.stats.skipped.slice(0, 3).join('; ')}` : '';
-      setCsvMsg(`${formatImportResult(data.stats)}.${skipped}`);
+      const { data } = await fundraiserApi.import(fr._id, { orders: valid, options: IMPORT_OPTIONS });
+      const warn = data.stats.warnings?.length
+        ? `\n\nAddress warnings:\n${data.stats.warnings.slice(0, 10).join('\n')}${data.stats.warnings.length > 10 ? `\n…and ${data.stats.warnings.length - 10} more` : ''}`
+        : '';
+      const skipped = data.stats.skipped?.length ? `\nSkipped: ${data.stats.skipped.slice(0, 3).join('; ')}` : '';
+      setCsvMsg(`${formatImportResult(data.stats)}.${skipped}${warn}`);
       load();
     } catch (err) {
       const data = err.response?.data;
@@ -932,6 +914,11 @@ function OrdersTab({ fr }) {
         </div>
       </div>
       {csvMsg && <p className={`tab-csv-msg ${csvMsg.includes('failed') || csvMsg.includes('No valid') || csvMsg.includes('Fix these') ? 'tab-csv-msg--err' : 'tab-csv-msg--ok'}`}>{csvMsg}</p>}
+      {addressWarnings > 0 && (
+        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '.85rem 1rem', marginBottom: '1rem', fontSize: '.84rem', color: '#9a3412' }}>
+          <strong>{addressWarnings} order(s) need address review.</strong> Fix spelling or formatting in your spreadsheet, delete and re-import those rows, or edit addresses before generating routes.
+        </div>
+      )}
       <div className="admin-stat-row">
         {[['Total Orders', orders.length], ['Paid', paid], ['Revenue', `$${total.toFixed(2)}`]].map(([l,v]) => (
           <div key={l} className="admin-stat-card">
@@ -944,9 +931,12 @@ function OrdersTab({ fr }) {
       {loading ? <SkeletonList rows={4} /> : (
         <div className="admin-list">
           {orders.map(o => (
-            <button key={o._id} type="button" onClick={() => setSelected(o)} className="admin-list-item admin-list-item--clickable" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <button key={o._id} type="button" onClick={() => setSelected(o)} className="admin-list-item admin-list-item--clickable" style={{ justifyContent: 'space-between', flexWrap: 'wrap', borderLeft: needsAddressReview(o) ? '4px solid #f59e0b' : undefined }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '.95rem' }}>{o.customerName}</div>
+                <div style={{ fontWeight: 700, fontSize: '.95rem', display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                  {o.customerName}
+                  {needsAddressReview(o) && <span title="Address not verified" style={{ color: '#d97706', fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>Needs review</span>}
+                </div>
                 <div style={{ fontSize: '.8rem', color: 'var(--t3)' }}>{o.deliveryAddress}</div>
               </div>
               <div style={{ display: 'flex', gap: '.75rem', alignItems: 'center', flexShrink: 0 }}>
@@ -963,6 +953,11 @@ function OrdersTab({ fr }) {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem', overflowY: 'auto' }}>
           <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', width: '100%', maxWidth: 500 }}>
             <h3 style={{ fontFamily: 'var(--serif)', marginBottom: '1rem' }}>Order Details</h3>
+            {needsAddressReview(selected) && (
+              <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '.85rem 1rem', marginBottom: '1rem', fontSize: '.84rem', color: '#9a3412' }}>
+                <strong>Address not verified.</strong> This address could not be matched for routing. Fix the spelling in your CSV and re-import, or update the address below before generating routes.
+              </div>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem .85rem', marginBottom: '1.25rem' }}>
               {[['Customer', selected.customerName], ['Email', selected.customerEmail], ['Phone', selected.customerPhone||' - '], ['Address', selected.deliveryAddress], ['Referral', selected.referralCode||' - '], ['Status', '']].map(([l,v]) => (
                 <div key={l}>

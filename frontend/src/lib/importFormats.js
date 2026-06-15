@@ -35,7 +35,7 @@ export function resolveOrderCsvFields({ statusRaw, productRaw, referralRaw, comm
 }
 
 export const IMPORT_BEHAVIOR = {
-  orders: 'Adds new orders only. Existing orders are never modified or deleted. Duplicate rows (same customer + address + bags) are skipped. Email and phone are optional. Each address is validated before import; fix any errors in your CSV and re-upload.',
+  orders: 'Adds new orders only. Addresses are verified during import. Orders with unverified addresses are still imported and flagged for you to fix before routing.',
   vendors: 'Creates new vendor accounts. Rows with an email that already exists on this fundraiser are skipped. Password is required for each new vendor.',
   products: 'Creates new products or updates matching product names. Does not delete existing products.',
   drivers: 'Creates new driver routes. Existing driver codes are left unchanged.',
@@ -57,7 +57,7 @@ export const ORDERS_CSV = {
     'Status is optional (pending, paid, fulfilled, delivered, refunded, cancelled). Leave blank if unknown — do not put product names here.',
     'Referral is optional. Leave blank if the order was not referred by a vendor. If provided, it must match a vendor code on this fundraiser.',
     'Address: street number + street name, city, and state (ZIP optional). Example: 14508 Brookmead Dr, Darnestown, MD',
-    'Addresses without a ZIP code are OK. Routed validates each address before import; rows that cannot be parsed must be fixed and re-uploaded.',
+    'Addresses without a ZIP code are OK. Unverified addresses are imported with a warning — fix them in the Orders tab before generating routes.',
   ],
   aliases: {
     customer: ['customer', 'customername', 'name'],
