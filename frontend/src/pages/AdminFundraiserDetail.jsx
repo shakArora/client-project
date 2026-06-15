@@ -14,6 +14,7 @@ const FRONTEND = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 const TABS = ['Fundraiser Details', 'Products', 'Vendors', 'Orders', 'Drivers'];
 
 const IMPORT_OPTIONS = { orders: 'append', vendors: 'skip-existing', drivers: 'skip-existing', products: 'upsert' };
+const CSV_IMPORT_OPTIONS = { ...IMPORT_OPTIONS, geocode: false };
 
 /* ───────────────────────── helpers ─────────────────────── */
 const STATUS_COLOR = {
