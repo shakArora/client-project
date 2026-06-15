@@ -14,6 +14,7 @@ const DEFAULT_OPTIONS = {
   vendors:   "skip-existing",
   drivers:   "skip-existing",
   fundraiser: "merge",
+  geocode:   true,
 };
 
 function normalizeOptions(payload) {

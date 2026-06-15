@@ -19,19 +19,20 @@ export async function optimizeRoutes({ hubAddress, orders, drivers }) {
   const hubOffset = hub ? 1 : 0;
 
   const results = await logic(addresses, weights, capacities);
-  const final = results[results.length - 1];
   const stopsByDriver = drivers.map(() => []);
   const added = new Set();
 
-  for (const cluster of final.clusters || []) {
-    const drvIdx = cluster.vehicleIndex;
-    if (drvIdx < 0 || drvIdx >= drivers.length) continue;
-    for (const addr of cluster.addresses || []) {
-      const base = stripPartSuffix(addr);
-      const order = orders.find(o => o.deliveryAddress === base || o.deliveryAddress === addr);
-      if (order && !added.has(String(order._id))) {
-        stopsByDriver[drvIdx].push(order);
-        added.add(String(order._id));
+  for (const result of results) {
+    for (const cluster of result.clusters || []) {
+      const drvIdx = cluster.vehicleIndex;
+      if (drvIdx < 0 || drvIdx >= drivers.length) continue;
+      for (const addr of cluster.addresses || []) {
+        const base = stripPartSuffix(addr);
+        const order = orders.find(o => o.deliveryAddress === base || o.deliveryAddress === addr);
+        if (order && !added.has(String(order._id))) {
+          stopsByDriver[drvIdx].push(order);
+          added.add(String(order._id));
+        }
       }
     }
   }

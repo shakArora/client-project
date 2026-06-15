@@ -14,6 +14,7 @@ const FRONTEND = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 const TABS = ['Fundraiser Details', 'Products', 'Vendors', 'Orders', 'Drivers'];
 
 const IMPORT_OPTIONS = { orders: 'append', vendors: 'skip-existing', drivers: 'skip-existing', products: 'upsert' };
+const CSV_IMPORT_OPTIONS = { ...IMPORT_OPTIONS, geocode: false };
 
 /* ───────────────────────── helpers ─────────────────────── */
 const STATUS_COLOR = {
@@ -773,7 +774,7 @@ function OrdersTab({ fr }) {
 
     setCsvBusy(true); setCsvMsg('');
     try {
-      const { data } = await fundraiserApi.import(fr._id, { orders: valid, options: IMPORT_OPTIONS });
+      const { data } = await fundraiserApi.import(fr._id, { orders: valid, options: CSV_IMPORT_OPTIONS });
       const skipped = data.stats.skipped?.length ? ` ${data.stats.skipped.slice(0, 3).join('; ')}` : '';
       setCsvMsg(`${formatImportResult(data.stats)}.${skipped}`);
       load();

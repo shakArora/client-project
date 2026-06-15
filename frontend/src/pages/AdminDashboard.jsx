@@ -5,7 +5,6 @@ import { fundraiserApi } from '../lib/api';
 import { isPastFundraiser } from '../lib/dates';
 import { US_STATES } from '../lib/usStates';
 import { SkeletonDashboard } from '../components/Skeleton';
-import AddressSelect from '../components/AddressSelect';
 
 const FRONTEND = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 
@@ -103,7 +102,6 @@ export default function AdminDashboard() {
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newPickup, setNewPickup] = useState('');
-  const [newPickupCoords, setNewPickupCoords] = useState(null);
   const [newCity, setNewCity] = useState('');
   const [newState, setNewState] = useState('');
   const [saving,   setSaving]   = useState(false);
@@ -127,15 +125,12 @@ export default function AdminDashboard() {
       const res = await fundraiserApi.create({
         title: newTitle.trim(),
         pickupAddress: newPickup.trim() || undefined,
-        pickupCoords: newPickupCoords || undefined,
         deliveryHubAddress: newPickup.trim() || undefined,
-        deliveryHubCoords: newPickupCoords || undefined,
         location: (newCity.trim() || newState) ? { city: newCity.trim() || undefined, state: newState || undefined } : undefined,
       });
       setCreating(false);
       setNewTitle('');
       setNewPickup('');
-      setNewPickupCoords(null);
       setNewCity('');
       setNewState('');
       navigate(`/admin/fundraiser/${res.data._id}`);
@@ -215,15 +210,11 @@ export default function AdminDashboard() {
                 style={{ width: '100%', border: '2px solid var(--border)', borderRadius: 10, padding: '.75rem', fontSize: '.95rem', marginBottom: '1rem', boxSizing: 'border-box' }}
               />
               <label style={{ display: 'block', fontSize: '.82rem', fontWeight: 700, color: 'var(--t2)', marginBottom: '.35rem' }}>Fundraiser address</label>
-              <AddressSelect
+              <input
                 value={newPickup}
-                coords={newPickupCoords}
+                onChange={e => setNewPickup(e.target.value)}
                 placeholder="Pickup location & driver route starting point"
-                hint="Select a verified address from the dropdown."
-                onChange={({ address, coords }) => {
-                  setNewPickup(address);
-                  setNewPickupCoords(coords);
-                }}
+                style={{ width: '100%', border: '2px solid var(--border)', borderRadius: 10, padding: '.75rem', fontSize: '.95rem', marginBottom: '1rem', boxSizing: 'border-box' }}
               />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
