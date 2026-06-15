@@ -1169,7 +1169,7 @@ function DriversTab({ fr }) {
 
       {!isDeliveryDay && (
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '.85rem 1rem', marginBottom: '1.25rem', fontSize: '.84rem', color: '#1e40af' }}>
-          <strong>How it works:</strong> Set a delivery hub address in Fundraiser Details first. Add drivers with their total bag capacity. Generate Routes splits work into multiple routes per driver (max 100 bags, 15 stops each) with a unique code per route.
+          <strong>How it works:</strong> Set a delivery hub address in Fundraiser Details first. Add drivers with their total bag capacity. Generate Routes splits work into multiple routes per driver when they exceed 100 bags, with a unique code per route.
         </div>
       )}
 
@@ -1266,7 +1266,7 @@ function DriversTab({ fr }) {
             <Field label="Bag Capacity *">
               <input type="number" min="1" max="9999" value={form.capacity} onChange={set('capacity')} required placeholder="How many bags can this driver deliver?" />
             </Field>
-            <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '1.25rem' }}>Total bags this driver can handle across all routes. Each route is capped at 100 bags and 15 stops with its own code.</p>
+            <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '1.25rem' }}>Total bags this driver can handle across all routes. Each route is capped at 100 bags (any number of stops) with its own code.</p>
             {msg && <p style={{ color: '#dc2626', fontSize: '.85rem', marginBottom: '.75rem' }}>{msg}</p>}
             <div style={{ display: 'flex', gap: '.6rem' }}>
               <button type="button" onClick={() => setShowForm(false)} className="btn btn-outline" style={{ flex: 1 }}>Cancel</button>

@@ -13,7 +13,6 @@ import {
   splitOrdersIntoRoutes,
   getDriverProfiles,
   ROUTE_MAX_BAGS,
-  ROUTE_MAX_STOPS,
 } from "../utils/routeOptimizer.js";
 import { deleteDriverById } from "../services/fundraiserCleanup.js";
 
@@ -117,7 +116,7 @@ async function autoGenerateRoutes(fundraiserId) {
   const routeCount = drivers.length;
   const driverCount = profiles.length;
 
-  let message = `Generated ${routeCount} route(s) for ${driverCount} driver(s) (max ${ROUTE_MAX_BAGS} bags, ${ROUTE_MAX_STOPS} stops per route, ${method})`;
+  let message = `Generated ${routeCount} route(s) for ${driverCount} driver(s) (max ${ROUTE_MAX_BAGS} bags per route, ${method})`;
   if (allUnassigned.length) {
     message += `. ${allUnassigned.length} order(s) could not be assigned — add drivers, raise caps, or split large orders.`;
   }

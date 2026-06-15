@@ -170,11 +170,10 @@ export function buildStopsFromOrders(orderList) {
 }
 
 export const ROUTE_MAX_BAGS = 100;
-export const ROUTE_MAX_STOPS = 15;
 
 /**
  * Split a driver's optimized stop list into multiple delivery routes.
- * Each route: up to ROUTE_MAX_BAGS bags and ROUTE_MAX_STOPS stops.
+ * Each route: up to ROUTE_MAX_BAGS bags (no stop-count limit).
  */
 export function splitOrdersIntoRoutes(orders) {
   const routes = [];
@@ -190,10 +189,7 @@ export function splitOrdersIntoRoutes(orders) {
       continue;
     }
 
-    const needsNewRoute = current.orders.length > 0
-      && (current.bags + bags > ROUTE_MAX_BAGS || current.orders.length >= ROUTE_MAX_STOPS);
-
-    if (needsNewRoute) {
+    if (current.orders.length > 0 && current.bags + bags > ROUTE_MAX_BAGS) {
       routes.push(current);
       current = { orders: [], bags: 0 };
     }
