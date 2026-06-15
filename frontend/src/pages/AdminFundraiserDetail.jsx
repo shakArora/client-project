@@ -1,3 +1,8 @@
+/**
+ * Renders the comprehensive single-fundraiser admin workspace with tabbed management for details, products, vendors, orders, and drivers. Supports CSV/JSON import-export, route generation, and inline CRUD for all fundraiser entities.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';

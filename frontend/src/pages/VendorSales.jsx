@@ -1,3 +1,8 @@
+/**
+ * Renders the vendor sales dashboard with revenue goal tracking, order list, and order detail modal. Allows vendors to set a revenue goal and view orders credited to their referral code.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vendorApi } from '../lib/api';

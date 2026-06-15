@@ -1,3 +1,8 @@
+/**
+ * Renders checkout step two where customers enter delivery details, contact info, and referral code. Validates the address via AddressSelect and saves data to sessionStorage before payment.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';

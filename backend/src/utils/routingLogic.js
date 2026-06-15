@@ -1,3 +1,8 @@
+/**
+ * Implements the core delivery routing engine with geocoding, distance matrices via OSRM, capacity-constrained clustering, and multi-vehicle route splitting. Kept in sync with the root src/logic.js reference implementation.
+ * @name Shivum Arora, Jasraj Bhatia
+ * @date 2026-06-15
+ */
 // LOGIC FOR ROUTED HERE — keep in sync with /src/logic.js
 
 const wait = (ms) => {

@@ -1,3 +1,8 @@
+/**
+ * Renders the administrator home page with fundraiser cards, publish checklists, create/edit forms, and live/pause toggles. Lists all fundraisers owned by the logged-in admin with key sales metrics.
+ * @name Jasraj Bhatia
+ * @date 2026-06-14
+ */
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';

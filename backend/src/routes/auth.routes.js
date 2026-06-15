@@ -1,3 +1,8 @@
+/**
+ * Handles authentication endpoints for login, Google admin sign-in, password reset request/confirm, and disabled public registration. Validates input with Zod and issues JWT tokens on success.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import express from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";

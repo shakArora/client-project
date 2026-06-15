@@ -1,3 +1,8 @@
+/**
+ * Loads dotenv and exports a typed configuration object for port, database, JWT, Google OAuth, SMTP, Twilio, and frontend URL settings. Centralizes all backend environment variable defaults and parsing.
+ * @name Shivum Arora
+ * @date 2026-06-05
+ */
 import dotenv from "dotenv";
 
 dotenv.config();

@@ -1,3 +1,8 @@
+/**
+ * Renders the driver route completion celebration screen with static delivery stats. Shown after all stops on a route have been marked delivered.
+ * @name Shivum Arora
+ * @date 2026-06-05
+ */
 import { Link } from 'react-router-dom';
 
 export default function DriverComplete() {

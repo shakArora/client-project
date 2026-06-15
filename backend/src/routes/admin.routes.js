@@ -1,5 +1,7 @@
 /**
- * Admin-only aggregate endpoints — dashboard stats and user management.
+ * Provides admin-only REST endpoints for dashboard statistics, vendor account creation, and user management. Requires administrator JWT authentication on all routes.
+ * @name Shivum Arora
+ * @date 2026-06-14
  */
 import express from "express";
 import { z } from "zod";

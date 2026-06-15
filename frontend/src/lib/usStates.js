@@ -1,3 +1,8 @@
+/**
+ * Exports a static array of US state abbreviations and full names for form select dropdowns. Used in admin fundraiser creation and editing forms.
+ * @name Shivum Arora
+ * @date 2026-06-11
+ */
 export const US_STATES = [
   ['AL', 'Alabama'], ['AK', 'Alaska'], ['AZ', 'Arizona'], ['AR', 'Arkansas'],
   ['CA', 'California'], ['CO', 'Colorado'], ['CT', 'Connecticut'], ['DE', 'Delaware'],

@@ -1,3 +1,8 @@
+/**
+ * Configures the Express application with CORS, Helmet, JSON parsing, and mounts all API route modules under /api. Serves as the composable HTTP layer exported for both the production server and tests.
+ * @name Shivum Arora
+ * @date 2026-06-06
+ */
 import express from "express";
 import helmet from "helmet";
 import { env } from "./config/env.js";

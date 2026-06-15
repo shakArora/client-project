@@ -1,3 +1,8 @@
+/**
+ * Defines the Mongoose schema for driver delivery routes, including OTP codes, capacity, ordered stops, and completion tracking. Exposes virtual fields for total stops and delivery progress percentage.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import mongoose from "mongoose";
 
 const stopSchema = new mongoose.Schema(

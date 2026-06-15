@@ -1,3 +1,8 @@
+/**
+ * Defines the Mongoose schema for application users with email, password hash, Google sub, phone, and role enum. Exports ROLES constants for administrator, vendor, and driver.
+ * @name Shivum Arora
+ * @date 2026-06-05
+ */
 import mongoose from "mongoose";
 
 export const ROLES = {

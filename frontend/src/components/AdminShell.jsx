@@ -1,3 +1,8 @@
+/**
+ * Provides the admin layout with a dark sidebar navigation, fundraiser context display, and logout controls. Wraps admin page content in a consistent two-column shell.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 

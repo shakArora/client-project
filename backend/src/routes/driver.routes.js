@@ -1,3 +1,8 @@
+/**
+ * Exposes driver route endpoints for OTP-based access, route retrieval, stop completion, and automatic route generation. Integrates the route optimizer to assign paid orders across drivers by capacity.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import express from "express";
 import mongoose from "mongoose";
 import { z } from "zod";

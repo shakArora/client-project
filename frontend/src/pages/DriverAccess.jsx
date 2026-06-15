@@ -1,3 +1,8 @@
+/**
+ * Renders the driver portal OTP entry form with six-character code input. Validates the code against the API and stores it in localStorage before navigating to the route view.
+ * @name Shivum Arora
+ * @date 2026-06-11
+ */
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { driverApi } from '../lib/api';

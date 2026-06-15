@@ -1,3 +1,8 @@
+/**
+ * Sends password-reset notifications via configured SMTP email or Twilio SMS channels. Gracefully no-ops when the relevant service credentials are not configured.
+ * @name Shivum Arora
+ * @date 2026-06-05
+ */
 import nodemailer from "nodemailer";
 import twilio from "twilio";
 import { env } from "../config/env.js";

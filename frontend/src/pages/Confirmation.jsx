@@ -1,3 +1,8 @@
+/**
+ * Renders the post-checkout order confirmation page with order code, item summary, delivery date, and payment details. Reads the placed order from sessionStorage.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';

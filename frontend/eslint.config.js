@@ -1,3 +1,8 @@
+/**
+ * Configures ESLint flat config for the frontend React app with recommended JS rules, React Hooks, and React Refresh plugins. Targets browser globals and ignores the dist build output.
+ * @name Shivum Arora
+ * @date 2026-06-05
+ */
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

@@ -1,3 +1,8 @@
+/**
+ * Wraps the routing logic engine to assign orders to drivers, split oversized routes, and build stop lists from paid orders. Provides capacity-based fallback when OSRM optimization fails.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import { logic } from "./routingLogic.js";
 import { geocodeImportAddress, formatRegionHint } from "./geocode.js";
 

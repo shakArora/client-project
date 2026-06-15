@@ -1,3 +1,8 @@
+/**
+ * Defines the Mongoose schema for fundraiser campaigns with slug, dates, contact info, payment settings, geocoded addresses, and denormalized sales counters. Powers public customer pages and admin management.
+ * @name Shivum Arora
+ * @date 2026-06-11
+ */
 import mongoose from "mongoose";
 
 const fundraiserSchema = new mongoose.Schema(

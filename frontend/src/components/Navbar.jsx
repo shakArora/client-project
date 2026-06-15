@@ -1,3 +1,8 @@
+/**
+ * Renders a responsive navigation bar with configurable links, mobile drawer, and a CTA that routes logged-in users to their role dashboard. Used on shop and checkout pages.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';

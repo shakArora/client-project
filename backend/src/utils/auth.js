@@ -1,3 +1,8 @@
+/**
+ * Provides JWT sign/verify helpers and secure password-reset token generation using SHA-256 hashing. Uses secrets and expiry settings from environment configuration.
+ * @name Shivum Arora
+ * @date 2026-06-05
+ */
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { env } from "../config/env.js";

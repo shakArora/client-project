@@ -1,3 +1,8 @@
+/**
+ * Renders the public fundraiser shop page at /fundraiser/:slug with product carousel, quantity selection, and sale-status gating. Stores cart data in sessionStorage and proceeds to checkout when sales are open.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';

@@ -1,3 +1,8 @@
+/**
+ * Legacy admin page for CRUD management of fundraiser products with emoji picker. Lists, creates, edits, and deletes products for the active fundraiser.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useEffect } from 'react';
 import AdminShell from '../components/AdminShell';
 import { productApi } from '../lib/api';

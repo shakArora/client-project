@@ -1,3 +1,8 @@
+/**
+ * Defines Express middleware to require a valid Bearer JWT and optionally enforce role-based access. Attaches decoded user claims to req.user or returns 401/403 responses.
+ * @name Shivum Arora
+ * @date 2026-06-05
+ */
 import { verifyAuthToken } from "../utils/auth.js";
 
 export function requireAuth(req, res, next) {

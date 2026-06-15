@@ -1,3 +1,8 @@
+/**
+ * Handles order listing, public placement, address search/validation, status updates, and admin deletion. Updates vendor and fundraiser counters when orders are created or removed.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import express from "express";
 import { z } from "zod";
 import { Order } from "../models/Order.js";

@@ -1,3 +1,8 @@
+/**
+ * Renders a standalone marketing landing page prototype for the Routed product with hero, features, and contact sections. Serves as the root Vite app's default view separate from the full frontend app.
+ * @name Jasraj Bhatia
+ * @date 2026-06-07
+ */
 import './App.css'
 
 function App() {

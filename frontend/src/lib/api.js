@@ -1,3 +1,8 @@
+/**
+ * Configures an Axios client with JWT injection, 401 auto-logout, and grouped API methods for auth, fundraisers, products, orders, vendors, drivers, and admin. Centralizes all backend HTTP calls for the frontend.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import axios from "axios";
 
 const BASE = import.meta.env.VITE_API_BASE_URL || "/api";

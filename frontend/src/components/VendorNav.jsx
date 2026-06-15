@@ -1,3 +1,8 @@
+/**
+ * Renders the vendor portal navigation with tabs for My Codes and My Sales, plus mobile drawer and logout. Displays the vendor's name in the header.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';

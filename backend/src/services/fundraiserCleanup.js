@@ -1,3 +1,8 @@
+/**
+ * Provides admin-guarded deletion helpers for orders, vendors, drivers, and bulk resets within a fundraiser. Keeps denormalized fundraiser and vendor counters in sync when records are removed.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import { Fundraiser } from "../models/Fundraiser.js";
 import { Order } from "../models/Order.js";
 import { Vendor } from "../models/Vendor.js";

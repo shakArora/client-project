@@ -1,3 +1,8 @@
+/**
+ * Implements fundraiser data export to JSON and import from JSON/CSV with configurable merge strategies. Handles geocoding, vendor/user creation, order deduplication, and driver route reconstruction during import.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import { Fundraiser } from "../models/Fundraiser.js";

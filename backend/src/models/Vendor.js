@@ -1,3 +1,8 @@
+/**
+ * Defines the Mongoose schema for vendor profiles linked to users and fundraisers with referral codes and running sales totals. Enforces unique referral codes per fundraiser via a compound index.
+ * @name Shivum Arora
+ * @date 2026-06-09
+ */
 import mongoose from "mongoose";
 
 const vendorSchema = new mongoose.Schema(

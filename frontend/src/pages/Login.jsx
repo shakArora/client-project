@@ -1,3 +1,8 @@
+/**
+ * Renders the unified login page with Vendor, Administrator, and Driver tabs supporting email/password, Google OAuth, and OTP entry. Redirects authenticated users to their role-specific dashboard.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';

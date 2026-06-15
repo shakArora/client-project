@@ -1,3 +1,8 @@
+/**
+ * Renders the vendor portal page showing referral code, shareable shop link, and downloadable QR code. Fetches the vendor profile and builds the fundraiser URL with referral parameter.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vendorApi } from '../lib/api';

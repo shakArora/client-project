@@ -1,3 +1,8 @@
+/**
+ * Legacy admin page for manual driver route creation and route listing with paid-order stop assignment. Also exposes client-side routing logic imports for testing route generation.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useEffect } from 'react';
 import AdminShell from '../components/AdminShell';
 import { driverApi, orderApi } from '../lib/api';

@@ -1,3 +1,8 @@
+/**
+ * Renders the help documentation page with role-based step-by-step guides for administrators, vendors, customers, and drivers. Uses an accordion layout within the marketing site shell.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';

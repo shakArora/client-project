@@ -1,5 +1,8 @@
-/** Column specs and behavior notes for fundraiser import/export */
-
+/**
+ * Defines CSV column specs, import behavior notes, and field-resolution helpers for fundraiser data import. Normalizes order statuses and recovers misaligned CSV columns during spreadsheet imports.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 export const ORDER_STATUSES = new Set([
   'pending', 'paid', 'fulfilled', 'delivered', 'refunded', 'cancelled',
 ]);

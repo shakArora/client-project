@@ -1,3 +1,8 @@
+/**
+ * Renders the main marketing landing page with animated hero, feature sections, FAQ, and scroll-driven interactions. Primary entry point for the Routed product website.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ArrowRight } from 'lucide-react';

@@ -1,3 +1,8 @@
+/**
+ * Renders the password reset request form that emails a secure reset link via the auth API. Shows a confirmation message after the reset email is sent.
+ * @name Shivum Arora
+ * @date 2026-06-05
+ */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authApi } from '../lib/api';

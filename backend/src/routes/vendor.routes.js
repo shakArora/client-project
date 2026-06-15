@@ -1,3 +1,8 @@
+/**
+ * Serves vendor profile, order listing, stats update, and admin vendor management endpoints. Vendors access their own data via JWT; admins can list and delete vendors.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import express from "express";
 import { z } from "zod";
 import { Vendor } from "../models/Vendor.js";

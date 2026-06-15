@@ -1,3 +1,8 @@
+/**
+ * Defines the Mongoose schema for customer orders with line items, delivery address, geocoordinates, referral codes, and status workflow. Tracks bags sold and order totals linked to fundraisers and vendors.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema(

@@ -1,3 +1,8 @@
+/**
+ * Contains Node.js unit tests for the routing logic engine using mocked fetch for Nominatim and OSRM endpoints. Validates geocoding, distance matrices, clustering, and the main logic function.
+ * @name Jasraj Bhatia
+ * @date 2026-06-11
+ */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 

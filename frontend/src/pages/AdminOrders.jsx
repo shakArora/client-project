@@ -1,3 +1,8 @@
+/**
+ * Legacy admin page for viewing and updating order statuses with search and detail modal. Filters orders by the active fundraiser and supports status changes.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useEffect } from 'react';
 import AdminShell from '../components/AdminShell';
 import { orderApi } from '../lib/api';

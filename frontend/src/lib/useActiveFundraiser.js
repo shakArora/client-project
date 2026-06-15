@@ -1,3 +1,8 @@
+/**
+ * React hook that fetches the admin's fundraisers and selects the active one (or first available). Exposes reload, loading state, and the full fundraiser list for admin pages.
+ * @name Shivum Arora
+ * @date 2026-06-09
+ */
 import { useState, useEffect } from 'react';
 import { fundraiserApi } from './api';
 

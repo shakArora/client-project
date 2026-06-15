@@ -1,3 +1,8 @@
+/**
+ * Renders the driver's active delivery route with color-coded stop list, map navigation links, and mark-delivered actions. Fetches route data via stored OTP and auto-navigates to completion when finished.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { driverApi } from '../lib/api';

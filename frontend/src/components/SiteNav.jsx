@@ -1,3 +1,8 @@
+/**
+ * Renders the marketing-site navigation with scroll-aware styling, mobile menu, and auth-aware dashboard links. Supports both landing-page anchor links and subpage route links.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';

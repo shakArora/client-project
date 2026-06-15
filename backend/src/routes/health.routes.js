@@ -1,3 +1,8 @@
+/**
+ * Exposes a simple GET / health check endpoint reporting service status and MongoDB connection state. Used by deployment platforms like Railway for readiness probes.
+ * @name Shivum Arora
+ * @date 2026-06-06
+ */
 import express from "express";
 import mongoose from "mongoose";
 

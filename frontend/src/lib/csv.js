@@ -1,3 +1,8 @@
+/**
+ * Provides CSV and JSON download utilities plus a robust CSV line parser for import workflows. Used by admin fundraiser detail for template downloads and file parsing.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import { normalizeCsvHeader } from './importFormats.js';
 
 export function downloadJson(filename, data) {

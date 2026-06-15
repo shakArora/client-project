@@ -1,3 +1,8 @@
+/**
+ * Defines the React Router route table for all public, shop, customer, driver, vendor, and admin pages. Wraps protected routes with role-based authentication guards and redirects legacy admin paths.
+ * @name Shivum Arora
+ * @date 2026-06-09
+ */
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 

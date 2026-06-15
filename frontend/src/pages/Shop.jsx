@@ -1,3 +1,8 @@
+/**
+ * Legacy shop entry page that fetches the active fundraiser and redirects to its canonical /fundraiser/:slug URL. Falls back to demo products if no live fundraiser is found.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';

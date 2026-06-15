@@ -1,3 +1,8 @@
+/**
+ * Renders a QR code for a vendor shop URL and provides a PNG download helper. Used on the vendor codes page for sharing referral links.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import { useRef } from 'react';
 import QRCode from 'react-qr-code';
 

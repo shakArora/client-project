@@ -1,4 +1,8 @@
-/** Parse YYYY-MM-DD (or ISO string) as local calendar date — avoids UTC timezone shifts. */
+/**
+ * Provides timezone-safe local date parsing, formatting, and fundraiser sale-status helpers. Determines whether a fundraiser is open, not yet started, or ended for customer-facing pages.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 export function parseLocalDate(value) {
   if (!value) return null;
   const [y, m, d] = String(value).slice(0, 10).split('-').map(Number);

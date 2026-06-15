@@ -1,3 +1,8 @@
+/**
+ * Bootstraps the frontend React app with BrowserRouter, AuthProvider, and optional GoogleOAuthProvider. Mounts the root App component into the DOM with StrictMode enabled.
+ * @name Shivum Arora
+ * @date 2026-06-06
+ */
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { GoogleOAuthProvider } from "@react-oauth/google";

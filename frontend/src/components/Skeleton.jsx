@@ -1,5 +1,8 @@
-/** Shimmer skeleton primitives for loading states */
-
+/**
+ * Exports shimmer skeleton loading primitives and pre-built layouts for dashboard, shop, vendor, driver, and detail pages. Provides accessible placeholder UI during async data fetches.
+ * @name Shivum Arora
+ * @date 2026-06-11
+ */
 export function Skeleton({ className = '', style, width, height, circle, rounded }) {
   return (
     <div

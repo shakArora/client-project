@@ -1,3 +1,8 @@
+/**
+ * Serves public and admin fundraiser CRUD endpoints including slug lookup, activation, export/import, and bulk deletion of related data. Validates publish readiness and geocodes addresses on create/update.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import express from "express";
 import { z } from "zod";
 import { Fundraiser } from "../models/Fundraiser.js";

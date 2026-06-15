@@ -1,3 +1,8 @@
+/**
+ * Provides a React context for authentication state persisted in localStorage with login and logout helpers. Exports useAuth hook and ROLES constants for role checks throughout the app.
+ * @name Shivum Arora
+ * @date 2026-06-05
+ */
 import { createContext, useContext, useState, useCallback } from "react";
 
 const AuthContext = createContext(null);

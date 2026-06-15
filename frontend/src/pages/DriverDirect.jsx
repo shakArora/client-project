@@ -1,3 +1,8 @@
+/**
+ * Handles deep-link driver access via /driver/:otp URL by validating the code and redirecting to the route page. Shows a loading skeleton or error message if the code is invalid.
+ * @name Shivum Arora
+ * @date 2026-06-11
+ */
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { driverApi } from '../lib/api';

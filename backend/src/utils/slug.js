@@ -1,4 +1,8 @@
-/** Turn a fundraiser title into a URL slug segment (underscores). */
+/**
+ * Generates URL-safe slugs from fundraiser titles and ensures global uniqueness by appending numeric suffixes. Queries the Fundraiser collection to avoid collisions on create and update.
+ * @name Shivum Arora
+ * @date 2026-06-09
+ */
 export function slugifyTitle(title) {
   let base = String(title || "")
     .toLowerCase()

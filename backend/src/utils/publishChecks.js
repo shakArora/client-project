@@ -1,3 +1,8 @@
+/**
+ * Evaluates whether a fundraiser meets all requirements before going live, including dates, contact info, payment details, cover image, address, and products. Returns a checklist array and a single isPublishReady boolean.
+ * @name Shivum Arora
+ * @date 2026-06-11
+ */
 export function isValidCoverUrl(url) {
   if (!url || typeof url !== "string") return false;
   const trimmed = url.trim();

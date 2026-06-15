@@ -1,3 +1,8 @@
+/**
+ * Legacy admin page for creating vendor accounts with referral codes and listing vendor sales stats. Allows admins to add new vendors to the active fundraiser.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState, useEffect } from 'react';
 import AdminShell from '../components/AdminShell';
 import { vendorApi, adminApi } from '../lib/api';

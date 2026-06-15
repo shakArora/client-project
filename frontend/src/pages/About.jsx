@@ -1,3 +1,8 @@
+/**
+ * Renders the About marketing page describing Routed features, stats, and the five-step fundraiser lifecycle. Uses the dark marketing layout with SiteNav.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import SiteNav from '../components/SiteNav';

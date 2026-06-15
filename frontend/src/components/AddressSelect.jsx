@@ -1,3 +1,8 @@
+/**
+ * Renders an address input with live geocoded autocomplete suggestions from the orders API. Requires the user to select a validated result before proceeding with checkout.
+ * @name Shivum Arora
+ * @date 2026-06-11
+ */
 import { useState, useEffect, useRef } from 'react';
 import { orderApi } from '../lib/api';
 

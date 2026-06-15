@@ -1,3 +1,8 @@
+/**
+ * Reference implementation of the Routed delivery routing engine with geocoding, OSRM distance matrices, capacity clustering, and multi-vehicle route splitting. Kept in sync with backend/src/utils/routingLogic.js and exported for unit testing.
+ * @name Shivum Arora, Jasraj Bhatia
+ * @date 2026-06-15
+ */
 // LOGIC FOR ROUTED HERE — keep in sync with backend/src/utils/routingLogic.js
 
 const wait = (ms) => {

@@ -1,3 +1,8 @@
+/**
+ * Legacy admin page for listing and creating/editing fundraisers within the AdminShell sidebar layout. Superseded by AdminDashboard but retained for direct /admin/fundraisers navigation.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { useState } from 'react';
 import AdminShell from '../components/AdminShell';
 import { fundraiserApi } from '../lib/api';

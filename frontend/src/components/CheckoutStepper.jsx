@@ -1,3 +1,8 @@
+/**
+ * Renders a three-step checkout progress indicator for Shop, Details, and Pay stages. Highlights the active step and marks completed steps with checkmarks.
+ * @name Shivum Arora
+ * @date 2026-06-09
+ */
 const LABELS = ['Shop', 'Details', 'Pay'];
 
 export default function CheckoutStepper({ step }) {

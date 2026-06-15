@@ -1,3 +1,8 @@
+/**
+ * Integrates with Nominatim for address search, validation, and geocoding with rate limiting and import-address normalization. Exports helpers to preprocess messy spreadsheet addresses and validate bulk imports.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 const USER_AGENT = "Routed/1.0 contact.routed@gmail.com";
 
 let lastGeocodeAt = 0;

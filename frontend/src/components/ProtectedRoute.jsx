@@ -1,3 +1,8 @@
+/**
+ * Guards child routes by requiring a valid JWT and optionally matching the user's role. Redirects unauthenticated users to login and wrong-role users to their home page.
+ * @name Shivum Arora
+ * @date 2026-06-05
+ */
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 

@@ -1,3 +1,8 @@
+/**
+ * Renders checkout step three with order summary and payment instructions from the fundraiser. Submits the order to the API and navigates to confirmation on success.
+ * @name Shivum Arora
+ * @date 2026-06-15
+ */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';

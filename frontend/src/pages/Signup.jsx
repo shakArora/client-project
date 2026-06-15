@@ -1,3 +1,8 @@
+/**
+ * Renders a self-service administrator registration form (currently blocked by the backend). Attempts to register via the auth API and redirect to the admin dashboard on success.
+ * @name Shivum Arora
+ * @date 2026-06-05
+ */
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../lib/api';

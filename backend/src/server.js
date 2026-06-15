@@ -1,3 +1,8 @@
+/**
+ * Bootstraps the HTTP server by binding to the configured port before connecting to MongoDB. Ensures health checks pass immediately while database connection retries run in the background.
+ * @name Shivum Arora
+ * @date 2026-06-06
+ */
 import app from "./app.js";
 import { env } from "./config/env.js";
 import { connectWithRetry } from "./config/db.js";

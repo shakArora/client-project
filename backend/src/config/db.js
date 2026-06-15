@@ -1,3 +1,8 @@
+/**
+ * Provides MongoDB connection helpers using Mongoose, including a single connect call and a retry wrapper for deferred startup. Reads the connection URI from environment configuration and logs success or failure.
+ * @name Shivum Arora
+ * @date 2026-06-06
+ */
 import mongoose from "mongoose";
 import { env } from "./env.js";
 

@@ -1,3 +1,8 @@
+/**
+ * Provides product list, detail, create, update, and delete endpoints with optional auth-aware visibility. Public users see only active products; admins see all products for a fundraiser.
+ * @name Shivum Arora
+ * @date 2026-06-05
+ */
 import express from "express";
 import { z } from "zod";
 import { Product } from "../models/Product.js";

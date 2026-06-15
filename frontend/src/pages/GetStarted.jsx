@@ -1,3 +1,8 @@
+/**
+ * Renders a marketing get-started page highlighting admin features with a signup CTA. Uses the standard Navbar and feature card layout.
+ * @name Shivum Arora
+ * @date 2026-06-14
+ */
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
