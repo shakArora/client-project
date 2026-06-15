@@ -6,6 +6,7 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { ROLES } from "../models/User.js";
 import { Fundraiser } from "../models/Fundraiser.js";
 import { optimizeRoutes, capacityFallback, buildStopsFromOrders } from "../utils/routeOptimizer.js";
+import { deleteDriverById } from "../services/fundraiserCleanup.js";
 
 const router = express.Router();
 
@@ -193,10 +194,10 @@ router.get("/routes", requireAuth, requireRole(ROLES.ADMIN), async (req, res) =>
 // ── Admin: delete a driver/route ──────────────────────
 router.delete("/drivers/:id", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
-    await DriverRoute.findByIdAndDelete(req.params.id);
+    await deleteDriverById(req.params.id, req.user.sub);
     res.json({ message: "Driver removed" });
-  } catch {
-    res.status(500).json({ message: "Unable to remove driver" });
+  } catch (err) {
+    res.status(400).json({ message: err.message || "Unable to remove driver" });
   }
 });
 

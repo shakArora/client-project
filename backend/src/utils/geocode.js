@@ -63,22 +63,33 @@ export async function geocodeAddress(address) {
       headers: { "User-Agent": USER_AGENT },
       signal: AbortSignal.timeout(8000),
     });
+    if (!res.ok) {
+      return { error: `nominatim_http_${res.status}` };
+    }
     const data = await res.json();
-    if (!data.length) return null;
+    if (!data.length) return { error: "nominatim_no_results" };
     return {
       lat: parseFloat(data[0].lat),
       lon: parseFloat(data[0].lon),
       display: data[0].display_name,
     };
-  } catch {
-    return null;
+  } catch (err) {
+    return { error: err?.name === "TimeoutError" ? "nominatim_timeout" : "nominatim_fetch_failed" };
   }
 }
 
 export async function geocodeImportAddress(raw, { regionHint } = {}) {
   const input = String(raw || "").trim();
+  const queriesTried = [];
+
   if (!looksLikeStreetAddress(input)) {
-    return { ok: false, reason: "not_a_street_address", input };
+    return {
+      ok: false,
+      reason: "not_a_street_address",
+      input,
+      queriesTried,
+      debug: { reason: "not_a_street_address", queriesTried, regionHint: regionHint || null },
+    };
   }
 
   const variants = normalizeImportAddressVariants(input);
@@ -89,11 +100,20 @@ export async function geocodeImportAddress(raw, { regionHint } = {}) {
   }
 
   for (const query of variants) {
-    const coords = await geocodeAddress(query);
-    if (coords) return { ok: true, coords, input, query };
+    queriesTried.push(query);
+    const result = await geocodeAddress(query);
+    if (result?.lat != null && result?.lon != null) {
+      return { ok: true, coords: result, input, query, queriesTried };
+    }
   }
 
-  return { ok: false, reason: "not_found", input };
+  return {
+    ok: false,
+    reason: "not_found",
+    input,
+    queriesTried,
+    debug: { reason: "not_found", queriesTried, regionHint: regionHint || null },
+  };
 }
 
 export async function validateImportAddresses(rows, { regionHint } = {}) {
@@ -106,7 +126,13 @@ export async function validateImportAddresses(rows, { regionHint } = {}) {
     if (cache.has(key)) {
       const cached = cache.get(key);
       if (!cached.ok) {
-        errors.push({ row: row.row, customerName: row.customerName, deliveryAddress: row.deliveryAddress, message: cached.message });
+        errors.push({
+          row: row.row,
+          customerName: row.customerName,
+          deliveryAddress: row.deliveryAddress,
+          message: cached.message,
+          debug: cached.debug,
+        });
       } else {
         validated.push({ row: row.row, deliveryAddress: cached.deliveryAddress, coords: cached.coords });
       }
@@ -116,12 +142,18 @@ export async function validateImportAddresses(rows, { regionHint } = {}) {
     const result = await geocodeImportAddress(row.deliveryAddress, { regionHint });
     if (!result.ok) {
       const message = addressImportErrorMessage(row.deliveryAddress, result.reason);
-      cache.set(key, { ok: false, message });
+      const debug = result.debug || {
+        reason: result.reason,
+        queriesTried: result.queriesTried || [],
+        regionHint: regionHint || null,
+      };
+      cache.set(key, { ok: false, message, debug });
       errors.push({
         row: row.row,
         customerName: row.customerName,
         deliveryAddress: row.deliveryAddress,
         message,
+        debug,
       });
     } else {
       const entry = {
@@ -134,7 +166,7 @@ export async function validateImportAddresses(rows, { regionHint } = {}) {
     }
   }
 
-  return { valid: errors.length === 0, errors, validated };
+  return { valid: errors.length === 0, errors, validated, regionHint: regionHint || null };
 }
 
 export async function searchAddresses(query, limit = 5) {

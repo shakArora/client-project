@@ -6,6 +6,7 @@ import { Fundraiser } from "../models/Fundraiser.js";
 import { User } from "../models/User.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { ROLES } from "../models/User.js";
+import { deleteVendorById } from "../services/fundraiserCleanup.js";
 
 const router = express.Router();
 
@@ -135,6 +136,16 @@ router.patch("/:id", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => 
       return res.status(400).json({ message: "Invalid payload", issues: error.issues });
     }
     res.status(500).json({ message: "Unable to update vendor" });
+  }
+});
+
+// ── Admin: delete vendor ──────────────────────────────
+router.delete("/:id", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const stats = await deleteVendorById(req.params.id, req.user.sub);
+    res.json({ message: "Vendor deleted", ...stats });
+  } catch (err) {
+    res.status(400).json({ message: err.message || "Unable to delete vendor" });
   }
 });
 

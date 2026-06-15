@@ -111,6 +111,23 @@ export function parseCsvNumber(val, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+export function formatAddressValidationError(e) {
+  const base = `Row ${e.row}${e.customerName ? ` (${e.customerName})` : ''}: ${e.message}`;
+  if (!e.debug) return base;
+  const parts = [`reason=${e.debug.reason}`];
+  if (e.debug.queriesTried?.length) {
+    parts.push(`tried=${e.debug.queriesTried.join(' | ')}`);
+  }
+  if (e.debug.regionHint) parts.push(`regionHint=${e.debug.regionHint}`);
+  return `${base}\n  debug: ${parts.join(', ')}`;
+}
+
+export function formatApiDebug(data) {
+  if (!data?.debug) return '';
+  const text = typeof data.debug === 'string' ? data.debug : JSON.stringify(data.debug, null, 2);
+  return `\n[debug]\n${text}`;
+}
+
 export function pickField(row, aliases) {
   for (const key of aliases) {
     if (row[key] !== undefined && row[key] !== '') return row[key];

@@ -7,6 +7,11 @@ import { uniqueSlug } from "../utils/slug.js";
 import { isPublishReady } from "../utils/publishChecks.js";
 import { geocodeAddress } from "../utils/geocode.js";
 import { exportFundraiser, importFundraiser, validateOrderImportAddresses } from "../services/fundraiserMigration.js";
+import {
+  deleteAllDrivers,
+  deleteAllOrders,
+  deleteAllVendors,
+} from "../services/fundraiserCleanup.js";
 
 const router = express.Router();
 
@@ -83,7 +88,40 @@ router.post("/:id/import/validate-addresses", requireAuth, requireRole(ROLES.ADM
   } catch (err) {
     if (err instanceof z.ZodError) return res.status(400).json({ message: "Invalid request" });
     console.error("Address validation error:", err);
-    res.status(400).json({ message: err.message || "Unable to validate addresses" });
+    res.status(500).json({
+      message: err.message || "Unable to validate addresses",
+      debug: {
+        error: err.message,
+        stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
+      },
+    });
+  }
+});
+
+router.delete("/:id/orders", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const stats = await deleteAllOrders(req.params.id, req.user.sub);
+    res.json({ message: `Deleted ${stats.deleted} order(s)`, ...stats });
+  } catch (err) {
+    res.status(400).json({ message: err.message || "Unable to delete orders" });
+  }
+});
+
+router.delete("/:id/vendors", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const stats = await deleteAllVendors(req.params.id, req.user.sub);
+    res.json({ message: `Deleted ${stats.deleted} vendor(s)`, ...stats });
+  } catch (err) {
+    res.status(400).json({ message: err.message || "Unable to delete vendors" });
+  }
+});
+
+router.delete("/:id/drivers", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const stats = await deleteAllDrivers(req.params.id, req.user.sub);
+    res.json({ message: `Deleted ${stats.deleted} driver(s)`, ...stats });
+  } catch (err) {
+    res.status(400).json({ message: err.message || "Unable to delete drivers" });
   }
 });
 
@@ -151,13 +189,13 @@ router.post("/", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
     const slug = await uniqueSlug(Fundraiser, body.title);
     if (body.pickupAddress && !body.pickupCoords) {
       const coords = await geocodeAddress(body.pickupAddress);
-      if (!coords) return res.status(400).json({ message: "Pickup address could not be verified." });
+      if (!coords?.lat) return res.status(400).json({ message: "Pickup address could not be verified." });
       body.pickupCoords = coords;
       body.pickupAddress = coords.display;
     }
     if (body.deliveryHubAddress && !body.deliveryHubCoords) {
       const coords = await geocodeAddress(body.deliveryHubAddress);
-      if (!coords) return res.status(400).json({ message: "Delivery hub address could not be verified." });
+      if (!coords?.lat) return res.status(400).json({ message: "Delivery hub address could not be verified." });
       body.deliveryHubCoords = coords;
       body.deliveryHubAddress = coords.display;
     }
@@ -190,7 +228,7 @@ router.patch("/:id", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => 
         body.pickupCoords = undefined;
       } else if (!body.pickupCoords) {
         const coords = await geocodeAddress(body.pickupAddress);
-        if (!coords) return res.status(400).json({ message: "Pickup address could not be verified." });
+        if (!coords?.lat) return res.status(400).json({ message: "Pickup address could not be verified." });
         body.pickupCoords = coords;
         body.pickupAddress = coords.display;
       }
@@ -200,7 +238,7 @@ router.patch("/:id", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => 
         body.deliveryHubCoords = undefined;
       } else if (!body.deliveryHubCoords) {
         const coords = await geocodeAddress(body.deliveryHubAddress);
-        if (!coords) return res.status(400).json({ message: "Delivery hub address could not be verified." });
+        if (!coords?.lat) return res.status(400).json({ message: "Delivery hub address could not be verified." });
         body.deliveryHubCoords = coords;
         body.deliveryHubAddress = coords.display;
       }

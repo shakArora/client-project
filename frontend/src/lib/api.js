@@ -48,6 +48,9 @@ export const fundraiserApi = {
   export:    (id)         => api.get(`/fundraisers/${id}/export`),
   import:    (id, data)   => api.post(`/fundraisers/${id}/import`, data, { timeout: 300_000 }),
   validateImportAddresses: (id, orders) => api.post(`/fundraisers/${id}/import/validate-addresses`, { orders }, { timeout: 300_000 }),
+  deleteAllOrders:  (id) => api.delete(`/fundraisers/${id}/orders`),
+  deleteAllVendors: (id) => api.delete(`/fundraisers/${id}/vendors`),
+  deleteAllDrivers: (id) => api.delete(`/fundraisers/${id}/drivers`),
 };
 
 /* ── Products ─────────────────────────────────────────── */
@@ -68,6 +71,7 @@ export const orderApi = {
   searchAddresses: (q)          => api.get("/orders/address-search", { params: { q } }),
   updateStatus:    (id, status) => api.patch(`/orders/${id}/status`, { status }),
   refund:          (id)         => api.post(`/orders/${id}/refund`),
+  delete:          (id)         => api.delete(`/orders/${id}`),
 };
 
 /* ── Vendors ──────────────────────────────────────────── */
@@ -79,6 +83,7 @@ export const vendorApi = {
   get:      (id)       => api.get(`/vendors/${id}`),
   create:   (data)     => api.post("/vendors", data),
   update:   (id, data) => api.patch(`/vendors/${id}`, data),
+  delete:   (id)       => api.delete(`/vendors/${id}`),
 };
 
 /* ── Admin ────────────────────────────────────────────── */

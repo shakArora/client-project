@@ -6,6 +6,7 @@ import { Fundraiser } from "../models/Fundraiser.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { ROLES } from "../models/User.js";
 import { geocodeImportAddress, searchAddresses } from "../utils/geocode.js";
+import { deleteOrderById } from "../services/fundraiserCleanup.js";
 
 const router = express.Router();
 
@@ -196,6 +197,16 @@ router.post("/:id/refund", requireAuth, requireRole(ROLES.ADMIN), async (req, re
     res.json(order);
   } catch {
     res.status(500).json({ message: "Unable to refund order" });
+  }
+});
+
+// ── Admin: delete an order ────────────────────────────
+router.delete("/:id", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const stats = await deleteOrderById(req.params.id, req.user.sub);
+    res.json({ message: "Order deleted", ...stats });
+  } catch (err) {
+    res.status(400).json({ message: err.message || "Unable to delete order" });
   }
 });
 

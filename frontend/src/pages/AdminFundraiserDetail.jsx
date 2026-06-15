@@ -5,7 +5,7 @@ import { fundraiserApi, productApi, vendorApi, adminApi, orderApi, driverApi } f
 import { US_STATES } from '../lib/usStates';
 import { downloadCsv, downloadJson, downloadTemplateCsv, parseCsv } from '../lib/csv';
 import { isPastFundraiser } from '../lib/dates';
-import { ORDERS_CSV, VENDORS_CSV, pickField, parseCsvNumber, resolveOrderCsvFields } from '../lib/importFormats';
+import { ORDERS_CSV, VENDORS_CSV, pickField, parseCsvNumber, resolveOrderCsvFields, formatAddressValidationError, formatApiDebug } from '../lib/importFormats';
 import AddressSelect from '../components/AddressSelect';
 import { SkeletonFundraiserDetail, SkeletonList } from '../components/Skeleton';
 
@@ -16,7 +16,18 @@ const TABS = ['Fundraiser Details', 'Products', 'Vendors', 'Orders', 'Drivers'];
 const IMPORT_OPTIONS = { orders: 'append', vendors: 'skip-existing', drivers: 'skip-existing', products: 'upsert' };
 const CSV_IMPORT_OPTIONS = { ...IMPORT_OPTIONS, geocode: false };
 
-/* ───────────────────────── helpers ─────────────────────── */
+function DeleteBtn({ onClick, label = 'Delete', small }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="btn btn-outline btn-sm"
+      style={{ color: '#dc2626', borderColor: '#fecaca', fontSize: small ? '.75rem' : undefined }}
+    >
+      {label}
+    </button>
+  );
+}
 const STATUS_COLOR = {
   pending:   '#6b7280', paid:    '#2563eb',
   fulfilled: '#7c3aed', delivered: '#059669',
@@ -677,6 +688,29 @@ function VendorsTab({ fr }) {
     }
   }
 
+  async function removeVendor(id, name) {
+    if (!window.confirm(`Delete vendor "${name}"? Their orders will stay but won't be credited to them.`)) return;
+    try {
+      await vendorApi.delete(id);
+      load();
+      setMsg(`Deleted vendor ${name}.`);
+    } catch (err) {
+      setMsg(err.response?.data?.message || 'Failed to delete vendor.');
+    }
+  }
+
+  async function deleteAllVendors() {
+    if (!vendors.length) return;
+    if (!window.confirm(`Delete all ${vendors.length} vendor(s)? This cannot be undone.`)) return;
+    try {
+      const { data } = await fundraiserApi.deleteAllVendors(fr._id);
+      setMsg(data.message || 'All vendors deleted.');
+      load();
+    } catch (err) {
+      setMsg(err.response?.data?.message || 'Failed to delete vendors.');
+    }
+  }
+
   return (
     <div>
       <div className="tab-toolbar">
@@ -693,6 +727,7 @@ function VendorsTab({ fr }) {
             onImport={importVendorsCsv}
           />
           <button type="button" onClick={() => { setShowForm(true); setMsg(''); }} className="btn btn-gold btn-sm">+ Add Vendor</button>
+          {vendors.length > 0 && <DeleteBtn onClick={deleteAllVendors} label="Delete all" />}
         </div>
       </div>
       {csvMsg && <p className={`tab-csv-msg ${csvMsg.includes('failed') || csvMsg.includes('No valid') || csvMsg.includes('Fix these') ? 'tab-csv-msg--err' : 'tab-csv-msg--ok'}`}>{csvMsg}</p>}
@@ -714,10 +749,11 @@ function VendorsTab({ fr }) {
                 <div style={{ fontWeight: 700 }}>{v.name}</div>
                 <div style={{ fontSize: '.82rem', color: 'var(--t3)' }}>{v.email}</div>
               </div>
-              <div style={{ textAlign: 'right' }}>
+              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '.4rem' }}>
                 <div style={{ fontSize: '.8rem', fontWeight: 700, color: 'var(--gold-dk)', fontFamily: 'monospace' }}>{v.referralCode}</div>
                 <div style={{ fontSize: '.72rem', color: 'var(--t3)' }}>{v.bagsSold || 0} bags · ${(v.totalRevenue||0).toFixed(0)}</div>
                 <a href={`${publicUrl}?ref=${v.referralCode}`} target="_blank" rel="noreferrer" style={{ fontSize: '.72rem', color: 'var(--gold-dk)' }}>Customer link ↗</a>
+                <DeleteBtn small onClick={() => removeVendor(v._id, v.name)} />
               </div>
             </div>
           ))}
@@ -774,6 +810,30 @@ function OrdersTab({ fr }) {
     try { await orderApi.refund(id); load(); setSelected(null); } catch (err) { alert(err.response?.data?.message || 'Refund failed.'); }
   }
 
+  async function handleDelete(id) {
+    if (!window.confirm('Delete this order permanently? This cannot be undone.')) return;
+    try {
+      await orderApi.delete(id);
+      load();
+      setSelected(null);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Delete failed.');
+    }
+  }
+
+  async function deleteAllOrders() {
+    if (!orders.length) return;
+    if (!window.confirm(`Delete all ${orders.length} order(s)? Driver routes will be cleared. This cannot be undone.`)) return;
+    try {
+      const { data } = await fundraiserApi.deleteAllOrders(fr._id);
+      setCsvMsg(data.message || 'All orders deleted.');
+      load();
+      setSelected(null);
+    } catch (err) {
+      setCsvMsg(err.response?.data?.message || 'Failed to delete orders.');
+    }
+  }
+
   const total = orders.reduce((s, o) => s + o.totalAmount, 0);
   const paid  = orders.filter(o => ['paid','fulfilled','delivered'].includes(o.status)).length;
 
@@ -799,12 +859,13 @@ function OrdersTab({ fr }) {
       const allProblems = [...problems];
       if (validation.errors?.length) {
         validation.errors.forEach(e => {
-          allProblems.push(`Row ${e.row}${e.customerName ? ` (${e.customerName})` : ''}: ${e.message}`);
+          allProblems.push(formatAddressValidationError(e));
         });
       }
 
       if (allProblems.length) {
-        setCsvMsg(`Fix these issues in your CSV and re-import:\n${allProblems.slice(0, 8).join('\n')}${allProblems.length > 8 ? `\n…and ${allProblems.length - 8} more` : ''}`);
+        const debugNote = validation.regionHint ? `\n[debug] regionHint=${validation.regionHint}` : '';
+        setCsvMsg(`Fix these issues in your CSV and re-import:\n${allProblems.slice(0, 8).join('\n')}${allProblems.length > 8 ? `\n…and ${allProblems.length - 8} more` : ''}${debugNote}`);
         return;
       }
 
@@ -831,10 +892,11 @@ function OrdersTab({ fr }) {
       setCsvMsg(`${formatImportResult(data.stats)}.${skipped}`);
       load();
     } catch (err) {
+      const data = err.response?.data;
       const msg = err.code === 'ECONNABORTED'
         ? 'Request timed out. Large imports can take a few minutes — please try again.'
-        : (err.response?.data?.message || 'Import failed.');
-      setCsvMsg(msg);
+        : (data?.message || 'Import failed.');
+      setCsvMsg(`${msg}${formatApiDebug(data)}`);
     } finally {
       setCsvBusy(false);
     }
@@ -844,6 +906,7 @@ function OrdersTab({ fr }) {
     <div>
       <div className="tab-toolbar">
         <h3>Orders</h3>
+        <div className="tab-toolbar-actions">
         <CompactCsvBar
           spec={ORDERS_CSV}
           busy={csvBusy}
@@ -865,6 +928,8 @@ function OrdersTab({ fr }) {
           )}
           onImport={importOrdersCsv}
         />
+        {orders.length > 0 && <DeleteBtn onClick={deleteAllOrders} label="Delete all" />}
+        </div>
       </div>
       {csvMsg && <p className={`tab-csv-msg ${csvMsg.includes('failed') || csvMsg.includes('No valid') || csvMsg.includes('Fix these') ? 'tab-csv-msg--err' : 'tab-csv-msg--ok'}`}>{csvMsg}</p>}
       <div className="admin-stat-row">
@@ -932,10 +997,14 @@ function OrdersTab({ fr }) {
 
             {/* Refund button */}
             {!['refunded','cancelled'].includes(selected.status) && (
-              <button onClick={() => handleRefund(selected._id)} style={{ width: '100%', padding: '.6rem', borderRadius: 10, border: '2px solid #dc2626', background: '#fff', color: '#dc2626', fontWeight: 700, cursor: 'pointer', marginBottom: '1rem', fontSize: '.88rem' }}>
+              <button onClick={() => handleRefund(selected._id)} style={{ width: '100%', padding: '.6rem', borderRadius: 10, border: '2px solid #dc2626', background: '#fff', color: '#dc2626', fontWeight: 700, cursor: 'pointer', marginBottom: '.75rem', fontSize: '.88rem' }}>
                 Refund This Order
               </button>
             )}
+
+            <button onClick={() => handleDelete(selected._id)} style={{ width: '100%', padding: '.6rem', borderRadius: 10, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', fontWeight: 700, cursor: 'pointer', marginBottom: '1rem', fontSize: '.88rem' }}>
+              Delete Order
+            </button>
 
             <button onClick={() => setSelected(null)} className="btn btn-outline" style={{ width: '100%' }}>Close</button>
           </div>
@@ -982,8 +1051,24 @@ function DriversTab({ fr }) {
 
   async function removeDriver(id) {
     if (!window.confirm('Remove this driver?')) return;
-    await driverApi.deleteDriver(id).catch(() => {});
-    load();
+    try {
+      await driverApi.deleteDriver(id);
+      load();
+    } catch (err) {
+      setMsg(err.response?.data?.message || 'Failed to remove driver.');
+    }
+  }
+
+  async function deleteAllDrivers() {
+    if (!routes.length) return;
+    if (!window.confirm(`Delete all ${routes.length} driver(s)? This cannot be undone.`)) return;
+    try {
+      const { data } = await fundraiserApi.deleteAllDrivers(fr._id);
+      setMsg(data.message || 'All drivers deleted.');
+      load();
+    } catch (err) {
+      setMsg(err.response?.data?.message || 'Failed to delete drivers.');
+    }
   }
 
   async function generateRoutes() {
@@ -1014,6 +1099,7 @@ function DriversTab({ fr }) {
           <button onClick={generateRoutes} disabled={generating || !hasRoutes} className="btn btn-gold" style={{ fontSize: '.85rem' }}>
             {generating ? 'Generating…' : isDeliveryDay ? 'Re-Route Mid-Delivery' : 'Generate Routes'}
           </button>
+          {routes.length > 0 && <DeleteBtn onClick={deleteAllDrivers} label="Delete all" />}
         </div>
       </div>
 
