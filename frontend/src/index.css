@@ -3077,6 +3077,7 @@ input, textarea, select { font-family: var(--sans); }
   font-weight: 600;
   margin: 0 0 .85rem;
   line-height: 1.45;
+  white-space: pre-line;
 }
 .tab-csv-msg--ok { color: var(--green); }
 .tab-csv-msg--err { color: var(--red); }

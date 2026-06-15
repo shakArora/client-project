@@ -66,11 +66,11 @@ export default function CheckoutInfo() {
             <input placeholder="Enter your name" value={form.name} onChange={set('name')} required autoComplete="name" />
           </div>
           <div className="field">
-            <label>Email Address</label>
-            <input type="email" placeholder="Enter your email" value={form.email} onChange={set('email')} required autoComplete="email" inputMode="email" />
+            <label>Email Address (optional)</label>
+            <input type="email" placeholder="Enter your email" value={form.email} onChange={set('email')} autoComplete="email" inputMode="email" />
           </div>
           <div className="field">
-            <label>Phone Number</label>
+            <label>Phone Number (optional)</label>
             <input type="tel" placeholder="(555) 000-0000" value={form.phone} onChange={set('phone')} autoComplete="tel" inputMode="tel" />
           </div>
 

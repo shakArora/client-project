@@ -16,7 +16,7 @@ const orderSchema = new mongoose.Schema(
     vendorId:        { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
     referralCode:    { type: String, trim: true, uppercase: true },
     customerName:    { type: String, required: true, trim: true },
-    customerEmail:   { type: String, required: true, trim: true, lowercase: true },
+    customerEmail:   { type: String, trim: true, lowercase: true },
     deliveryAddress: { type: String, required: true, trim: true },
     customerPhone:   { type: String, trim: true },
     comments:        { type: String, trim: true },

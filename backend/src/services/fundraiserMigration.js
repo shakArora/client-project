@@ -5,6 +5,7 @@ import { Vendor } from "../models/Vendor.js";
 import { Order } from "../models/Order.js";
 import { DriverRoute } from "../models/DriverRoute.js";
 import { User, ROLES } from "../models/User.js";
+import { geocodeImportAddress, validateImportAddresses, addressImportErrorMessage } from "../utils/geocode.js";
 
 const EXPORT_VERSION = 1;
 
@@ -24,6 +25,10 @@ function normalizeAddress(addr) {
   return String(addr || "").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+function escapeRegex(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function emptyStats() {
   return {
     products: 0,
@@ -34,7 +39,7 @@ function emptyStats() {
     details: {
       products:  { created: 0, updated: 0 },
       vendors:   { created: 0, skipped: 0 },
-      orders:    { created: 0, skipped: 0, duplicates: 0 },
+      orders:    { created: 0, skipped: 0, duplicates: 0, addressErrors: 0 },
       drivers:   { created: 0, skipped: 0 },
       fundraiser: { updated: false },
     },
@@ -101,19 +106,29 @@ async function genReferralCode(fundraiserId, preferred) {
 }
 
 async function isDuplicateOrder(fundraiserId, order) {
-  const email = String(order.customerEmail || "").trim().toLowerCase();
   const addr  = normalizeAddress(order.deliveryAddress || order.coords?.display);
   const bags  = order.totalBags || 0;
-  if (!email || !addr) return false;
+  const email = String(order.customerEmail || "").trim().toLowerCase();
+  if (!addr || !bags) return false;
+  if (!email && !String(order.customerName || "").trim()) return false;
 
-  const existing = await Order.findOne({
-    fundraiserId,
-    customerEmail: email,
-    totalBags: bags,
-  }).lean();
+  const filter = { fundraiserId, totalBags: bags };
+  if (email) filter.customerEmail = email;
+  else filter.customerName = { $regex: new RegExp(`^${escapeRegex(order.customerName.trim())}$`, "i") };
 
+  const existing = await Order.findOne(filter).lean();
   if (!existing) return false;
   return normalizeAddress(existing.deliveryAddress) === addr;
+}
+
+function fundraiserRegionHint(fr) {
+  return fr?.location || fr?.pickupAddress || fr?.deliveryHubAddress || null;
+}
+
+export async function validateOrderImportAddresses(fundraiserId, adminId, rows) {
+  const fr = await Fundraiser.findOne({ _id: fundraiserId, adminId }).lean();
+  if (!fr) throw new Error("Fundraiser not found");
+  return validateImportAddresses(rows, { regionHint: fundraiserRegionHint(fr) });
 }
 
 export async function importFundraiser(fundraiserId, adminId, payload) {
@@ -264,14 +279,32 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
 
     if (await isDuplicateOrder(fundraiserId, draft)) {
       stats.details.orders.duplicates++;
-      stats.skipped.push(`Order ${o.customerName}: duplicate (same email, address, bags)`);
+      stats.skipped.push(`Order ${o.customerName}: duplicate (same customer, address, bags)`);
       continue;
     }
 
-    // Keep spreadsheet text verbatim. Optional lat/lon from export JSON only — never rewrite via geocoder.
-    const coords = (o.coords?.lat != null && o.coords?.lon != null)
-      ? { lat: o.coords.lat, lon: o.coords.lon, display: rawAddress }
-      : undefined;
+    let coords;
+    let deliveryAddress = rawAddress;
+
+    if (o.coords?.lat != null && o.coords?.lon != null) {
+      coords = {
+        lat: o.coords.lat,
+        lon: o.coords.lon,
+        display: o.coords.display || rawAddress,
+      };
+      deliveryAddress = coords.display;
+    } else {
+      const parsed = await geocodeImportAddress(rawAddress, { regionHint: fundraiserRegionHint(fr) });
+      if (!parsed.ok) {
+        stats.details.orders.addressErrors++;
+        stats.details.orders.skipped++;
+        const label = o.row ? `Row ${o.row}` : `Order ${o.customerName}`;
+        stats.skipped.push(`${label}: ${addressImportErrorMessage(rawAddress, parsed.reason)}`);
+        continue;
+      }
+      coords = parsed.coords;
+      deliveryAddress = parsed.coords.display;
+    }
 
     let vendorId = null;
     if (o.referralCode && vendorByCode[o.referralCode.toUpperCase()]) {
@@ -299,11 +332,11 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
     await Order.create({
       fundraiserId,
       vendorId,
-      referralCode: o.referralCode,
+      referralCode: o.referralCode?.trim() ? o.referralCode.trim().toUpperCase() : undefined,
       customerName: o.customerName,
-      customerEmail: o.customerEmail,
-      customerPhone: o.customerPhone,
-      deliveryAddress: rawAddress,
+      customerEmail: o.customerEmail?.trim() || undefined,
+      customerPhone: o.customerPhone?.trim() || undefined,
+      deliveryAddress,
       comments: o.comments,
       coords,
       items,

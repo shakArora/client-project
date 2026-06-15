@@ -6,7 +6,7 @@ import { ROLES } from "../models/User.js";
 import { uniqueSlug } from "../utils/slug.js";
 import { isPublishReady } from "../utils/publishChecks.js";
 import { geocodeAddress } from "../utils/geocode.js";
-import { exportFundraiser, importFundraiser } from "../services/fundraiserMigration.js";
+import { exportFundraiser, importFundraiser, validateOrderImportAddresses } from "../services/fundraiserMigration.js";
 
 const router = express.Router();
 
@@ -68,6 +68,25 @@ router.get("/:id/export", requireAuth, requireRole(ROLES.ADMIN), async (req, res
 });
 
 // ── Admin: import data (append-only for orders) ─────
+router.post("/:id/import/validate-addresses", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
+  try {
+    const body = z.object({
+      orders: z.array(z.object({
+        row: z.coerce.number().int().min(1),
+        customerName: z.string().optional(),
+        deliveryAddress: z.string().min(1).trim(),
+      })).min(1),
+    }).parse(req.body);
+
+    const result = await validateOrderImportAddresses(req.params.id, req.user.sub, body.orders);
+    res.json(result);
+  } catch (err) {
+    if (err instanceof z.ZodError) return res.status(400).json({ message: "Invalid request" });
+    console.error("Address validation error:", err);
+    res.status(400).json({ message: err.message || "Unable to validate addresses" });
+  }
+});
+
 router.post("/:id/import", requireAuth, requireRole(ROLES.ADMIN), async (req, res) => {
   try {
     const stats = await importFundraiser(req.params.id, req.user.sub, req.body);

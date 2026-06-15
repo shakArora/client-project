@@ -35,7 +35,7 @@ export default function CheckoutPay() {
         fundraiserId: cart.fundraiserId,
         referralCode: info.referralCode || undefined,
         customerName: info.name,
-        customerEmail: info.email,
+        customerEmail: info.email?.trim() || undefined,
         customerPhone: info.phone || undefined,
         deliveryAddress: info.address,
         comments: info.comments || undefined,

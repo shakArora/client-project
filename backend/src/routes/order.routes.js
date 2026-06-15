@@ -5,7 +5,7 @@ import { Vendor } from "../models/Vendor.js";
 import { Fundraiser } from "../models/Fundraiser.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { ROLES } from "../models/User.js";
-import { geocodeAddress, searchAddresses } from "../utils/geocode.js";
+import { geocodeImportAddress, searchAddresses } from "../utils/geocode.js";
 
 const router = express.Router();
 
@@ -45,14 +45,16 @@ router.get("/", requireAuth, async (req, res) => {
 router.post("/validate-address", async (req, res) => {
   try {
     const { address } = z.object({ address: z.string().min(5).trim() }).parse(req.body);
-    const coords = await geocodeAddress(address);
-    if (!coords) {
+    const coords = await geocodeImportAddress(address);
+    if (!coords.ok) {
       return res.status(400).json({
         valid: false,
-        message: "We couldn't locate that address. Please double-check and try again.",
+        message: coords.reason === "not_a_street_address"
+          ? "Enter a street address with a house number."
+          : "We couldn't locate that address. Please double-check and try again.",
       });
     }
-    res.json({ valid: true, coords });
+    res.json({ valid: true, coords: coords.coords });
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ message: "Invalid address" });
     res.status(500).json({ message: "Unable to validate address" });
@@ -81,8 +83,14 @@ const createSchema = z.object({
   fundraiserId:    z.string().min(10),
   referralCode:    z.string().min(2).max(6).trim().toUpperCase().optional(),
   customerName:    z.string().min(2).trim(),
-  customerEmail:   z.string().email().trim(),
-  customerPhone:   z.string().optional(),
+  customerEmail:   z.preprocess(
+    (v) => (typeof v === "string" && !v.trim() ? undefined : v),
+    z.string().email().trim().optional(),
+  ),
+  customerPhone:   z.preprocess(
+    (v) => (typeof v === "string" && !v.trim() ? undefined : v),
+    z.string().trim().optional(),
+  ),
   deliveryAddress: z.string().min(5).trim(),
   comments:        z.string().optional(),
   items:           z.array(orderItemSchema).min(1),
@@ -105,9 +113,13 @@ router.post("/", async (req, res) => {
       }
     }
 
-    const coords = await geocodeAddress(body.deliveryAddress);
-    if (!coords) {
-      return res.status(400).json({ message: "We couldn't locate that address. Please double-check and try again." });
+    const coords = await geocodeImportAddress(body.deliveryAddress);
+    if (!coords.ok) {
+      return res.status(400).json({
+        message: coords.reason === "not_a_street_address"
+          ? "Enter a street address with a house number."
+          : "We couldn't locate that address. Please double-check and try again.",
+      });
     }
 
     // Resolve vendor
@@ -125,7 +137,7 @@ router.post("/", async (req, res) => {
       vendorId,
       totalBags,
       totalAmount,
-      coords,
+      coords: coords.coords,
       status: body.paymentIntentId ? "paid" : "pending",
     });
 

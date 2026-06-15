@@ -320,6 +320,7 @@ function formatImportResult(stats) {
   const parts = [];
   if (d.orders) {
     parts.push(`${d.orders.created || stats.orders || 0} order(s) added`);
+    if (d.orders.addressErrors) parts.push(`${d.orders.addressErrors} address error(s)`);
     if (d.orders.duplicates) parts.push(`${d.orders.duplicates} duplicate(s) skipped`);
     if (d.orders.skipped) parts.push(`${d.orders.skipped} row(s) skipped`);
   } else if (stats.orders) parts.push(`${stats.orders} order(s) added`);
@@ -341,20 +342,26 @@ function parseOrdersCsvRows(rows) {
       problems.push(`Row ${i + 2}: missing Customer or Address`);
       return;
     }
+    if (customer.trim().toLowerCase() === address.trim().toLowerCase()) {
+      problems.push(`Row ${i + 2}: Address looks like a customer name, not a street address`);
+      return;
+    }
     const bagsRaw = pickField(r, ORDERS_CSV.aliases.bags);
     const bags  = Math.max(1, Math.round(parseCsvNumber(bagsRaw, 1)));
     const total = parseCsvNumber(pickField(r, ORDERS_CSV.aliases.total), 0);
     const product = pickField(r, ORDERS_CSV.aliases.product) || 'Imported';
     const unitPrice = bags > 0 && total > 0 ? Math.round((total / bags) * 100) / 100 : 0;
+    const referralRaw = pickField(r, ORDERS_CSV.aliases.referral);
     valid.push({
+      row: i + 2,
       customerName: customer,
-      customerEmail: pickField(r, ORDERS_CSV.aliases.email) || 'import@routed.local',
-      customerPhone: pickField(r, ORDERS_CSV.aliases.phone),
+      customerEmail: (pickField(r, ORDERS_CSV.aliases.email) || '').trim() || undefined,
+      customerPhone: (pickField(r, ORDERS_CSV.aliases.phone) || '').trim() || undefined,
       deliveryAddress: address,
       totalBags: bags,
       totalAmount: total,
       status: pickField(r, ORDERS_CSV.aliases.status) || 'pending',
-      referralCode: pickField(r, ORDERS_CSV.aliases.referral) || undefined,
+      referralCode: referralRaw?.trim() ? referralRaw.trim().toUpperCase() : undefined,
       comments: pickField(r, ORDERS_CSV.aliases.comments),
       items: [{ productName: product, quantity: bags, unitPrice }],
     });
@@ -673,7 +680,7 @@ function VendorsTab({ fr }) {
           <button type="button" onClick={() => { setShowForm(true); setMsg(''); }} className="btn btn-gold btn-sm">+ Add Vendor</button>
         </div>
       </div>
-      {csvMsg && <p className={`tab-csv-msg ${csvMsg.includes('failed') || csvMsg.includes('No valid') ? 'tab-csv-msg--err' : 'tab-csv-msg--ok'}`}>{csvMsg}</p>}
+      {csvMsg && <p className={`tab-csv-msg ${csvMsg.includes('failed') || csvMsg.includes('No valid') || csvMsg.includes('Fix these') ? 'tab-csv-msg--err' : 'tab-csv-msg--ok'}`}>{csvMsg}</p>}
 
       {/* Customer link reminder */}
       <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '.85rem 1rem', marginBottom: '1.25rem', fontSize: '.83rem' }}>
@@ -763,16 +770,35 @@ function OrdersTab({ fr }) {
       setCsvMsg(problems[0] || 'No valid rows, check template format.');
       return;
     }
-    const preview = [
-      `${valid.length} order(s) to import`,
-      problems.length ? `${problems.length} row(s) skipped` : null,
-      'Existing orders are never changed',
-      'Duplicates (same email + address + bags) are skipped',
-    ].filter(Boolean).join(' · ');
-    if (!window.confirm(`Import orders?\n${preview}`)) return;
 
-    setCsvBusy(true); setCsvMsg('');
+    setCsvBusy(true);
+    setCsvMsg('Validating addresses…');
     try {
+      const { data: validation } = await fundraiserApi.validateImportAddresses(
+        fr._id,
+        valid.map(o => ({ row: o.row, customerName: o.customerName, deliveryAddress: o.deliveryAddress })),
+      );
+
+      const allProblems = [...problems];
+      if (validation.errors?.length) {
+        validation.errors.forEach(e => {
+          allProblems.push(`Row ${e.row}${e.customerName ? ` (${e.customerName})` : ''}: ${e.message}`);
+        });
+      }
+
+      if (allProblems.length) {
+        setCsvMsg(`Fix these issues in your CSV and re-import:\n${allProblems.slice(0, 8).join('\n')}${allProblems.length > 8 ? `\n…and ${allProblems.length - 8} more` : ''}`);
+        return;
+      }
+
+      const preview = [
+        `${valid.length} order(s) to import`,
+        'Existing orders are never changed',
+        'Duplicates (same customer + address + bags) are skipped',
+      ].join(' · ');
+      if (!window.confirm(`Import orders?\n${preview}`)) return;
+
+      setCsvMsg('');
       const { data } = await fundraiserApi.import(fr._id, { orders: valid, options: IMPORT_OPTIONS });
       const skipped = data.stats.skipped?.length ? ` ${data.stats.skipped.slice(0, 3).join('; ')}` : '';
       setCsvMsg(`${formatImportResult(data.stats)}.${skipped}`);
@@ -810,7 +836,7 @@ function OrdersTab({ fr }) {
           onImport={importOrdersCsv}
         />
       </div>
-      {csvMsg && <p className={`tab-csv-msg ${csvMsg.includes('failed') || csvMsg.includes('No valid') ? 'tab-csv-msg--err' : 'tab-csv-msg--ok'}`}>{csvMsg}</p>}
+      {csvMsg && <p className={`tab-csv-msg ${csvMsg.includes('failed') || csvMsg.includes('No valid') || csvMsg.includes('Fix these') ? 'tab-csv-msg--err' : 'tab-csv-msg--ok'}`}>{csvMsg}</p>}
       <div className="admin-stat-row">
         {[['Total Orders', orders.length], ['Paid', paid], ['Revenue', `$${total.toFixed(2)}`]].map(([l,v]) => (
           <div key={l} className="admin-stat-card">

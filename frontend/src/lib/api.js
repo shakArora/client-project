@@ -47,6 +47,7 @@ export const fundraiserApi = {
   delete:    (id)         => api.delete(`/fundraisers/${id}`),
   export:    (id)         => api.get(`/fundraisers/${id}/export`),
   import:    (id, data)   => api.post(`/fundraisers/${id}/import`, data),
+  validateImportAddresses: (id, orders) => api.post(`/fundraisers/${id}/import/validate-addresses`, { orders }, { timeout: 300_000 }),
 };
 
 /* ── Products ─────────────────────────────────────────── */

@@ -42,10 +42,9 @@ export default function Confirmation() {
 
         <p style={{ color: 'var(--t3)', lineHeight: 1.65, marginBottom: '1.75rem', fontSize: '.95rem' }}>
           {firstName && <>Thank you, <strong style={{ color: 'var(--t1)' }}>{firstName}</strong>! </>}
-          A confirmation email has been sent to{' '}
           {order?.customerEmail
-            ? <strong style={{ color: 'var(--t1)' }}>{order.customerEmail}</strong>
-            : 'your email address'}.
+            ? <>A confirmation email has been sent to <strong style={{ color: 'var(--t1)' }}>{order.customerEmail}</strong>.</>
+            : 'Your order has been received.'}
         </p>
 
         {order?.paymentMethod && order?.paymentDestination && (
