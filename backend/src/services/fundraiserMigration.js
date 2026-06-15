@@ -5,7 +5,6 @@ import { Vendor } from "../models/Vendor.js";
 import { Order } from "../models/Order.js";
 import { DriverRoute } from "../models/DriverRoute.js";
 import { User, ROLES } from "../models/User.js";
-import { geocodeAddress } from "../utils/geocode.js";
 
 const EXPORT_VERSION = 1;
 
@@ -218,27 +217,48 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
     stats.vendors++;
   }
 
-  let defaultProduct = await Product.findOne({ fundraiserId, isActive: true })
-    || await Product.findOne({ fundraiserId });
+  const dbProducts = await Product.find({ fundraiserId });
+  for (const p of dbProducts) {
+    if (!productMap[p.name]) productMap[p.name] = p._id;
+  }
 
-  if (!defaultProduct && (payload.orders || []).length) {
-    defaultProduct = await Product.create({
+  async function ensureOrderProduct(name, unitPrice) {
+    const trimmed = String(name || "").trim() || "Imported";
+    if (productMap[trimmed]) return productMap[trimmed];
+
+    const existing = await Product.findOne({ fundraiserId, name: trimmed });
+    if (existing) {
+      productMap[trimmed] = existing._id;
+      return existing._id;
+    }
+
+    const price = Math.max(0, Number(unitPrice) || 0);
+    const created = await Product.create({
       fundraiserId,
-      name: "Imported Item",
-      price: 0,
+      name: trimmed,
+      price,
       isActive: true,
     });
-    productMap["Imported"] = defaultProduct._id;
-    productMap["Imported Item"] = defaultProduct._id;
+    productMap[trimmed] = created._id;
+    stats.details.products.created++;
+    stats.products++;
+    return created._id;
   }
 
   for (const o of payload.orders || []) {
     if (options.orders === "skip") continue;
 
+    const rawAddress = String(o.deliveryAddress || "").trim();
+    if (!rawAddress) {
+      stats.details.orders.skipped++;
+      stats.skipped.push(`Order ${o.customerName || "(unknown)"}: missing address`);
+      continue;
+    }
+
     const draft = {
       customerEmail: o.customerEmail,
       customerName: o.customerName,
-      deliveryAddress: o.deliveryAddress,
+      deliveryAddress: rawAddress,
       coords: o.coords,
       totalBags: o.totalBags,
     };
@@ -249,27 +269,27 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
       continue;
     }
 
-    let coords = o.coords;
-    if (!coords?.lat && o.deliveryAddress && options.geocode !== false) {
-      coords = await geocodeAddress(o.deliveryAddress);
-      if (!coords) {
-        stats.details.orders.skipped++;
-        stats.skipped.push(`Order ${o.customerName}: invalid address`);
-        continue;
-      }
-    }
+    // Keep spreadsheet text verbatim. Optional lat/lon from export JSON only — never rewrite via geocoder.
+    const coords = (o.coords?.lat != null && o.coords?.lon != null)
+      ? { lat: o.coords.lat, lon: o.coords.lon, display: rawAddress }
+      : undefined;
 
     let vendorId = null;
     if (o.referralCode && vendorByCode[o.referralCode.toUpperCase()]) {
       vendorId = vendorByCode[o.referralCode.toUpperCase()]._id;
     }
 
-    const items = (o.items || []).map(item => ({
-      productName: item.productName || "Imported",
-      quantity:    item.quantity || 1,
-      unitPrice:   item.unitPrice ?? 0,
-      productId:   productMap[item.productName] || defaultProduct?._id,
-    })).filter(item => item.productId);
+    const items = [];
+    for (const item of o.items || []) {
+      const productName = String(item.productName || "Imported").trim() || "Imported";
+      const productId = await ensureOrderProduct(productName, item.unitPrice);
+      items.push({
+        productName,
+        quantity:    item.quantity || 1,
+        unitPrice:   item.unitPrice ?? 0,
+        productId,
+      });
+    }
 
     if (!items.length) {
       stats.details.orders.skipped++;
@@ -284,7 +304,7 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
       customerName: o.customerName,
       customerEmail: o.customerEmail,
       customerPhone: o.customerPhone,
-      deliveryAddress: coords?.display || o.deliveryAddress,
+      deliveryAddress: rawAddress,
       comments: o.comments,
       coords,
       items,
@@ -302,7 +322,7 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
 
     if (route) {
       stats.details.drivers.skipped++;
-      stats.skipped.push(`Driver ${d.driverName || code}: code already exists — left unchanged`);
+      stats.skipped.push(`Driver ${d.driverName || code}: code already exists, left unchanged`);
       continue;
     }
 

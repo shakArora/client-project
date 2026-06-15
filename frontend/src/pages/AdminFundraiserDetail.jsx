@@ -5,7 +5,7 @@ import { fundraiserApi, productApi, vendorApi, adminApi, orderApi, driverApi } f
 import { US_STATES } from '../lib/usStates';
 import { downloadCsv, downloadJson, downloadTemplateCsv, parseCsv } from '../lib/csv';
 import { isPastFundraiser } from '../lib/dates';
-import { ORDERS_CSV, VENDORS_CSV, pickField } from '../lib/importFormats';
+import { ORDERS_CSV, VENDORS_CSV, pickField, parseCsvNumber } from '../lib/importFormats';
 import AddressSelect from '../components/AddressSelect';
 import { SkeletonFundraiserDetail, SkeletonList } from '../components/Skeleton';
 
@@ -328,6 +328,7 @@ function formatImportResult(stats) {
     parts.push(`${d.vendors.created || stats.vendors || 0} vendor(s) added`);
     if (d.vendors.skipped) parts.push(`${d.vendors.skipped} existing vendor(s) skipped`);
   } else if (stats.vendors) parts.push(`${stats.vendors} vendor(s) added`);
+  if (d.products?.created) parts.push(`${d.products.created} product(s) created`);
   return parts.join(' · ');
 }
 
@@ -341,9 +342,11 @@ function parseOrdersCsvRows(rows) {
       problems.push(`Row ${i + 2}: missing Customer or Address`);
       return;
     }
-    const bags  = Number(pickField(r, ORDERS_CSV.aliases.bags) || 1);
-    const total = Number(pickField(r, ORDERS_CSV.aliases.total) || 0);
+    const bagsRaw = pickField(r, ORDERS_CSV.aliases.bags);
+    const bags  = Math.max(1, Math.round(parseCsvNumber(bagsRaw, 1)));
+    const total = parseCsvNumber(pickField(r, ORDERS_CSV.aliases.total), 0);
     const product = pickField(r, ORDERS_CSV.aliases.product) || 'Imported';
+    const unitPrice = bags > 0 && total > 0 ? Math.round((total / bags) * 100) / 100 : 0;
     valid.push({
       customerName: customer,
       customerEmail: pickField(r, ORDERS_CSV.aliases.email) || 'import@routed.local',
@@ -354,7 +357,7 @@ function parseOrdersCsvRows(rows) {
       status: pickField(r, ORDERS_CSV.aliases.status) || 'pending',
       referralCode: pickField(r, ORDERS_CSV.aliases.referral) || undefined,
       comments: pickField(r, ORDERS_CSV.aliases.comments),
-      items: [{ productName: product, quantity: bags, unitPrice: total / Math.max(1, bags) }],
+      items: [{ productName: product, quantity: bags, unitPrice }],
     });
   });
   return { valid, problems };

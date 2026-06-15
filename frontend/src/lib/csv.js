@@ -1,3 +1,5 @@
+import { normalizeCsvHeader } from './importFormats.js';
+
 export function downloadJson(filename, data) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -29,7 +31,7 @@ export function downloadCsv(filename, headers, rows) {
 export function parseCsv(text) {
   const lines = text.trim().split(/\r?\n/).filter(Boolean);
   if (!lines.length) return [];
-  const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+  const headers = lines[0].split(',').map(h => normalizeCsvHeader(h.trim()));
   return lines.slice(1).map(line => {
     const cells = line.match(/("([^"]|"")*"|[^,]+)/g) || [];
     const values = cells.map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
