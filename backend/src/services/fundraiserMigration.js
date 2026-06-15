@@ -401,7 +401,8 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
       otp: code,
       driverName: d.driverName,
       driverPhone: d.driverPhone,
-      capacity: d.capacity || ROUTE_MAX_BAGS,
+      driverTotalCapacity: d.capacity || ROUTE_MAX_BAGS,
+      capacity: ROUTE_MAX_BAGS,
       stops: (d.stops || []).map(s => ({ ...s, status: s.status || "pending" })),
     });
     route.completedStops = route.stops.filter(s => s.status === "delivered").length;

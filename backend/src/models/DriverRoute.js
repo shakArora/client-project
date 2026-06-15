@@ -21,6 +21,9 @@ const driverRouteSchema = new mongoose.Schema(
     otp:             { type: String, required: true, trim: true, uppercase: true },
     driverName:      { type: String, trim: true },
     driverPhone:     { type: String, trim: true },
+    /** Total bags this driver can handle in a day (assignment planning). */
+    driverTotalCapacity: { type: Number, min: 1, max: 9999 },
+    /** Per-route bag cap shown on driver cards (usually 100). */
     capacity:        { type: Number, default: 100, min: 1, max: 9999 },
     stops:           { type: [stopSchema], default: [] },
     completedStops:  { type: Number, default: 0, min: 0 },

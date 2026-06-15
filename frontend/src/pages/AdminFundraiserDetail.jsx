@@ -1266,7 +1266,7 @@ function DriversTab({ fr }) {
             <Field label="Bag Capacity *">
               <input type="number" min="1" max="9999" value={form.capacity} onChange={set('capacity')} required placeholder="How many bags can this driver deliver?" />
             </Field>
-            <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '1.25rem' }}>Total bags this driver can handle across all routes. Each route is capped at 100 bags (any number of stops) with its own code.</p>
+            <p style={{ fontSize: '.78rem', color: 'var(--t3)', marginBottom: '1.25rem' }}>Optional reference capacity. All orders are assigned across your drivers and split into 100-bag routes automatically.</p>
             {msg && <p style={{ color: '#dc2626', fontSize: '.85rem', marginBottom: '.75rem' }}>{msg}</p>}
             <div style={{ display: 'flex', gap: '.6rem' }}>
               <button type="button" onClick={() => setShowForm(false)} className="btn btn-outline" style={{ flex: 1 }}>Cancel</button>
