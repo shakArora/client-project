@@ -40,18 +40,23 @@ function haversineMatrix(coordList) {
   return matrix;
 }
 
+function sanitizeMatrix(matrix) {
+  return matrix.map((row) => row.map((v) => (v == null || !Number.isFinite(v) ? 1e9 : v)));
+}
+
 async function fetchOsrmMatrix(coordList, mode = 'duration') {
   if (mode !== 'duration' && mode !== 'distance') throw new Error('Invalid mode.');
   const coordString = coordList.map((c) => `${Number(c.lon)},${Number(c.lat)}`).join(';');
   const url = `https://router.project-osrm.org/table/v1/driving/${coordString}?annotations=${mode}`;
   const response = await fetch(url, {
     headers: { 'User-Agent': 'Routed/1.0 (arorashivum@gmail.com)' },
+    signal: AbortSignal.timeout(60_000),
   });
   if (!response.ok) throw new Error(`OSRM API request failed with status ${response.status}`);
   const data = await response.json();
   if (data.code !== 'Ok') throw new Error(`OSRM Error: ${data.code}`);
   const key = mode === 'duration' ? 'durations' : 'distances';
-  return data[key];
+  return sanitizeMatrix(data[key]);
 }
 
 /** Build NxN matrix from lat/lon (OSRM driving times, haversine fallback). */
@@ -59,7 +64,8 @@ async function distMatrixFromCoords(coordList, mode = 'duration') {
   if (!coordList?.length) return [];
   try {
     return await fetchOsrmMatrix(coordList, mode);
-  } catch {
+  } catch (err) {
+    console.warn('OSRM matrix failed, using haversine fallback:', err?.message || err);
     return haversineMatrix(coordList);
   }
 }
@@ -275,15 +281,34 @@ async function clusterAddressesWithCapacity(addresses, weights, distanceMatrix, 
   };
 }
 
+function deductCapsFromClusters(remainingCaps, clusters) {
+  for (const cluster of clusters || []) {
+    const idx = cluster.vehicleIndex;
+    if (idx >= 0 && idx < remainingCaps.length) {
+      remainingCaps[idx] = Math.max(0, remainingCaps[idx] - cluster.totalWeight);
+    }
+  }
+}
+
 async function logic(addresses, amountPerAddress, carCapacities, options = {}) {
   const { coords, disableSplit = false } = options;
   const distanceMatrix = coords?.length
     ? await distMatrixFromCoords(coords)
     : await distMatrix(addresses);
   const clusterOpts = { disableSplit };
-  let result = await clusterAddressesWithCapacity(addresses, amountPerAddress, distanceMatrix, carCapacities, clusterOpts);
+  const remainingCaps = [...carCapacities];
+
+  let result = await clusterAddressesWithCapacity(
+    addresses,
+    amountPerAddress,
+    distanceMatrix,
+    remainingCaps,
+    clusterOpts,
+  );
   const newClusters = [result];
-  while (result.unassignedAddresses?.length > 0) {
+  deductCapsFromClusters(remainingCaps, result.clusters);
+
+  while (result.unassignedAddresses?.length > 0 && remainingCaps.some((c) => c > 0)) {
     const remaining = result.unassignedAddresses;
     const remainingAddresses = remaining.map((u) => u.address);
     const remainingWeights = remaining.map((u) => u.weight);
@@ -291,14 +316,17 @@ async function logic(addresses, amountPerAddress, carCapacities, options = {}) {
     const remainingMatrix = remainingIndices.map((i) =>
       remainingIndices.map((j) => distanceMatrix[i][j]),
     );
+    const prevCount = remaining.length;
     result = await clusterAddressesWithCapacity(
       remainingAddresses,
       remainingWeights,
       remainingMatrix,
-      carCapacities,
+      remainingCaps,
       clusterOpts,
     );
+    deductCapsFromClusters(remainingCaps, result.clusters);
     newClusters.push(result);
+    if (!result.clusters?.length || result.unassignedAddresses?.length >= prevCount) break;
   }
   return newClusters;
 }

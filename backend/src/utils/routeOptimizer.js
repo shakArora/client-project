@@ -7,6 +7,26 @@ function stripPartSuffix(label) {
   return String(label).replace(/ \(Part \d+\)$/, "");
 }
 
+function driverCap(drivers, idx) {
+  return drivers[idx]?.capacity || 999;
+}
+
+function orderBags(order) {
+  return Number(order.totalBags) || 0;
+}
+
+function bagsUsed(stopsByDriver, idx) {
+  return stopsByDriver[idx].reduce((sum, o) => sum + orderBags(o), 0);
+}
+
+function bagsRemaining(stopsByDriver, drivers, idx) {
+  return driverCap(drivers, idx) - bagsUsed(stopsByDriver, idx);
+}
+
+function canFit(stopsByDriver, drivers, drvIdx, order) {
+  return bagsRemaining(stopsByDriver, drivers, drvIdx) >= orderBags(order);
+}
+
 function haversineKm(a, b) {
   const R = 6371;
   const toRad = (d) => (d * Math.PI) / 180;
@@ -29,24 +49,17 @@ async function resolveHubCoords(fundraiser) {
   return parsed.ok ? parsed.coords : null;
 }
 
-async function resolveOrderCoords(orders, regionHint) {
+function resolveOrderCoords(orders) {
   const geocoded = [];
   const missing = [];
-
   for (const order of orders) {
-    if (order.coords?.lat != null && order.coords?.lon != null) {
-      geocoded.push(order);
-      continue;
-    }
-    const parsed = await geocodeImportAddress(order.deliveryAddress, { regionHint });
-    if (parsed.ok) geocoded.push({ ...order, coords: parsed.coords });
+    if (order.coords?.lat != null && order.coords?.lon != null) geocoded.push(order);
     else missing.push(order);
   }
-
   return { geocoded, missing };
 }
 
-function appendClusterStops(stopsByDriver, cluster, orderById, added) {
+function appendClusterStops(stopsByDriver, cluster, orderById, added, drivers) {
   const drvIdx = cluster.vehicleIndex;
   if (drvIdx < 0 || drvIdx >= stopsByDriver.length) return;
 
@@ -54,26 +67,22 @@ function appendClusterStops(stopsByDriver, cluster, orderById, added) {
     const orderId = stripPartSuffix(label);
     if (orderId === HUB_LABEL) continue;
     const order = orderById.get(orderId);
-    if (order && !added.has(orderId)) {
-      stopsByDriver[drvIdx].push(order);
-      added.add(orderId);
-    }
+    if (!order || added.has(orderId)) continue;
+    if (!canFit(stopsByDriver, drivers, drvIdx, order)) continue;
+    stopsByDriver[drvIdx].push(order);
+    added.add(orderId);
   }
 }
 
 /**
- * Assign orders to drivers using src/logic.js (OSRM matrix + greedy clustering).
- * Uses stored coordinates — no per-address Nominatim round-trip during routing.
+ * Assign orders to drivers using routingLogic (OSRM matrix + greedy clustering).
+ * Each driver's assigned orders must sum to at most their bag capacity.
  */
 export async function optimizeRoutes({ orders, drivers, fundraiser }) {
   if (!orders.length || !drivers.length) return null;
 
-  const regionHint = formatRegionHint(fundraiser?.location)
-    || fundraiser?.deliveryHubAddress
-    || fundraiser?.pickupAddress;
-
   const hubCoords = await resolveHubCoords(fundraiser);
-  const { geocoded, missing } = await resolveOrderCoords(orders, regionHint);
+  const { geocoded, missing } = resolveOrderCoords(orders);
   if (!geocoded.length) return null;
 
   const useHub = hubCoords?.lat != null;
@@ -81,8 +90,8 @@ export async function optimizeRoutes({ orders, drivers, fundraiser }) {
     ? [HUB_LABEL, ...geocoded.map((o) => String(o._id))]
     : geocoded.map((o) => String(o._id));
   const weights = useHub
-    ? [0, ...geocoded.map((o) => o.totalBags)]
-    : geocoded.map((o) => o.totalBags);
+    ? [0, ...geocoded.map((o) => orderBags(o))]
+    : geocoded.map((o) => orderBags(o));
   const coords = useHub
     ? [{ lat: hubCoords.lat, lon: hubCoords.lon }, ...geocoded.map((o) => ({ lat: o.coords.lat, lon: o.coords.lon }))]
     : geocoded.map((o) => ({ lat: o.coords.lat, lon: o.coords.lon }));
@@ -96,7 +105,7 @@ export async function optimizeRoutes({ orders, drivers, fundraiser }) {
 
   for (const result of results) {
     for (const cluster of result.clusters || []) {
-      appendClusterStops(stopsByDriver, cluster, orderById, added);
+      appendClusterStops(stopsByDriver, cluster, orderById, added, drivers);
     }
   }
 
@@ -108,8 +117,15 @@ export async function optimizeRoutes({ orders, drivers, fundraiser }) {
   return { stopsByDriver, unassigned, optimized: true, hubCoords };
 }
 
-export function capacityFallback({ orders, drivers, hubCoords }) {
-  const stopsByDriver = drivers.map(() => []);
+/**
+ * Greedy capacity assignment — never exceeds per-driver bag cap.
+ * Pass existingStops when topping up drivers that already have orders.
+ */
+export function capacityFallback({ orders, drivers, hubCoords, existingStops = null }) {
+  const stopsByDriver = existingStops
+    ? existingStops.map((stops) => [...stops])
+    : drivers.map(() => []);
+  const unassigned = [];
   const sorted = [...orders];
 
   if (hubCoords?.lat != null) {
@@ -122,38 +138,41 @@ export function capacityFallback({ orders, drivers, hubCoords }) {
 
   let driverIdx = 0;
   for (const order of sorted) {
+    const bags = orderBags(order);
     let assigned = false;
+
     for (let i = 0; i < drivers.length; i++) {
       const idx = (driverIdx + i) % drivers.length;
-      const d = drivers[idx];
-      const used = stopsByDriver[idx].reduce((s, o) => s + o.totalBags, 0);
-      if ((d.capacity || 999) - used >= order.totalBags) {
+      if (bagsRemaining(stopsByDriver, drivers, idx) >= bags) {
         stopsByDriver[idx].push(order);
         driverIdx = (idx + 1) % drivers.length;
         assigned = true;
         break;
       }
     }
-    if (!assigned) {
-      let minIdx = 0;
-      let minUsed = Infinity;
-      stopsByDriver.forEach((stops, i) => {
-        const used = stops.reduce((s, o) => s + o.totalBags, 0);
-        if (used < minUsed) { minUsed = used; minIdx = i; }
-      });
-      stopsByDriver[minIdx].push(order);
-    }
+
+    if (!assigned) unassigned.push(order);
   }
 
-  return { stopsByDriver, unassigned: [], optimized: false };
+  return { stopsByDriver, unassigned, optimized: false };
 }
 
 export function buildStopsFromOrders(orderList) {
-  return orderList.map((order) => ({
-    orderId:         order._id,
-    customerName:    order.customerName,
-    deliveryAddress: order.deliveryAddress,
-    bags:            order.totalBags,
-    comment:         order.comments || "",
+  return orderList
+    .filter((order) => orderBags(order) > 0)
+    .map((order) => ({
+      orderId:         order._id,
+      customerName:    order.customerName,
+      deliveryAddress: order.deliveryAddress,
+      bags:            orderBags(order),
+      comment:         order.comments || "",
+    }));
+}
+
+export function routeBagTotals(stopsByDriver, drivers) {
+  return stopsByDriver.map((stops, i) => ({
+    driverIndex: i,
+    assignedBags: bagsUsed(stopsByDriver, i),
+    capacity: driverCap(drivers, i),
   }));
 }

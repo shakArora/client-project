@@ -40,32 +40,57 @@ async function autoGenerateRoutes(fundraiserId) {
 
   let plan = null;
   let hubCoords = fr?.deliveryHubCoords || fr?.pickupCoords || null;
+
   try {
     plan = await optimizeRoutes({ orders, drivers, fundraiser: fr });
     hubCoords = plan?.hubCoords || hubCoords;
   } catch (err) {
     console.error("Route optimization failed, using capacity fallback:", err);
   }
-  if (!plan) {
+
+  if (!plan?.stopsByDriver) {
     plan = capacityFallback({ orders, drivers, hubCoords });
+  }
+
+  if (plan.unassigned?.length) {
+    const fb = capacityFallback({
+      orders: plan.unassigned,
+      drivers,
+      hubCoords,
+      existingStops: plan.stopsByDriver,
+    });
+    plan.stopsByDriver = fb.stopsByDriver;
+    plan.unassigned = fb.unassigned;
+  }
+
+  if (!Array.isArray(plan.stopsByDriver) || plan.stopsByDriver.length !== drivers.length) {
+    throw new Error("Route planner returned an invalid driver assignment.");
   }
 
   plan.stopsByDriver.forEach((orderList, i) => {
     drivers[i].stops = buildStopsFromOrders(orderList);
   });
 
+  await Promise.all(drivers.map((d) => d.save()));
+
+  const method = plan.optimized ? "optimized" : "capacity";
+  const overCap = drivers.filter((d) => {
+    const used = d.stops.reduce((s, stop) => s + (stop.bags || 0), 0);
+    return used > (d.capacity || 999);
+  });
+
+  let message = `Routes generated for ${drivers.length} driver(s) (${method})`;
   if (plan.unassigned?.length) {
-    const fb = capacityFallback({ orders: plan.unassigned, drivers, hubCoords });
-    fb.stopsByDriver.forEach((orderList, i) => {
-      drivers[i].stops.push(...buildStopsFromOrders(orderList));
-    });
+    message += `. ${plan.unassigned.length} order(s) could not fit any driver capacity — add drivers or raise caps.`;
+  }
+  if (overCap.length) {
+    console.error("Route generation exceeded capacity for drivers:", overCap.map((d) => d.otp));
   }
 
-  await Promise.all(drivers.map(d => d.save()));
-  const method = plan.optimized ? "optimized" : "capacity";
   return {
     drivers,
-    message: `Routes generated for ${drivers.length} driver(s) (${method})`,
+    message,
+    unassigned: plan.unassigned?.length || 0,
   };
 }
 
@@ -176,7 +201,8 @@ router.post("/routes/generate", requireAuth, requireRole(ROLES.ADMIN), async (re
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ message: "Invalid payload" });
     console.error("Route generation error:", error);
-    res.status(500).json({ message: "Unable to generate routes" });
+    const detail = error?.message || String(error);
+    res.status(500).json({ message: `Unable to generate routes: ${detail}` });
   }
 });
 

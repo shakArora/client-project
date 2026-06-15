@@ -101,5 +101,5 @@ export const driverApi = {
   listRoutes:     (params)         => api.get("/driver/routes", { params }),
   addDriver:      (data)           => api.post("/driver/drivers", data),
   deleteDriver:   (id)             => api.delete(`/driver/drivers/${id}`),
-  generateRoutes: (fundraiserId)   => api.post("/driver/routes/generate", { fundraiserId }),
+  generateRoutes: (fundraiserId)   => api.post("/driver/routes/generate", { fundraiserId }, { timeout: 300_000 }),
 };

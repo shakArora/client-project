@@ -1136,7 +1136,7 @@ function DriversTab({ fr }) {
       setMsg(res.data.message);
       load();
     } catch (err) {
-      setMsg(err.response?.data?.message || 'Route generation failed.');
+      setMsg(err.response?.data?.message || err.message || 'Route generation failed.');
     } finally {
       setGenerating(false);
     }
@@ -1182,13 +1182,15 @@ function DriversTab({ fr }) {
         ))}
       </div>
 
-      {msg && <p style={{ marginBottom: '1rem', fontWeight: 600, color: msg.toLowerCase().includes('fail') || msg.toLowerCase().includes('error') ? '#dc2626' : '#059669' }}>{msg}</p>}
+      {msg && <p style={{ marginBottom: '1rem', fontWeight: 600, color: msg.toLowerCase().includes('fail') || msg.toLowerCase().includes('error') || msg.includes('could not fit') ? '#dc2626' : '#059669' }}>{msg}</p>}
 
       {loading ? <SkeletonList rows={4} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.85rem' }}>
           {routes.map(r => {
             const currentStopIdx = (r.stops || []).findIndex(s => s.status !== 'delivered');
             const driverUrl = `${FRONTEND}/driver/${r.otp}`;
+            const assignedBags = (r.stops || []).reduce((sum, s) => sum + (s.bags || 0), 0);
+            const overCap = assignedBags > (r.capacity || 999);
             return (
               <div key={r._id} style={{ background: '#fff', borderRadius: 12, padding: '1.1rem 1.25rem', boxShadow: '0 1px 8px rgba(0,0,0,.07)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap', marginBottom: '.75rem' }}>
@@ -1197,7 +1199,9 @@ function DriversTab({ fr }) {
                     {r.driverPhone && <div style={{ fontSize: '.82rem', color: 'var(--t3)' }}>📞 {r.driverPhone}</div>}
                     <div style={{ display: 'flex', gap: '.6rem', marginTop: '.45rem', flexWrap: 'wrap', alignItems: 'center' }}>
                       <span style={{ fontSize: '.78rem', background: '#f3f4f6', borderRadius: 6, padding: '.2rem .6rem', fontFamily: 'monospace', fontWeight: 700 }}>OTP: {r.otp}</span>
-                      <span style={{ fontSize: '.78rem', color: 'var(--t3)' }}>Cap: {r.capacity} bags</span>
+                      <span style={{ fontSize: '.78rem', color: overCap ? '#dc2626' : 'var(--t3)', fontWeight: overCap ? 700 : 400 }}>
+                        {assignedBags}/{r.capacity} bags assigned
+                      </span>
                       <span style={{ fontSize: '.78rem', color: r.completedStops === r.stops?.length && r.stops?.length > 0 ? '#059669' : 'var(--t3)', fontWeight: r.completedStops === r.stops?.length && r.stops?.length > 0 ? 700 : 400 }}>
                         {r.completedStops || 0}/{r.stops?.length || 0} stops
                       </span>

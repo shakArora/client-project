@@ -305,15 +305,34 @@ async function clusterAddressesWithCapacity(addresses, weights, distanceMatrix, 
   };
 }
 
+function deductCapsFromClusters(remainingCaps, clusters) {
+  for (const cluster of clusters || []) {
+    const idx = cluster.vehicleIndex;
+    if (idx >= 0 && idx < remainingCaps.length) {
+      remainingCaps[idx] = Math.max(0, remainingCaps[idx] - cluster.totalWeight);
+    }
+  }
+}
+
 async function logic(addresses, amountPerAddress, carCapacities, options = {}) {
   const { coords, disableSplit = false } = options;
   const distanceMatrix = coords?.length
     ? await distMatrixFromCoords(coords)
     : await distMatrix(addresses);
   const clusterOpts = { disableSplit };
-  let result = await clusterAddressesWithCapacity(addresses, amountPerAddress, distanceMatrix, carCapacities, clusterOpts);
+  const remainingCaps = [...carCapacities];
+
+  let result = await clusterAddressesWithCapacity(
+    addresses,
+    amountPerAddress,
+    distanceMatrix,
+    remainingCaps,
+    clusterOpts,
+  );
   const newClusters = [result];
-  while (result.unassignedAddresses?.length > 0) {
+  deductCapsFromClusters(remainingCaps, result.clusters);
+
+  while (result.unassignedAddresses?.length > 0 && remainingCaps.some((c) => c > 0)) {
     const remaining = result.unassignedAddresses;
     const remainingAddresses = remaining.map((u) => u.address);
     const remainingWeights = remaining.map((u) => u.weight);
@@ -321,14 +340,17 @@ async function logic(addresses, amountPerAddress, carCapacities, options = {}) {
     const remainingMatrix = remainingIndices.map((i) =>
       remainingIndices.map((j) => distanceMatrix[i][j]),
     );
+    const prevCount = remaining.length;
     result = await clusterAddressesWithCapacity(
       remainingAddresses,
       remainingWeights,
       remainingMatrix,
-      carCapacities,
+      remainingCaps,
       clusterOpts,
     );
+    deductCapsFromClusters(remainingCaps, result.clusters);
     newClusters.push(result);
+    if (!result.clusters?.length || result.unassignedAddresses?.length >= prevCount) break;
   }
   return newClusters;
 }
