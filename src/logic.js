@@ -158,18 +158,10 @@ async function clusterAddressesWithCapacity(addresses, weights, distanceMatrix, 
     let vehicleLoad = 0;
     let currentIndex = null;
 
-    // Start with the unassigned address closest to depot
-    let minDistSum = Infinity;
-    for (const idx of unassigned) {
-      const distSum = Array.from(unassigned).reduce(
-        (sum, other) => sum + distanceMatrix[idx][other],
-        0
-      );
-      if (distSum < minDistSum) {
-        minDistSum = distSum;
-        currentIndex = idx;
-      }
-    }
+    // Start with the unassigned address closest to depot (index 0)
+    currentIndex = [...unassigned].reduce((best, idx) =>
+      distanceMatrix[0][idx] < distanceMatrix[0][best] ? idx : best
+    );
 
     // Greedy nearest neighbor insertion
     while (unassigned.size > 0 && currentIndex !== null) {
@@ -236,17 +228,24 @@ async function clusterAddressesWithCapacity(addresses, weights, distanceMatrix, 
     }
   }
 
-  // 2. Build unassigned list based on original parent indices
+  // 2. Build unassigned list based on original parent indices with remaining weight
   const parentUnassignedIndices = new Set();
   for (const idx of unassigned) {
     parentUnassignedIndices.add(originIndices[idx]);
   }
 
-  const unassignedAddresses = Array.from(parentUnassignedIndices).map(parentIdx => ({
-    index: parentIdx,
-    address: originalAddresses[parentIdx],
-    weight: originalWeights[parentIdx] 
-  }));
+  const remainingWeight = [...originalWeights];
+  for (let i = 0; i < assignments.length; i++) {
+    if (assignments[i] !== -1) remainingWeight[originIndices[i]] -= weights[i];
+  }
+
+  const unassignedAddresses = Array.from(parentUnassignedIndices)
+    .filter(parentIdx => remainingWeight[parentIdx] > 0)
+    .map(parentIdx => ({
+      index: parentIdx,
+      address: originalAddresses[parentIdx],
+      weight: remainingWeight[parentIdx],
+    }));
 
   return {
     assignments: mappedAssignments, 
