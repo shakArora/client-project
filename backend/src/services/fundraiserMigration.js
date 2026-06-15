@@ -212,14 +212,19 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
     }
 
     const code = await genReferralCode(fundraiserId, v.referralCode);
+    const password = String(v.password || "").trim() || "vendor";
     let user = await User.findOne({ email });
     if (!user) {
       user = await User.create({
         name: v.name,
         email,
-        passwordHash: await bcrypt.hash("vendor", 10),
+        passwordHash: await bcrypt.hash(password, 10),
         role: ROLES.VENDOR,
       });
+    } else if (v.password?.trim()) {
+      user.passwordHash = await bcrypt.hash(password, 10);
+      if (!user.name && v.name) user.name = v.name;
+      await user.save();
     }
 
     vendor = await Vendor.create({
@@ -303,6 +308,9 @@ export async function importFundraiser(fundraiserId, adminId, payload) {
         display: o.coords.display || rawAddress,
       };
       deliveryAddress = coords.display;
+    } else if (options.geocode === false) {
+      coords = undefined;
+      deliveryAddress = rawAddress;
     } else {
       const parsed = await geocodeImportAddress(rawAddress, { regionHint: fundraiserRegionHint(fr) });
       if (!parsed.ok) {

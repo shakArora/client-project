@@ -384,13 +384,19 @@ function parseVendorsCsvRows(rows) {
   rows.forEach((r, i) => {
     const name  = pickField(r, VENDORS_CSV.aliases.name);
     const email = pickField(r, VENDORS_CSV.aliases.email);
+    const password = pickField(r, VENDORS_CSV.aliases.password);
     if (!name || !email) {
       problems.push(`Row ${i + 2}: missing Name or Email`);
+      return;
+    }
+    if (!password) {
+      problems.push(`Row ${i + 2}: missing Password`);
       return;
     }
     valid.push({
       name,
       email,
+      password,
       referralCode: pickField(r, VENDORS_CSV.aliases.referral) || undefined,
     });
   });
@@ -681,8 +687,8 @@ function VendorsTab({ fr }) {
             busy={csvBusy}
             exportDisabled={!vendors.length}
             onExport={() => downloadCsv(`vendors-${fr.slug}.csv`,
-              ['Name', 'Email', 'Referral Code', 'Bags Sold', 'Revenue'],
-              vendors.map(v => [v.name, v.email, v.referralCode, v.bagsSold || 0, (v.totalRevenue || 0).toFixed(2)])
+              [...VENDORS_CSV.headers, 'Bags Sold', 'Revenue'],
+              vendors.map(v => [v.name, v.email, '', v.referralCode, v.bagsSold || 0, (v.totalRevenue || 0).toFixed(2)])
             )}
             onImport={importVendorsCsv}
           />
@@ -781,7 +787,9 @@ function OrdersTab({ fr }) {
     }
 
     setCsvBusy(true);
-    setCsvMsg('Validating addresses…');
+    const uniqueAddresses = new Set(valid.map(o => o.deliveryAddress.trim().toLowerCase())).size;
+    const estSec = Math.max(5, Math.ceil(uniqueAddresses * 1.2));
+    setCsvMsg(`Validating ${uniqueAddresses} unique address(es)… may take ~${estSec}s`);
     try {
       const { data: validation } = await fundraiserApi.validateImportAddresses(
         fr._id,
@@ -800,6 +808,16 @@ function OrdersTab({ fr }) {
         return;
       }
 
+      const coordsByRow = new Map((validation.validated || []).map(v => [v.row, v.coords]));
+      const ordersToImport = valid.map(o => {
+        const coords = coordsByRow.get(o.row);
+        return {
+          ...o,
+          coords,
+          deliveryAddress: coords?.display || o.deliveryAddress,
+        };
+      });
+
       const preview = [
         `${valid.length} order(s) to import`,
         'Existing orders are never changed',
@@ -807,13 +825,16 @@ function OrdersTab({ fr }) {
       ].join(' · ');
       if (!window.confirm(`Import orders?\n${preview}`)) return;
 
-      setCsvMsg('');
-      const { data } = await fundraiserApi.import(fr._id, { orders: valid, options: IMPORT_OPTIONS });
+      setCsvMsg('Importing orders…');
+      const { data } = await fundraiserApi.import(fr._id, { orders: ordersToImport, options: CSV_IMPORT_OPTIONS });
       const skipped = data.stats.skipped?.length ? ` ${data.stats.skipped.slice(0, 3).join('; ')}` : '';
       setCsvMsg(`${formatImportResult(data.stats)}.${skipped}`);
       load();
     } catch (err) {
-      setCsvMsg(err.response?.data?.message || 'Import failed.');
+      const msg = err.code === 'ECONNABORTED'
+        ? 'Request timed out. Large imports can take a few minutes — please try again.'
+        : (err.response?.data?.message || 'Import failed.');
+      setCsvMsg(msg);
     } finally {
       setCsvBusy(false);
     }

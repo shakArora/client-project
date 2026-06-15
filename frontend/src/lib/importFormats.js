@@ -36,7 +36,7 @@ export function resolveOrderCsvFields({ statusRaw, productRaw, referralRaw, comm
 
 export const IMPORT_BEHAVIOR = {
   orders: 'Adds new orders only. Existing orders are never modified or deleted. Duplicate rows (same customer + address + bags) are skipped. Email and phone are optional. Each address is validated before import; fix any errors in your CSV and re-upload.',
-  vendors: 'Creates new vendor accounts. Rows with an email that already exists on this fundraiser are skipped.',
+  vendors: 'Creates new vendor accounts. Rows with an email that already exists on this fundraiser are skipped. Password is required for each new vendor.',
   products: 'Creates new products or updates matching product names. Does not delete existing products.',
   drivers: 'Creates new driver routes. Existing driver codes are left unchanged.',
   fundraiser: 'Merges settings into this fundraiser. Does not delete any records.',
@@ -75,19 +75,22 @@ export const ORDERS_CSV = {
 
 export const VENDORS_CSV = {
   filename: 'vendors-template.csv',
-  headers: ['Name', 'Email', 'Referral Code'],
-  example: ['Alex Johnson', 'alex@email.com', 'AJ01'],
-  required: ['Name', 'Email'],
+  headers: ['Name', 'Email', 'Password', 'Referral Code'],
+  example: ['Alex Johnson', 'alex@email.com', 'scout2025', 'AJ01'],
+  required: ['Name', 'Email', 'Password'],
   optional: ['Referral Code'],
   notes: [
     'Header row required. Column names are case-insensitive.',
-    'Name and Email are required. Email must be unique per fundraiser.',
+    'Name, Email, and Password are required for each new vendor.',
+    'Share the password with the vendor so they can log in at routed.',
     'Referral Code is optional, Routed generates one if left blank.',
     'Existing vendors (same email) are skipped, not updated.',
+    'Exported CSV leaves Password blank — passwords cannot be retrieved after creation.',
   ],
   aliases: {
     name: ['name', 'vendor', 'vendorname'],
     email: ['email'],
+    password: ['password', 'pass', 'vendor password'],
     referral: ['referral', 'referralcode', 'referral code', 'code'],
   },
 };

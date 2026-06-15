@@ -46,7 +46,7 @@ export const fundraiserApi = {
   activate:  (id)         => api.patch(`/fundraisers/${id}/activate`),
   delete:    (id)         => api.delete(`/fundraisers/${id}`),
   export:    (id)         => api.get(`/fundraisers/${id}/export`),
-  import:    (id, data)   => api.post(`/fundraisers/${id}/import`, data),
+  import:    (id, data)   => api.post(`/fundraisers/${id}/import`, data, { timeout: 300_000 }),
   validateImportAddresses: (id, orders) => api.post(`/fundraisers/${id}/import/validate-addresses`, { orders }, { timeout: 300_000 }),
 };
 

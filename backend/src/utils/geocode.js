@@ -99,22 +99,38 @@ export async function geocodeImportAddress(raw, { regionHint } = {}) {
 export async function validateImportAddresses(rows, { regionHint } = {}) {
   const errors = [];
   const validated = [];
+  const cache = new Map();
 
   for (const row of rows) {
+    const key = String(row.deliveryAddress || "").trim().toLowerCase();
+    if (cache.has(key)) {
+      const cached = cache.get(key);
+      if (!cached.ok) {
+        errors.push({ row: row.row, customerName: row.customerName, deliveryAddress: row.deliveryAddress, message: cached.message });
+      } else {
+        validated.push({ row: row.row, deliveryAddress: cached.deliveryAddress, coords: cached.coords });
+      }
+      continue;
+    }
+
     const result = await geocodeImportAddress(row.deliveryAddress, { regionHint });
     if (!result.ok) {
+      const message = addressImportErrorMessage(row.deliveryAddress, result.reason);
+      cache.set(key, { ok: false, message });
       errors.push({
         row: row.row,
         customerName: row.customerName,
         deliveryAddress: row.deliveryAddress,
-        message: addressImportErrorMessage(row.deliveryAddress, result.reason),
+        message,
       });
     } else {
-      validated.push({
-        row: row.row,
+      const entry = {
+        ok: true,
         deliveryAddress: result.coords.display,
         coords: result.coords,
-      });
+      };
+      cache.set(key, entry);
+      validated.push({ row: row.row, deliveryAddress: entry.deliveryAddress, coords: entry.coords });
     }
   }
 
